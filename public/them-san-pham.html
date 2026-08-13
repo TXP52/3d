@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Thêm sản phẩm máy in 3D mới - IN3D Store">
+
+    <title>Thêm sản phẩm | IN3D Store</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <script src="assets/js/config.js"></script>
+    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
+    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
+    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
+    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
+    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+    <link href="assets/css/app3d.css" rel="stylesheet">
+    <script>
+      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
+      if (isRTL) {
+        document.getElementById('style-default').setAttribute('disabled', true);
+        document.getElementById('user-style-default').setAttribute('disabled', true);
+        document.querySelector('html').setAttribute('dir', 'rtl');
+      } else {
+        document.getElementById('style-rtl').setAttribute('disabled', true);
+        document.getElementById('user-style-rtl').setAttribute('disabled', true);
+      }
+    </script>
+    <script src="assets/js/app3d.js"></script>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <div class="container" data-layout="container">
+        <script>
+          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
+          if (isFluid) {
+            var container = document.querySelector('[data-layout]');
+            container.classList.remove('container');
+            container.classList.add('container-fluid');
+          }
+        </script>
+
+        <script>App3D.sidebar('them-san-pham');</script>
+
+        <div class="content">
+          <script>App3D.topbar();</script>
+
+          <script>
+            App3D.pageHeader(
+              'Thêm sản phẩm mới',
+              'Khai báo thông tin máy in 3D, vật tư hoặc linh kiện để đưa lên gian hàng.',
+              '<a class="btn btn-falcon-default btn-sm me-2" href="san-pham.html">Huỷ</a>' +
+              '<button class="btn btn-primary btn-sm" type="submit" form="product-form"><span class="fas fa-save me-1"></span>Lưu sản phẩm</button>'
+            );
+          </script>
+
+          <form id="product-form" novalidate>
+            <div class="row g-3">
+              <div class="col-lg-8">
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Thông tin cơ bản</h6></div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label" for="p-name">Tên sản phẩm <span class="text-danger">*</span></label>
+                        <input class="form-control" id="p-name" type="text" placeholder="Ví dụ: Creality Ender-3 V3 SE" required />
+                        <div class="invalid-feedback">Vui lòng nhập tên sản phẩm.</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-sku">Mã SKU <span class="text-danger">*</span></label>
+                        <input class="form-control" id="p-sku" type="text" placeholder="FDM-E3V3" required />
+                        <div class="invalid-feedback">Vui lòng nhập mã SKU.</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-brand">Thương hiệu</label>
+                        <input class="form-control" id="p-brand" type="text" placeholder="Creality, Bambu Lab, Prusa..." />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-cat">Danh mục <span class="text-danger">*</span></label>
+                        <select class="form-select" id="p-cat" required>
+                          <option value="">-- Chọn danh mục --</option>
+                        </select>
+                        <div class="invalid-feedback">Vui lòng chọn danh mục.</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-status">Trạng thái kinh doanh</label>
+                        <select class="form-select" id="p-status">
+                          <option>Đang bán</option>
+                          <option>Nháp</option>
+                          <option>Ngừng kinh doanh</option>
+                        </select>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="p-desc">Mô tả sản phẩm</label>
+                        <textarea class="form-control" id="p-desc" rows="5" placeholder="Khổ in, công nghệ in, tốc độ, vật liệu tương thích, phụ kiện đi kèm..."></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Thông số kỹ thuật máy in</h6></div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-tech">Công nghệ in</label>
+                        <select class="form-select" id="p-tech">
+                          <option>FDM (đùn nhựa)</option>
+                          <option>SLA / LCD (resin)</option>
+                          <option>SLS (bột)</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-volume">Khổ in tối đa (mm)</label>
+                        <input class="form-control" id="p-volume" type="text" placeholder="220 x 220 x 250" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-speed">Tốc độ in tối đa (mm/s)</label>
+                        <input class="form-control" id="p-speed" type="number" min="0" placeholder="250" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label" for="p-nozzle">Nhiệt độ đầu phun tối đa (°C)</label>
+                        <input class="form-control" id="p-nozzle" type="number" min="0" placeholder="300" />
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="p-materials">Vật liệu tương thích</label>
+                        <input class="form-control" id="p-materials" type="text" placeholder="PLA, PLA+, PETG, TPU, ABS..." />
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label d-block">Tính năng nổi bật</label>
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" id="f-auto" type="checkbox" />
+                          <label class="form-check-label" for="f-auto">Cân bàn tự động</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" id="f-cam" type="checkbox" />
+                          <label class="form-check-label" for="f-cam">Camera giám sát</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" id="f-wifi" type="checkbox" />
+                          <label class="form-check-label" for="f-wifi">Kết nối Wi-Fi</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" id="f-multi" type="checkbox" />
+                          <label class="form-check-label" for="f-multi">In đa màu</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="col-lg-4">
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Giá &amp; lợi nhuận</h6></div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label" for="p-price">Giá bán (₫) <span class="text-danger">*</span></label>
+                      <input class="form-control" id="p-price" type="number" min="0" step="1000" placeholder="4990000" required />
+                      <div class="invalid-feedback">Vui lòng nhập giá bán.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label" for="p-cost">Giá vốn (₫)</label>
+                      <input class="form-control" id="p-cost" type="number" min="0" step="1000" placeholder="3750000" />
+                    </div>
+                    <div class="mb-0">
+                      <label class="form-label" for="p-sale">Giá khuyến mãi (₫)</label>
+                      <input class="form-control" id="p-sale" type="number" min="0" step="1000" placeholder="Bỏ trống nếu không giảm giá" />
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between fs--1">
+                      <span class="text-600">Lợi nhuận ước tính</span>
+                      <span class="fw-semi-bold" id="calc-profit">0 ₫</span>
+                    </div>
+                    <div class="d-flex justify-content-between fs--1 mt-1">
+                      <span class="text-600">Tỉ suất lợi nhuận</span>
+                      <span class="fw-semi-bold" id="calc-margin">0%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Kho hàng</h6></div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label" for="p-stock">Số lượng tồn ban đầu</label>
+                      <input class="form-control" id="p-stock" type="number" min="0" placeholder="10" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label" for="p-min">Mức tồn tối thiểu (cảnh báo)</label>
+                      <input class="form-control" id="p-min" type="number" min="0" placeholder="5" />
+                    </div>
+                    <div class="mb-0">
+                      <label class="form-label" for="p-warehouse">Kho lưu trữ</label>
+                      <select class="form-select" id="p-warehouse">
+                        <option>Kho HCM</option>
+                        <option>Kho Hà Nội</option>
+                        <option>Kho Đà Nẵng</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Bảo hành &amp; vận chuyển</h6></div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label" for="p-warranty">Thời gian bảo hành</label>
+                      <select class="form-select" id="p-warranty">
+                        <option>12 tháng</option>
+                        <option>24 tháng</option>
+                        <option>6 tháng</option>
+                        <option>Không bảo hành</option>
+                      </select>
+                    </div>
+                    <div class="mb-0">
+                      <label class="form-label" for="p-weight">Khối lượng đóng gói (kg)</label>
+                      <input class="form-control" id="p-weight" type="number" min="0" step="0.1" placeholder="8.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card mb-3">
+                  <div class="card-header border-bottom"><h6 class="mb-0">Hình ảnh sản phẩm</h6></div>
+                  <div class="card-body text-center">
+                    <div class="border border-dashed rounded-3 py-5 mb-3">
+                      <span class="fas fa-cloud-upload-alt fs-3 text-300 d-block mb-2"></span>
+                      <p class="fs--1 text-500 mb-0">Kéo thả ảnh vào đây hoặc bấm để chọn tệp</p>
+                    </div>
+                    <input class="form-control form-control-sm" id="p-images" type="file" accept="image/*" multiple />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="card mb-3">
+              <div class="card-body text-end">
+                <a class="btn btn-falcon-default me-2" href="san-pham.html">Huỷ bỏ</a>
+                <button class="btn btn-falcon-default me-2" type="button">Lưu nháp</button>
+                <button class="btn btn-primary" type="submit"><span class="fas fa-save me-1"></span>Lưu &amp; đăng bán</button>
+              </div>
+            </div>
+          </form>
+
+          <script>App3D.footer();</script>
+        </div>
+      </div>
+    </main>
+
+    <script src="vendors/popper/popper.min.js"></script>
+    <script src="vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="vendors/is/is.min.js"></script>
+    <script src="vendors/fontawesome/all.min.js"></script>
+    <script src="vendors/lodash/lodash.min.js"></script>
+    <script src="vendors/list.js/list.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Nạp danh mục
+        var cat = document.getElementById('p-cat');
+        App3D.categories.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          cat.appendChild(opt);
+        });
+
+        // Tính lợi nhuận theo thời gian thực
+        var price = document.getElementById('p-price');
+        var cost = document.getElementById('p-cost');
+        var profitEl = document.getElementById('calc-profit');
+        var marginEl = document.getElementById('calc-margin');
+
+        var recalc = function () {
+          var p = Number(price.value) || 0;
+          var c = Number(cost.value) || 0;
+          var profit = p - c;
+          profitEl.textContent = App3D.money(profit);
+          marginEl.textContent = p > 0 ? Math.round((profit / p) * 100) + '%' : '0%';
+          marginEl.className = 'fw-semi-bold ' + (profit >= 0 ? 'text-success' : 'text-danger');
+        };
+        price.addEventListener('input', recalc);
+        cost.addEventListener('input', recalc);
+        recalc();
+
+        // Kiểm tra dữ liệu trước khi lưu (chỉ minh hoạ, chưa gửi lên máy chủ)
+        var form = document.getElementById('product-form');
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          form.classList.add('was-validated');
+          if (!form.checkValidity()) {
+            return;
+          }
+          alert('Đã lưu sản phẩm "' + document.getElementById('p-name').value + '" (bản demo, dữ liệu chưa được gửi lên máy chủ).');
+        });
+      });
+    </script>
+  </body>
+
+</html>

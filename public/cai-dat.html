@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Cài đặt cửa hàng - IN3D Store">
+
+    <title>Cài đặt cửa hàng | IN3D Store</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <script src="assets/js/config.js"></script>
+    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
+    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
+    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
+    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
+    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+    <link href="assets/css/app3d.css" rel="stylesheet">
+    <script>
+      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
+      if (isRTL) {
+        document.getElementById('style-default').setAttribute('disabled', true);
+        document.getElementById('user-style-default').setAttribute('disabled', true);
+        document.querySelector('html').setAttribute('dir', 'rtl');
+      } else {
+        document.getElementById('style-rtl').setAttribute('disabled', true);
+        document.getElementById('user-style-rtl').setAttribute('disabled', true);
+      }
+    </script>
+    <script src="assets/js/app3d.js"></script>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <div class="container" data-layout="container">
+        <script>
+          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
+          if (isFluid) {
+            var container = document.querySelector('[data-layout]');
+            container.classList.remove('container');
+            container.classList.add('container-fluid');
+          }
+        </script>
+
+        <script>App3D.sidebar('cai-dat');</script>
+
+        <div class="content">
+          <script>App3D.topbar();</script>
+
+          <script>
+            App3D.pageHeader(
+              'Cài đặt cửa hàng',
+              'Thông tin doanh nghiệp, phương thức thanh toán, vận chuyển và phân quyền nhân viên.',
+              '<button class="btn btn-primary btn-sm" type="button"><span class="fas fa-save me-1"></span>Lưu thay đổi</button>'
+            );
+          </script>
+
+          <div class="row g-3">
+            <div class="col-lg-8">
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Thông tin cửa hàng</h6></div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-name">Tên cửa hàng</label>
+                      <input class="form-control" id="s-name" type="text" value="IN3D Store" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-tax">Mã số thuế</label>
+                      <input class="form-control" id="s-tax" type="text" value="0316889002" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-phone">Hotline</label>
+                      <input class="form-control" id="s-phone" type="tel" value="1900 6868" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-email">Email liên hệ</label>
+                      <input class="form-control" id="s-email" type="email" value="cskh@in3dstore.vn" />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="s-address">Địa chỉ showroom</label>
+                      <input class="form-control" id="s-address" type="text" value="45 Lê Văn Việt, TP. Thủ Đức, TP. Hồ Chí Minh" />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="s-hours">Giờ mở cửa</label>
+                      <input class="form-control" id="s-hours" type="text" value="Thứ 2 - Thứ 7: 8h00 - 21h00, Chủ nhật: 9h00 - 17h00" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Phương thức thanh toán</h6></div>
+                <div class="card-body">
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="pay-bank" type="checkbox" checked />
+                    <label class="form-check-label" for="pay-bank">Chuyển khoản ngân hàng
+                      <span class="d-block fs--2 text-500">Vietcombank - 0071000123456 - CTY TNHH IN3D STORE</span>
+                    </label>
+                  </div>
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="pay-cod" type="checkbox" checked />
+                    <label class="form-check-label" for="pay-cod">Thanh toán khi nhận hàng (COD)
+                      <span class="d-block fs--2 text-500">Áp dụng cho đơn dưới 20.000.000 ₫</span>
+                    </label>
+                  </div>
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="pay-momo" type="checkbox" checked />
+                    <label class="form-check-label" for="pay-momo">Ví điện tử MoMo / ZaloPay</label>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" id="pay-install" type="checkbox" />
+                    <label class="form-check-label" for="pay-install">Trả góp 0% qua thẻ tín dụng
+                      <span class="d-block fs--2 text-500">Áp dụng cho máy in từ 10.000.000 ₫</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Vận chuyển &amp; bảo hành</h6></div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-freeship">Miễn phí vận chuyển từ (₫)</label>
+                      <input class="form-control" id="s-freeship" type="number" value="5000000" step="100000" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-fee">Phí vận chuyển mặc định (₫)</label>
+                      <input class="form-control" id="s-fee" type="number" value="300000" step="10000" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-warranty">Bảo hành mặc định cho máy in</label>
+                      <select class="form-select" id="s-warranty">
+                        <option>12 tháng</option>
+                        <option>24 tháng</option>
+                        <option>6 tháng</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="s-return">Thời hạn đổi trả</label>
+                      <select class="form-select" id="s-return">
+                        <option>7 ngày</option>
+                        <option>15 ngày</option>
+                        <option>30 ngày</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="col-lg-4">
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Cảnh báo &amp; thông báo</h6></div>
+                <div class="card-body">
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="n-stock" type="checkbox" checked />
+                    <label class="form-check-label" for="n-stock">Cảnh báo khi hàng dưới mức tồn tối thiểu</label>
+                  </div>
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="n-order" type="checkbox" checked />
+                    <label class="form-check-label" for="n-order">Thông báo khi có đơn hàng mới</label>
+                  </div>
+                  <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" id="n-review" type="checkbox" />
+                    <label class="form-check-label" for="n-review">Thông báo khi có đánh giá sản phẩm</label>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" id="n-report" type="checkbox" checked />
+                    <label class="form-check-label" for="n-report">Gửi báo cáo doanh thu hằng tuần qua email</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Nhân viên &amp; phân quyền</h6></div>
+                <div class="card-body p-0">
+                  <div class="table-responsive scrollbar">
+                    <table class="table table-sm fs--1 mb-0" id="tbl-staff">
+                      <thead class="bg-200 text-900">
+                        <tr><th>Nhân viên</th><th>Vai trò</th></tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card-footer text-center">
+                  <button class="btn btn-falcon-default btn-sm" type="button"><span class="fas fa-user-plus me-1"></span>Thêm nhân viên</button>
+                </div>
+              </div>
+              <script>
+                App3D.fill('#tbl-staff tbody', [
+                  { name: 'Nguyễn Văn An', role: 'Quản trị viên', color: 'primary' },
+                  { name: 'Lê Thị Mai', role: 'Nhân viên bán hàng', color: 'info' },
+                  { name: 'Trần Đức Thắng', role: 'Kỹ thuật viên', color: 'warning' },
+                  { name: 'Phan Hồng Nhung', role: 'Thủ kho', color: 'success' }
+                ].map(function (s) {
+                  return '<tr><td class="align-middle">' + App3D.escapeHtml(s.name) + '</td>' +
+                    '<td class="align-middle"><span class="badge badge-soft-' + s.color + '">' + App3D.escapeHtml(s.role) + '</span></td></tr>';
+                }).join(''));
+              </script>
+
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Hỗ trợ kỹ thuật</h6></div>
+                <div class="card-body fs--1">
+                  <p class="mb-2"><span class="fas fa-headset me-2 text-primary"></span>Hotline kỹ thuật: <strong>1900 6868</strong> (nhánh 2)</p>
+                  <p class="mb-2"><span class="fas fa-envelope me-2 text-primary"></span>support@in3dstore.vn</p>
+                  <p class="mb-0"><span class="fas fa-book me-2 text-primary"></span>Tài liệu hướng dẫn vận hành máy in 3D</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <script>App3D.footer();</script>
+        </div>
+      </div>
+    </main>
+
+    <script src="vendors/popper/popper.min.js"></script>
+    <script src="vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="vendors/is/is.min.js"></script>
+    <script src="vendors/fontawesome/all.min.js"></script>
+    <script src="vendors/lodash/lodash.min.js"></script>
+    <script src="vendors/list.js/list.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+  </body>
+
+</html>

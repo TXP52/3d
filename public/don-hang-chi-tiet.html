@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Chi tiết đơn hàng - IN3D Store">
+
+    <title>Chi tiết đơn hàng | IN3D Store</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <script src="assets/js/config.js"></script>
+    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
+    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
+    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
+    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
+    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+    <link href="assets/css/app3d.css" rel="stylesheet">
+    <script>
+      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
+      if (isRTL) {
+        document.getElementById('style-default').setAttribute('disabled', true);
+        document.getElementById('user-style-default').setAttribute('disabled', true);
+        document.querySelector('html').setAttribute('dir', 'rtl');
+      } else {
+        document.getElementById('style-rtl').setAttribute('disabled', true);
+        document.getElementById('user-style-rtl').setAttribute('disabled', true);
+      }
+    </script>
+    <script src="assets/js/app3d.js"></script>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <div class="container" data-layout="container">
+        <script>
+          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
+          if (isFluid) {
+            var container = document.querySelector('[data-layout]');
+            container.classList.remove('container');
+            container.classList.add('container-fluid');
+          }
+        </script>
+
+        <script>App3D.sidebar('don-hang');</script>
+
+        <div class="content">
+          <script>App3D.topbar();</script>
+
+          <!-- Tiêu đề đơn hàng -->
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="row flex-between-center g-3">
+                <div class="col-md">
+                  <h5 class="mb-2 mb-md-0">Đơn hàng <span id="od-id">-</span> <span id="od-status"></span></h5>
+                  <p class="fs--1 mb-0 text-600">Đặt lúc <span id="od-date">-</span> qua kênh Website</p>
+                </div>
+                <div class="col-auto">
+                  <a class="btn btn-falcon-default btn-sm me-2" href="don-hang.html"><span class="fas fa-arrow-left me-1"></span>Quay lại</a>
+                  <button class="btn btn-falcon-default btn-sm me-2" type="button" onclick="window.print()"><span class="fas fa-print me-1"></span>In hoá đơn</button>
+                  <button class="btn btn-primary btn-sm" type="button"><span class="fas fa-check me-1"></span>Xác nhận giao hàng</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-lg-8">
+
+              <!-- Sản phẩm trong đơn -->
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Sản phẩm trong đơn</h6></div>
+                <div class="card-body p-0">
+                  <div class="table-responsive scrollbar">
+                    <table class="table table-striped fs--1 mb-0 app3d-table" id="tbl-order-lines">
+                      <thead class="bg-200 text-900">
+                        <tr>
+                          <th>Sản phẩm</th>
+                          <th class="text-center">Số lượng</th>
+                          <th class="text-end">Đơn giá</th>
+                          <th class="text-end">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <div class="row justify-content-end">
+                    <div class="col-auto">
+                      <table class="table table-sm table-borderless fs--1 mb-0">
+                        <tbody>
+                          <tr><td class="text-600">Tạm tính:</td><td class="text-end fw-semi-bold" id="od-subtotal">-</td></tr>
+                          <tr><td class="text-600">Phí vận chuyển:</td><td class="text-end" id="od-shipping">-</td></tr>
+                          <tr><td class="text-600">Giảm giá:</td><td class="text-end text-danger" id="od-discount">-</td></tr>
+                          <tr class="border-top"><td class="fw-bold">Tổng thanh toán:</td><td class="text-end fw-bold fs-0" id="od-total">-</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ghi chú -->
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Ghi chú của khách hàng</h6></div>
+                <div class="card-body">
+                  <p class="fs--1 mb-0" id="od-note">-</p>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="col-lg-4">
+
+              <!-- Trạng thái xử lý -->
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Tiến trình xử lý</h6></div>
+                <div class="card-body">
+                  <ul class="app3d-timeline fs--1">
+                    <li><h6 class="mb-0 fs--1">Đã tiếp nhận đơn</h6><span class="text-500 fs--2">12/08/2026 - 09:24</span></li>
+                    <li><h6 class="mb-0 fs--1">Đã xác nhận thanh toán</h6><span class="text-500 fs--2">12/08/2026 - 10:05</span></li>
+                    <li><h6 class="mb-0 fs--1">Đang kiểm tra &amp; test máy</h6><span class="text-500 fs--2">12/08/2026 - 11:40</span></li>
+                    <li class="pending"><h6 class="mb-0 fs--1 text-500">Bàn giao vận chuyển</h6><span class="text-500 fs--2">Chưa thực hiện</span></li>
+                    <li class="pending"><h6 class="mb-0 fs--1 text-500">Giao hàng thành công</h6><span class="text-500 fs--2">Chưa thực hiện</span></li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Khách hàng -->
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Thông tin khách hàng</h6></div>
+                <div class="card-body fs--1" id="od-customer"></div>
+              </div>
+
+              <!-- Thanh toán & vận chuyển -->
+              <div class="card mb-3">
+                <div class="card-header border-bottom"><h6 class="mb-0">Thanh toán &amp; vận chuyển</h6></div>
+                <div class="card-body fs--1">
+                  <p class="mb-2"><span class="text-600">Hình thức thanh toán:</span><br /><span class="fw-semi-bold" id="od-payment">-</span></p>
+                  <p class="mb-0"><span class="text-600">Đơn vị vận chuyển:</span><br /><span class="fw-semi-bold" id="od-shipping-method">-</span></p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <script>App3D.footer();</script>
+        </div>
+      </div>
+    </main>
+
+    <script src="vendors/popper/popper.min.js"></script>
+    <script src="vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="vendors/is/is.min.js"></script>
+    <script src="vendors/fontawesome/all.min.js"></script>
+    <script src="vendors/lodash/lodash.min.js"></script>
+    <script src="vendors/list.js/list.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var d = App3D.orderDetail;
+        var e = App3D.escapeHtml;
+
+        document.getElementById('od-id').textContent = d.id;
+        document.getElementById('od-status').innerHTML = App3D.statusBadge(d.status);
+        document.getElementById('od-status').className = 'd-inline-block align-middle ms-1 fs--1';
+        document.getElementById('od-date').textContent = d.date;
+        document.getElementById('od-note').textContent = d.note;
+        document.getElementById('od-payment').textContent = d.payment;
+        document.getElementById('od-shipping-method').textContent = d.shipping;
+
+        var subtotal = d.lines.reduce(function (s, l) { return s + l.qty * l.price; }, 0);
+        var total = subtotal + d.shippingFee - d.discount;
+
+        App3D.fill('#tbl-order-lines tbody', d.lines.map(function (l) {
+          return '<tr>' +
+            '<td class="align-middle"><h6 class="mb-0 fs--1">' + e(l.name) + '</h6>' +
+            '<span class="fs--2 text-500">' + e(l.sku) + '</span></td>' +
+            '<td class="align-middle text-center">' + l.qty + '</td>' +
+            '<td class="align-middle text-end">' + App3D.money(l.price) + '</td>' +
+            '<td class="align-middle text-end fw-semi-bold">' + App3D.money(l.qty * l.price) + '</td>' +
+            '</tr>';
+        }).join(''));
+
+        document.getElementById('od-subtotal').textContent = App3D.money(subtotal);
+        document.getElementById('od-shipping').textContent = App3D.money(d.shippingFee);
+        document.getElementById('od-discount').textContent = '-' + App3D.money(d.discount);
+        document.getElementById('od-total').textContent = App3D.money(total);
+
+        var c = d.customer;
+        App3D.fill('#od-customer',
+          '<h6 class="mb-1">' + e(c.name) + '</h6>' +
+          '<p class="text-500 mb-3">' + e(c.company) + '</p>' +
+          '<p class="mb-1"><span class="fas fa-envelope me-2 text-500"></span><a href="mailto:' + e(c.email) + '">' + e(c.email) + '</a></p>' +
+          '<p class="mb-1"><span class="fas fa-phone me-2 text-500"></span>' + e(c.phone) + '</p>' +
+          '<p class="mb-1"><span class="fas fa-map-marker-alt me-2 text-500"></span>' + e(c.address) + '</p>' +
+          '<p class="mb-0"><span class="fas fa-file-invoice me-2 text-500"></span>MST: ' + e(c.taxCode) + '</p>');
+      });
+    </script>
+  </body>
+
+</html>

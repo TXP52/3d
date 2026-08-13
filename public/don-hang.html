@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Quản lý đơn hàng máy in 3D - IN3D Store">
+
+    <title>Đơn hàng | IN3D Store</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <script src="assets/js/config.js"></script>
+    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
+    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
+    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
+    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
+    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+    <link href="assets/css/app3d.css" rel="stylesheet">
+    <script>
+      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
+      if (isRTL) {
+        document.getElementById('style-default').setAttribute('disabled', true);
+        document.getElementById('user-style-default').setAttribute('disabled', true);
+        document.querySelector('html').setAttribute('dir', 'rtl');
+      } else {
+        document.getElementById('style-rtl').setAttribute('disabled', true);
+        document.getElementById('user-style-rtl').setAttribute('disabled', true);
+      }
+    </script>
+    <script src="assets/js/app3d.js"></script>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <div class="container" data-layout="container">
+        <script>
+          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
+          if (isFluid) {
+            var container = document.querySelector('[data-layout]');
+            container.classList.remove('container');
+            container.classList.add('container-fluid');
+          }
+        </script>
+
+        <script>App3D.sidebar('don-hang');</script>
+
+        <div class="content">
+          <script>App3D.topbar();</script>
+
+          <script>
+            App3D.pageHeader(
+              'Quản lý đơn hàng',
+              'Theo dõi và xử lý toàn bộ đơn đặt máy in 3D, vật tư và linh kiện.',
+              '<button class="btn btn-falcon-default btn-sm me-2" type="button"><span class="fas fa-file-export me-1"></span>Xuất Excel</button>' +
+              '<button class="btn btn-primary btn-sm" type="button"><span class="fas fa-plus me-1"></span>Tạo đơn mới</button>'
+            );
+          </script>
+
+          <!-- Thẻ trạng thái -->
+          <div class="row g-3 mb-3" id="order-stats"></div>
+          <script>
+            (function () {
+              var cards = [
+                { label: 'Chờ xác nhận', color: 'warning', icon: 'fas fa-stream' },
+                { label: 'Đang xử lý', color: 'info', icon: 'fas fa-cogs' },
+                { label: 'Đang giao', color: 'primary', icon: 'fas fa-truck' },
+                { label: 'Hoàn thành', color: 'success', icon: 'fas fa-check' }
+              ];
+              App3D.fill('#order-stats', cards.map(function (c) {
+                var list = App3D.orders.filter(function (o) { return o.status === c.label; });
+                var total = list.reduce(function (s, o) { return s + o.total; }, 0);
+                return '<div class="col-6 col-xxl-3"><div class="card h-100"><div class="card-body">' +
+                  '<div class="d-flex justify-content-between align-items-center">' +
+                  '<div><h6 class="text-600 mb-2">' + c.label + '</h6>' +
+                  '<h4 class="fw-normal text-700 mb-1">' + list.length + ' đơn</h4>' +
+                  '<span class="fs--2 text-500">' + App3D.money(total) + '</span></div>' +
+                  '<div class="app3d-kpi-icon bg-soft-' + c.color + ' text-' + c.color + '"><span class="' + c.icon + '"></span></div>' +
+                  '</div></div></div></div>';
+              }).join(''));
+            })();
+          </script>
+
+          <!-- Bảng đơn hàng -->
+          <div class="card mb-3" id="orderTable" data-list='{"valueNames":["order","customer","channel","items","payment","status","date","total"],"page":10,"pagination":true}'>
+            <div class="card-header">
+              <div class="row flex-between-center g-2">
+                <div class="col-sm-auto">
+                  <h6 class="mb-0 text-nowrap py-2 py-xl-0">Tất cả đơn hàng</h6>
+                </div>
+                <div class="col-sm-auto">
+                  <div class="row g-2">
+                    <div class="col-auto">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text"><span class="fas fa-search"></span></span>
+                        <input class="form-control search" type="search" placeholder="Tìm mã đơn, khách hàng..." aria-label="Tìm đơn hàng" />
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <select class="form-select form-select-sm" id="filter-status" aria-label="Lọc theo trạng thái">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Chờ xác nhận">Chờ xác nhận</option>
+                        <option value="Đang xử lý">Đang xử lý</option>
+                        <option value="Đang giao">Đang giao</option>
+                        <option value="Hoàn thành">Hoàn thành</option>
+                        <option value="Đã huỷ">Đã huỷ</option>
+                        <option value="Hoàn tiền">Hoàn tiền</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive scrollbar">
+                <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden app3d-table">
+                  <thead class="bg-200 text-900">
+                    <tr>
+                      <th class="sort" data-sort="order">Mã đơn</th>
+                      <th class="sort" data-sort="customer">Khách hàng</th>
+                      <th class="sort" data-sort="channel">Kênh bán</th>
+                      <th class="sort text-center" data-sort="items">SL</th>
+                      <th class="sort" data-sort="payment">Thanh toán</th>
+                      <th class="sort text-center" data-sort="status">Trạng thái</th>
+                      <th class="sort" data-sort="date">Ngày đặt</th>
+                      <th class="sort text-end" data-sort="total">Tổng tiền</th>
+                      <th class="text-end">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody class="list"></tbody>
+                </table>
+              </div>
+              <div class="text-center py-4 fallback d-none">
+                <p class="fw-bold fs-1 mb-0">Không tìm thấy đơn hàng nào.</p>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="d-flex justify-content-center">
+                <ul class="pagination mb-0"></ul>
+              </div>
+            </div>
+          </div>
+          <script>
+            App3D.fill('#orderTable tbody.list', App3D.orderRows());
+          </script>
+
+          <script>App3D.footer();</script>
+        </div>
+      </div>
+    </main>
+
+    <script src="vendors/popper/popper.min.js"></script>
+    <script src="vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="vendors/is/is.min.js"></script>
+    <script src="vendors/fontawesome/all.min.js"></script>
+    <script src="vendors/lodash/lodash.min.js"></script>
+    <script src="vendors/list.js/list.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('filter-status');
+        var searchInput = document.querySelector('#orderTable .search');
+        select.addEventListener('change', function () {
+          searchInput.value = select.value;
+          searchInput.dispatchEvent(new Event('keyup', { bubbles: true }));
+        });
+      });
+    </script>
+  </body>
+
+</html>
