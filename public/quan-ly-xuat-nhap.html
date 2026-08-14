@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Quản lý xuất nhập kho - IN3D Store">
+
+    <title>Quản lý xuất nhập | IN3D Store</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <script src="assets/js/config.js"></script>
+    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
+    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
+    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
+    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
+    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+    <link href="assets/css/app3d.css" rel="stylesheet">
+    <script>
+      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
+      if (isRTL) {
+        document.getElementById('style-default').setAttribute('disabled', true);
+        document.getElementById('user-style-default').setAttribute('disabled', true);
+        document.querySelector('html').setAttribute('dir', 'rtl');
+      } else {
+        document.getElementById('style-rtl').setAttribute('disabled', true);
+        document.getElementById('user-style-rtl').setAttribute('disabled', true);
+      }
+    </script>
+    <script src="assets/js/app3d.js"></script>
+  </head>
+
+  <body>
+    <main class="main" id="top">
+      <div class="container" data-layout="container">
+        <script>
+          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
+          if (isFluid) {
+            var container = document.querySelector('[data-layout]');
+            container.classList.remove('container');
+            container.classList.add('container-fluid');
+          }
+        </script>
+
+        <script>App3D.sidebar('quan-ly-xuat-nhap');</script>
+
+        <div class="content">
+          <script>App3D.topbar();</script>
+
+          <script>
+            App3D.pageHeader(
+              'Quản lý xuất nhập kho',
+              'Phiếu XUẤT sinh tự động từ đơn hàng của khách; phiếu NHẬP ghi nhận khi bấm "Nhập" trên trang Kho & vật tư.',
+              ''
+            );
+          </script>
+
+          <!-- Thẻ tổng quan xuất nhập -->
+          <div class="row g-3 mb-3" id="xn-stats"></div>
+          <script>
+            (function () {
+              var don = App3D.orders;
+              var soPhieuXuat = don.length;
+              var tongXuat = don.reduce(function (s, o) { return s + (o.total || 0); }, 0);
+              var soMonXuat = don.reduce(function (s, o) { return s + (o.items || 0); }, 0);
+              var tonHienTai = App3D.products.reduce(function (s, p) { return s + (p.stock || 0); }, 0);
+
+              var cards = [
+                { label: 'Phiếu xuất (đơn hàng)', value: App3D.number(soPhieuXuat) + ' phiếu', color: 'warning', icon: 'fas fa-sign-out-alt' },
+                { label: 'Tổng giá trị xuất', value: App3D.money(tongXuat), color: 'primary', icon: 'fas fa-file-invoice-dollar' },
+                { label: 'Số món đã xuất', value: App3D.number(soMonXuat) + ' món', color: 'success', icon: 'fas fa-boxes' },
+                { label: 'Tồn kho hiện tại', value: App3D.number(tonHienTai) + ' đơn vị', color: 'warning', icon: 'fas fa-warehouse' }
+              ];
+              App3D.fill('#xn-stats', cards.map(function (c) {
+                return '<div class="col-6 col-xxl-3"><div class="card h-100"><div class="card-body">' +
+                  '<div class="d-flex justify-content-between align-items-center">' +
+                  '<div><h6 class="text-600 mb-2">' + c.label + '</h6>' +
+                  '<h5 class="fw-normal text-700 mb-0">' + c.value + '</h5></div>' +
+                  '<div class="app3d-kpi-icon bg-soft-' + c.color + ' text-' + c.color + '"><span class="' + c.icon + '"></span></div>' +
+                  '</div></div></div></div>';
+              }).join(''));
+            })();
+          </script>
+
+          <!-- Phiếu xuất kho (từ đơn hàng) -->
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">Phiếu xuất kho (theo đơn hàng)</h6>
+              <a class="btn btn-falcon-default btn-sm" href="don-hang.html"><span class="fas fa-shopping-cart me-1"></span>Xem đơn hàng</a>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive scrollbar">
+                <table class="table table-sm table-striped fs--1 mb-0 app3d-table">
+                  <thead class="bg-200 text-900">
+                    <tr>
+                      <th>Mã phiếu xuất</th>
+                      <th>Ngày</th>
+                      <th>Khách nhận</th>
+                      <th class="text-center">Số món</th>
+                      <th class="text-center">Trạng thái đơn</th>
+                      <th class="text-end">Giá trị xuất</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bang-xuat"></tbody>
+                </table>
+              </div>
+              <p class="text-center text-500 py-3 mb-0 d-none" id="xuat-trong">Chưa có phiếu xuất nào — phiếu sẽ tự sinh khi khách đặt hàng trên website.</p>
+            </div>
+          </div>
+          <script>
+            (function () {
+              var don = App3D.orders;
+              if (!don.length) {
+                document.getElementById('xuat-trong').classList.remove('d-none');
+                return;
+              }
+              App3D.fill('#bang-xuat', don.map(function (o) {
+                return '<tr>' +
+                  '<td class="align-middle"><span class="badge badge-soft-warning">XK-' + App3D.escapeHtml(o.id) + '</span></td>' +
+                  '<td class="align-middle">' + App3D.escapeHtml(o.date) + '</td>' +
+                  '<td class="align-middle">' + App3D.escapeHtml(o.customer) + '</td>' +
+                  '<td class="align-middle text-center">' + (o.items || 0) + '</td>' +
+                  '<td class="align-middle text-center">' + App3D.statusBadge(o.status) + '</td>' +
+                  '<td class="align-middle text-end fw-semi-bold">' + App3D.money(o.total) + '</td>' +
+                  '</tr>';
+              }).join(''));
+            })();
+          </script>
+
+          <!-- Nhập kho -->
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">Nhập kho</h6>
+              <a class="btn btn-falcon-primary btn-sm" href="kho.html"><span class="fas fa-plus me-1"></span>Tạo phiếu nhập (trang Kho)</a>
+            </div>
+            <div class="card-body">
+              <p class="fs--1 text-600 mb-2">Tình trạng tồn theo nhóm hàng — hàng dưới mức tối thiểu cần nhập thêm:</p>
+              <div class="table-responsive scrollbar">
+                <table class="table table-sm fs--1 mb-0 app3d-table">
+                  <thead class="bg-200 text-900">
+                    <tr>
+                      <th>Mặt hàng</th>
+                      <th class="text-center">Tồn</th>
+                      <th class="text-center">Tối thiểu</th>
+                      <th class="text-center">Trạng thái</th>
+                      <th class="text-end">Cần nhập</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bang-nhap"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <script>
+            App3D.fill('#bang-nhap', App3D.products.map(function (p) {
+              var canNhap = Math.max(0, (p.min || 5) * 2 - (p.stock || 0));
+              return '<tr>' +
+                '<td class="align-middle"><div class="d-flex align-items-center"><img class="anh-sp-nho me-2" src="' + (p.img || App3D.anhSanPham(p.name)) + '" alt="" /><h6 class="mb-0 fs--1">' + App3D.escapeHtml(p.name) + '</h6></div></td>' +
+                '<td class="align-middle text-center">' + App3D.number(p.stock) + '</td>' +
+                '<td class="align-middle text-center text-500">' + App3D.number(p.min) + '</td>' +
+                '<td class="align-middle text-center">' + App3D.stockBadge(p.stock, p.min) + '</td>' +
+                '<td class="align-middle text-end">' + (canNhap > 0 ? '<span class="badge badge-soft-warning">Nên nhập ' + canNhap + '</span>' : '<span class="text-500">—</span>') + '</td>' +
+                '</tr>';
+            }).join(''));
+          </script>
+
+          <script>App3D.footer();</script>
+        </div>
+      </div>
+    </main>
+
+    <script src="vendors/popper/popper.min.js"></script>
+    <script src="vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="vendors/is/is.min.js"></script>
+    <script src="vendors/fontawesome/all.min.js"></script>
+    <script src="vendors/lodash/lodash.min.js"></script>
+    <script src="assets/js/theme.js"></script>
+  </body>
+
+</html>

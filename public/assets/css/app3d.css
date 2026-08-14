@@ -3,15 +3,68 @@
 /* -------------------------------------------------------------------------- */
 
 .app3d-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.5rem;
-  background: linear-gradient(135deg, #2c7be5 0%, #27bcfd 100%);
-  color: #fff;
-  font-size: 1rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Menu doc: BO nen panel mau xam xanh - de trong suot hoa cung nen trang */
+.navbar-vertical .navbar-collapse,
+.navbar-vertical .navbar-vertical-content,
+.navbar-vertical.navbar-card .navbar-collapse,
+.navbar-vertical.navbar-inverted .navbar-collapse,
+.navbar-vertical.navbar-vibrant .navbar-collapse {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Menu doc: ep DONG MAU - icon + chu cung mot mau xam, muc active/hover xanh la */
+.navbar-vertical .navbar-nav .nav-link,
+.navbar-vertical .navbar-nav .nav-link .nav-link-icon,
+.navbar-vertical .navbar-nav .nav-link .nav-link-icon span,
+.navbar-vertical .navbar-nav .nav-link .nav-link-text {
+  color: #5e6e82 !important;
+}
+.navbar-vertical .navbar-nav .nav-link:hover,
+.navbar-vertical .navbar-nav .nav-link:hover .nav-link-icon,
+.navbar-vertical .navbar-nav .nav-link:hover .nav-link-icon span,
+.navbar-vertical .navbar-nav .nav-link:hover .nav-link-text {
+  color: #76b900 !important;
+}
+.navbar-vertical .navbar-nav .nav-link.active,
+.navbar-vertical .navbar-nav .nav-link.active .nav-link-icon,
+.navbar-vertical .navbar-nav .nav-link.active .nav-link-icon span,
+.navbar-vertical .navbar-nav .nav-link.active .nav-link-text {
+  color: #76b900 !important;
+}
+.navbar-vertical .navbar-vertical-label {
+  color: #9da9bb !important;
+}
+html.dark .navbar-vertical .navbar-nav .nav-link,
+html.dark .navbar-vertical .navbar-nav .nav-link .nav-link-icon,
+html.dark .navbar-vertical .navbar-nav .nav-link .nav-link-icon span,
+html.dark .navbar-vertical .navbar-nav .nav-link .nav-link-text {
+  color: #9da9bb !important;
+}
+html.dark .navbar-vertical .navbar-nav .nav-link.active,
+html.dark .navbar-vertical .navbar-nav .nav-link.active .nav-link-icon,
+html.dark .navbar-vertical .navbar-nav .nav-link.active .nav-link-icon span,
+html.dark .navbar-vertical .navbar-nav .nav-link.active .nav-link-text,
+html.dark .navbar-vertical .navbar-nav .nav-link:hover,
+html.dark .navbar-vertical .navbar-nav .nav-link:hover .nav-link-icon span {
+  color: #a3d900 !important;
+}
+
+/* Anh san pham trong bang */
+.anh-sp-nho {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
@@ -46,14 +99,14 @@
   border-bottom-width: 0;
 }
 
-/* Trang đăng nhập */
+/* Trang đăng nhập - tông xanh lá mix vàng giống website bán hàng */
 .app3d-auth-bg {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b1727 0%, #2c7be5 100%);
+  background: linear-gradient(135deg, #151720 0%, #76b900 100%);
 }
 
 .app3d-auth-cover {
-  background: linear-gradient(160deg, #2c7be5 0%, #1a4f9c 100%);
+  background: linear-gradient(160deg, #76b900 0%, #3c6e00 70%, #f5b400 140%);
   color: #fff;
 }
 
@@ -96,7 +149,7 @@
   width: 0.65rem;
   height: 0.65rem;
   border-radius: 50%;
-  background-color: #2c7be5;
+  background-color: #76b900;
 }
 
 .app3d-timeline li.pending::after {

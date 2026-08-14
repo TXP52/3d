@@ -100,7 +100,7 @@
                       <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>7,6%</span>
                       <span class="fs--2 text-500 ms-1">so với tháng trước</span>
                     </div>
-                    <div class="app3d-kpi-icon bg-soft-info text-info"><span class="fas fa-shopping-cart"></span></div>
+                    <div class="app3d-kpi-icon bg-soft-warning text-warning"><span class="fas fa-shopping-cart"></span></div>
                   </div>
                   <div class="app3d-sparkline mt-3" id="spark-orders"></div>
                 </div>
@@ -132,7 +132,7 @@
                       <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>12,9%</span>
                       <span class="fs--2 text-500 ms-1">so với tháng trước</span>
                     </div>
-                    <div class="app3d-kpi-icon bg-soft-success text-success"><span class="fas fa-user-plus"></span></div>
+                    <div class="app3d-kpi-icon bg-soft-primary text-primary"><span class="fas fa-user-plus"></span></div>
                   </div>
                   <div class="app3d-sparkline mt-3" id="spark-customers"></div>
                 </div>
@@ -342,10 +342,10 @@
         App3D.pieChart('chart-category', App3D.stats.categoryShare, 'Danh mục');
         App3D.pieChart('chart-channel', App3D.stats.channelShare, 'Kênh bán');
         App3D.ordersChart('chart-orders');
-        App3D.sparkline('spark-revenue', App3D.stats.revenueThisYear.slice(-7), '#2c7be5');
-        App3D.sparkline('spark-orders', App3D.stats.ordersByMonth.slice(-7), '#27bcfd');
-        App3D.sparkline('spark-machines', [58, 61, 54, 66, 72, 69, 67], '#f5803e');
-        App3D.sparkline('spark-customers', [24, 29, 31, 28, 35, 38, 42], '#00d27a');
+        App3D.sparkline('spark-revenue', App3D.stats.revenueThisYear.slice(-7), '#76b900');
+        App3D.sparkline('spark-orders', App3D.stats.ordersByMonth.slice(-7), '#f5b400');
+        App3D.sparkline('spark-machines', [58, 61, 54, 66, 72, 69, 67], '#76b900');
+        App3D.sparkline('spark-customers', [24, 29, 31, 28, 35, 38, 42], '#c49000');
       });
     </script>
   </body>

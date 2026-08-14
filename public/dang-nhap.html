@@ -49,7 +49,7 @@
                   <div class="col-md-5 text-center app3d-auth-cover">
                     <div class="position-relative p-4 pt-md-5 pb-md-7">
                       <div class="z-index-1 position-relative">
-                        <a class="link-light mb-4 font-sans-serif fs-4 d-inline-block fw-bolder" href="index.html">IN3D Store</a>
+                        <a class="link-light mb-4 font-sans-serif fs-4 d-inline-block fw-bolder" href="index.html"><img class="app3d-logo me-2" src="assets/img/logo.png" alt="IN3D Store" style="vertical-align: middle;" />IN3D Store</a>
                         <p class="opacity-75 text-white">Hệ thống quản trị bán hàng máy in 3D dành cho showroom, đại lý và xưởng in dịch vụ.</p>
                       </div>
                     </div>
@@ -72,8 +72,8 @@
 
                       <form id="login-form" novalidate>
                         <div class="mb-3">
-                          <label class="form-label" for="login-email">Email hoặc tên đăng nhập</label>
-                          <input class="form-control" id="login-email" type="text" placeholder="admin@in3dstore.vn" required />
+                          <label class="form-label" for="login-email">Email</label>
+                          <input class="form-control" id="login-email" type="email" placeholder="admin@in3dstore.vn" required />
                           <div class="invalid-feedback">Vui lòng nhập email đăng nhập.</div>
                         </div>
                         <div class="mb-3">
@@ -93,8 +93,10 @@
                           </div>
                         </div>
                         <div class="mb-3">
-                          <button class="btn btn-primary d-block w-100 mt-3" type="submit">Đăng nhập</button>
+                          <button class="btn btn-primary d-block w-100 mt-3" type="submit" id="login-submit">Đăng nhập</button>
                         </div>
+                        <div class="alert alert-danger d-none py-2 fs--1" id="login-error" role="alert"></div>
+                        <div class="alert alert-success d-none py-2 fs--1" id="login-success" role="alert"></div>
                       </form>
 
                       <div class="position-relative mt-4">
@@ -105,7 +107,7 @@
                         <span class="fas fa-eye me-2"></span>Xem thử trang quản trị
                       </a>
 
-                      <p class="fs--2 text-500 text-center mt-4 mb-0">Đây là bản demo giao diện, thông tin đăng nhập không được gửi đi đâu cả.</p>
+                      <p class="fs--2 text-500 text-center mt-4 mb-0">Tài khoản đăng ký trên website bán hàng (Login.html). Người đăng ký ĐẦU TIÊN tự động là admin; tài khoản lưu trong database qua backend Java.</p>
                     </div>
                   </div>
 
@@ -124,13 +126,56 @@
     <script src="vendors/lodash/lodash.min.js"></script>
     <script src="assets/js/theme.js"></script>
     <script>
+      // Đăng nhập qua BACKEND JAVA - tài khoản lưu trong database (không dùng Supabase Auth)
+      var JAVA_API = 'http://localhost:8090/api';
+
       document.addEventListener('DOMContentLoaded', function () {
         var form = document.getElementById('login-form');
-        form.addEventListener('submit', function (e) {
+        var oLoi = document.getElementById('login-error');
+        var oOk = document.getElementById('login-success');
+        var nut = document.getElementById('login-submit');
+
+        function baoLoi(chu) {
+          oLoi.textContent = chu;
+          oLoi.classList.remove('d-none');
+          nut.disabled = false;
+          nut.textContent = 'Đăng nhập';
+        }
+
+        form.addEventListener('submit', async function (e) {
           e.preventDefault();
           form.classList.add('was-validated');
-          if (form.checkValidity()) {
-            window.location.href = 'index.html';
+          if (!form.checkValidity()) return;
+
+          oLoi.classList.add('d-none');
+          oOk.classList.add('d-none');
+          nut.disabled = true;
+          nut.textContent = 'Đang đăng nhập...';
+
+          try {
+            var resp = await fetch(JAVA_API + '/auth/dang-nhap', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: document.getElementById('login-email').value.trim(),
+                matKhau: document.getElementById('login-password').value
+              })
+            });
+            var kq = await resp.json();
+            if (!resp.ok) { baoLoi(kq.loi || ('Lỗi HTTP ' + resp.status)); return; }
+
+            if (kq.vaiTro !== 'admin') {
+              baoLoi('Tài khoản này không có quyền quản trị. (Người đăng ký ĐẦU TIÊN của hệ thống tự động là admin.)');
+              return;
+            }
+            localStorage.setItem('in3d_phien', JSON.stringify({
+              token: kq.token, hoTen: kq.hoTen, email: kq.email, vaiTro: kq.vaiTro
+            }));
+            oOk.textContent = 'Xin chào ' + kq.hoTen + '! Đang chuyển vào trang quản trị...';
+            oOk.classList.remove('d-none');
+            setTimeout(function () { window.location.href = 'index.html'; }, 800);
+          } catch (loi) {
+            baoLoi('Không kết nối được backend Java. Hãy chạy backend (cổng 8090) rồi thử lại.');
           }
         });
       });
