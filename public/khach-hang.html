@@ -1,188 +1,113 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khách hàng | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <script src="assets/js/apex.js?v=5"></script>
+  <style>
+    .chu-cai {
+      width: 36px; height: 36px; flex: 0 0 36px;
+      border-radius: 50%;
+      background: var(--accent-nhat);
+      color: var(--accent-dam);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Quản lý khách hàng - IN3D Store">
+        <!-- KPI -->
+        <div class="luoi-kpi" id="kpi"></div>
 
-    <title>Khách hàng | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-    <script src="assets/js/app3d.js"></script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container" data-layout="container">
-        <script>
-          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
-          if (isFluid) {
-            var container = document.querySelector('[data-layout]');
-            container.classList.remove('container');
-            container.classList.add('container-fluid');
-          }
-        </script>
-
-        <script>App3D.sidebar('khach-hang');</script>
-
-        <div class="content">
-          <script>App3D.topbar();</script>
-
-          <script>
-            App3D.pageHeader(
-              'Quản lý khách hàng',
-              'Danh sách khách lẻ, đại lý, trường học và doanh nghiệp đang mua máy in 3D.',
-              '<button class="btn btn-falcon-default btn-sm me-2" type="button"><span class="fas fa-file-export me-1"></span>Xuất danh sách</button>' +
-              '<button class="btn btn-primary btn-sm" type="button"><span class="fas fa-user-plus me-1"></span>Thêm khách hàng</button>'
-            );
-          </script>
-
-          <div class="row g-3 mb-3">
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Tổng khách hàng</h6>
-                <h4 class="fw-normal text-700 mb-0" id="stat-customers">0</h4>
-              </div></div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Đại lý</h6>
-                <h4 class="fw-normal text-700 mb-0" id="stat-agents">0</h4>
-              </div></div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Tổng chi tiêu</h6>
-                <h4 class="fw-normal text-700 mb-0 fs-1" id="stat-spent">0 ₫</h4>
-              </div></div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Giá trị đơn TB</h6>
-                <h4 class="fw-normal text-700 mb-0 fs-1" id="stat-aov">0 ₫</h4>
-              </div></div>
+        <!-- Danh sách khách hàng -->
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Danh sách khách hàng</h3>
+              <div class="phu">Tài khoản đăng ký chỉ hiện khi đăng nhập bằng tài khoản admin.</div>
             </div>
           </div>
-
-          <div class="card mb-3" id="customerTable" data-list='{"valueNames":["name","email","phone","city","group","orders","spent","since"],"page":10,"pagination":true}'>
-            <div class="card-header">
-              <div class="row flex-between-center g-2">
-                <div class="col-sm-auto">
-                  <h6 class="mb-0 text-nowrap py-2 py-xl-0">Danh sách khách hàng</h6>
-                </div>
-                <div class="col-sm-auto">
-                  <div class="row g-2">
-                    <div class="col-auto">
-                      <div class="input-group input-group-sm">
-                        <span class="input-group-text"><span class="fas fa-search"></span></span>
-                        <input class="form-control search" type="search" placeholder="Tìm tên, email, số điện thoại..." aria-label="Tìm khách hàng" />
-                      </div>
-                    </div>
-                    <div class="col-auto">
-                      <select class="form-select form-select-sm" id="filter-group" aria-label="Lọc theo nhóm">
-                        <option value="">Tất cả nhóm</option>
-                        <option value="Cá nhân">Cá nhân</option>
-                        <option value="Đại lý">Đại lý</option>
-                        <option value="Doanh nghiệp">Doanh nghiệp</option>
-                        <option value="Trường học">Trường học</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive scrollbar">
-                <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden app3d-table">
-                  <thead class="bg-200 text-900">
-                    <tr>
-                      <th class="sort" data-sort="name">Khách hàng</th>
-                      <th class="sort" data-sort="email">Email</th>
-                      <th class="sort" data-sort="phone">Điện thoại</th>
-                      <th class="sort" data-sort="city">Tỉnh/Thành</th>
-                      <th class="sort" data-sort="group">Nhóm</th>
-                      <th class="sort text-center" data-sort="orders">Số đơn</th>
-                      <th class="sort text-end" data-sort="spent">Chi tiêu</th>
-                      <th class="sort" data-sort="since">Ngày tham gia</th>
-                      <th class="text-end">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody class="list"></tbody>
-                </table>
-              </div>
-              <div class="text-center py-4 fallback d-none">
-                <p class="fw-bold fs-1 mb-0">Không tìm thấy khách hàng nào.</p>
-              </div>
-            </div>
-            <div class="card-footer">
-              <div class="d-flex justify-content-center">
-                <ul class="pagination mb-0"></ul>
-              </div>
-            </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Khách hàng</th>
+                  <th>Email</th>
+                  <th>Điện thoại</th>
+                  <th>Nhóm</th>
+                  <th class="giua">Số đơn</th>
+                  <th class="phai">Tổng chi tiêu</th>
+                  <th>Ngày tham gia</th>
+                </tr>
+              </thead>
+              <tbody id="bang-khach"></tbody>
+            </table>
           </div>
-          <script>
-            App3D.fill('#customerTable tbody.list', App3D.customerRows());
-          </script>
-
-          <script>App3D.footer();</script>
         </div>
-      </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="vendors/list.js/list.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var customers = App3D.customers;
-        var totalSpent = customers.reduce(function (s, c) { return s + c.spent; }, 0);
-        var totalOrders = customers.reduce(function (s, c) { return s + c.orders; }, 0);
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
 
-        document.getElementById('stat-customers').textContent = App3D.number(customers.length);
-        document.getElementById('stat-agents').textContent = App3D.number(customers.filter(function (c) { return c.group === 'Đại lý'; }).length);
-        document.getElementById('stat-spent').textContent = App3D.money(totalSpent);
-        document.getElementById('stat-aov').textContent = App3D.money(Math.round(totalSpent / totalOrders));
+  <script>
+    Apex.shell('khach-hang', 'Khách hàng');
 
-        var select = document.getElementById('filter-group');
-        var searchInput = document.querySelector('#customerTable .search');
-        select.addEventListener('change', function () {
-          searchInput.value = select.value;
-          searchInput.dispatchEvent(new Event('keyup', { bubbles: true }));
-        });
-      });
-    </script>
-  </body>
+    (function () {
+      var kh = Apex.customers || [];
+      var daDangKy = kh.filter(function (c) { return c.group !== 'Khách lẻ'; }).length;
+      var vangLai = kh.filter(function (c) { return c.group === 'Khách lẻ'; }).length;
+      var tongChi = kh.reduce(function (s, c) { return s + (c.spent || 0); }, 0);
 
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng khách hàng', so: Apex.number(kh.length) + ' khách', icon: 'fa-users', mau: 'bt-xanh' },
+        { nhan: 'Tài khoản đã đăng ký', so: Apex.number(daDangKy), icon: 'fa-user-check', mau: 'bt-vang' },
+        { nhan: 'Khách vãng lai', so: Apex.number(vangLai), icon: 'fa-user-clock', mau: 'bt-toi' },
+        { nhan: 'Tổng chi tiêu', so: Apex.money(tongChi), icon: 'fa-wallet', mau: 'bt-do' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+
+      function badgeNhom(nhom) {
+        var lop = 'badge-xam';
+        if (nhom === 'Quản trị') lop = 'badge-do';
+        else if (nhom === 'Khách hàng') lop = 'badge-duong';
+        return '<span class="badge ' + lop + '"><span class="cham"></span>' + Apex.esc(nhom || 'Khách lẻ') + '</span>';
+      }
+
+      function chuCai(ten) {
+        var t = (ten || '?').trim();
+        return Apex.esc(t ? t.charAt(0).toUpperCase() : '?');
+      }
+
+      Apex.fill('#bang-khach', kh.map(function (c) {
+        return '<tr>' +
+          '<td><div class="o-ten"><span class="chu-cai">' + chuCai(c.name) + '</span>' +
+            '<span><span class="chinh">' + Apex.esc(c.name || 'Không rõ') + '</span>' +
+            '<span class="phu">' + Apex.esc(c.id || '') + '</span></span></div></td>' +
+          '<td>' + Apex.esc(c.email || '—') + '</td>' +
+          '<td>' + Apex.esc(c.phone || '—') + '</td>' +
+          '<td>' + badgeNhom(c.group) + '</td>' +
+          '<td class="giua">' + Apex.number(c.orders || 0) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(c.spent || 0) + '</strong></td>' +
+          '<td>' + (c.since ? Apex.ngayVN(c.since) : '—') + '</td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
+    })();
+  </script>
+</body>
 </html>

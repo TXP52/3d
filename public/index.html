@@ -1,353 +1,112 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tổng quan | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="assets/js/apex.js?v=5"></script>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Hệ thống quản trị bán hàng máy in 3D - IN3D Store">
+        <!-- KPI -->
+        <div class="luoi-kpi" id="kpi"></div>
 
-    <title>Tổng quan | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-    <script src="assets/js/app3d.js"></script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container" data-layout="container">
-        <script>
-          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
-          if (isFluid) {
-            var container = document.querySelector('[data-layout]');
-            container.classList.remove('container');
-            container.classList.add('container-fluid');
-          }
-        </script>
-
-        <script>App3D.sidebar('tong-quan');</script>
-
-        <div class="content">
-          <script>App3D.topbar();</script>
-
-          <!-- Lời chào -->
-          <div class="card mb-3">
-            <div class="card-body">
-              <div class="row flex-between-center g-3">
-                <div class="col-md">
-                  <h5 class="mb-2 mb-md-0">Xin chào, Quản trị viên 👋</h5>
-                  <p class="fs--1 mb-0 text-600">Đây là tình hình kinh doanh máy in 3D của cửa hàng trong 30 ngày gần nhất.</p>
-                </div>
-                <div class="col-auto">
-                  <a class="btn btn-falcon-default btn-sm me-2" href="bao-cao.html"><span class="fas fa-download me-1"></span>Xuất báo cáo</a>
-                  <a class="btn btn-primary btn-sm" href="them-san-pham.html"><span class="fas fa-plus me-1"></span>Thêm sản phẩm</a>
-                </div>
-              </div>
-            </div>
+        <!-- Biểu đồ -->
+        <div class="luoi-2">
+          <div class="the">
+            <div class="the-dau"><div><h3>Doanh thu theo tháng</h3><div class="phu">Đơn vị: triệu đồng</div></div></div>
+            <div class="the-than"><div class="khung-bieu-do" id="bd-doanh-thu"></div></div>
           </div>
-
-          <!-- Chỉ số chính -->
-          <div class="row g-3 mb-3">
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <h6 class="text-600 mb-2">Doanh thu tháng này</h6>
-                      <h4 class="fw-normal text-700 mb-1">934.000.000 ₫</h4>
-                      <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>8,4%</span>
-                      <span class="fs--2 text-500 ms-1">so với tháng trước</span>
-                    </div>
-                    <div class="app3d-kpi-icon bg-soft-primary text-primary"><span class="fas fa-wallet"></span></div>
-                  </div>
-                  <div class="app3d-sparkline mt-3" id="spark-revenue"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <h6 class="text-600 mb-2">Đơn hàng mới</h6>
-                      <h4 class="fw-normal text-700 mb-1">184</h4>
-                      <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>7,6%</span>
-                      <span class="fs--2 text-500 ms-1">so với tháng trước</span>
-                    </div>
-                    <div class="app3d-kpi-icon bg-soft-warning text-warning"><span class="fas fa-shopping-cart"></span></div>
-                  </div>
-                  <div class="app3d-sparkline mt-3" id="spark-orders"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <h6 class="text-600 mb-2">Máy in 3D đã bán</h6>
-                      <h4 class="fw-normal text-700 mb-1">67 máy</h4>
-                      <span class="badge badge-soft-warning rounded-pill fs--2"><span class="fas fa-caret-down me-1"></span>2,1%</span>
-                      <span class="fs--2 text-500 ms-1">so với tháng trước</span>
-                    </div>
-                    <div class="app3d-kpi-icon bg-soft-warning text-warning"><span class="fas fa-cube"></span></div>
-                  </div>
-                  <div class="app3d-sparkline mt-3" id="spark-machines"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <h6 class="text-600 mb-2">Khách hàng mới</h6>
-                      <h4 class="fw-normal text-700 mb-1">42</h4>
-                      <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>12,9%</span>
-                      <span class="fs--2 text-500 ms-1">so với tháng trước</span>
-                    </div>
-                    <div class="app3d-kpi-icon bg-soft-primary text-primary"><span class="fas fa-user-plus"></span></div>
-                  </div>
-                  <div class="app3d-sparkline mt-3" id="spark-customers"></div>
-                </div>
-              </div>
-            </div>
+          <div class="the">
+            <div class="the-dau"><div><h3>Tỉ trọng theo trạng thái đơn</h3><div class="phu">Tính trên đơn hàng thật</div></div></div>
+            <div class="the-than"><div class="khung-bieu-do" id="bd-trang-thai"></div></div>
           </div>
-
-          <!-- Biểu đồ -->
-          <div class="row g-3 mb-3">
-            <div class="col-xxl-8">
-              <div class="card h-100">
-                <div class="card-header d-flex flex-between-center border-bottom">
-                  <h6 class="mb-0">Doanh thu theo tháng (triệu ₫)</h6>
-                  <div class="dropdown font-sans-serif">
-                    <button class="btn btn-link text-600 btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Năm 2026</button>
-                    <div class="dropdown-menu dropdown-menu-end border py-2">
-                      <a class="dropdown-item" href="#!">Năm 2026</a>
-                      <a class="dropdown-item" href="#!">Năm 2025</a>
-                      <a class="dropdown-item" href="#!">Năm 2024</a>
-                    </div>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <div class="app3d-chart" id="chart-revenue"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xxl-4">
-              <div class="card h-100">
-                <div class="card-header border-bottom">
-                  <h6 class="mb-0">Tỉ trọng doanh thu theo danh mục</h6>
-                </div>
-                <div class="card-body">
-                  <div class="app3d-chart" id="chart-category"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-lg-7">
-              <div class="card h-100">
-                <div class="card-header border-bottom">
-                  <h6 class="mb-0">Số lượng đơn hàng theo tháng</h6>
-                </div>
-                <div class="card-body">
-                  <div class="app3d-chart-sm" id="chart-orders"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-5">
-              <div class="card h-100">
-                <div class="card-header border-bottom">
-                  <h6 class="mb-0">Kênh bán hàng</h6>
-                </div>
-                <div class="card-body">
-                  <div class="app3d-chart-sm" id="chart-channel"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sản phẩm bán chạy + Cảnh báo kho -->
-          <div class="row g-3 mb-3">
-            <div class="col-lg-7">
-              <div class="card h-100">
-                <div class="card-header d-flex flex-between-center border-bottom">
-                  <h6 class="mb-0">Sản phẩm bán chạy</h6>
-                  <a class="btn btn-link btn-sm px-0" href="san-pham.html">Xem tất cả<span class="fas fa-chevron-right ms-1 fs--2"></span></a>
-                </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive scrollbar">
-                    <table class="table table-sm table-hover mb-0 app3d-table" id="tbl-top-products">
-                      <thead class="bg-200 text-900">
-                        <tr>
-                          <th>Sản phẩm</th>
-                          <th class="text-center">Đã bán</th>
-                          <th class="text-end">Giá bán</th>
-                          <th class="text-center">Tồn</th>
-                        </tr>
-                      </thead>
-                      <tbody></tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              <script>
-                App3D.fill('#tbl-top-products tbody', App3D.products
-                  .slice()
-                  .sort(function (a, b) { return b.sold * b.price - a.sold * a.price; })
-                  .slice(0, 6)
-                  .map(function (p) {
-                    return '<tr>' +
-                      '<td class="align-middle"><h6 class="mb-0 fs--1">' + App3D.escapeHtml(p.name) + '</h6>' +
-                      '<p class="fs--2 mb-0 text-500">' + App3D.escapeHtml(p.cat) + '</p></td>' +
-                      '<td class="align-middle text-center">' + App3D.number(p.sold) + '</td>' +
-                      '<td class="align-middle text-end fw-semi-bold">' + App3D.money(p.price) + '</td>' +
-                      '<td class="align-middle text-center">' + App3D.stockBadge(p.stock, p.min) + '</td>' +
-                      '</tr>';
-                  }).join(''));
-              </script>
-            </div>
-
-            <div class="col-lg-5">
-              <div class="card h-100">
-                <div class="card-header d-flex flex-between-center border-bottom">
-                  <h6 class="mb-0">Cảnh báo tồn kho</h6>
-                  <a class="btn btn-link btn-sm px-0" href="kho.html">Quản lý kho<span class="fas fa-chevron-right ms-1 fs--2"></span></a>
-                </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive scrollbar">
-                    <table class="table table-sm table-hover mb-0 app3d-table" id="tbl-low-stock">
-                      <thead class="bg-200 text-900">
-                        <tr>
-                          <th>Mặt hàng</th>
-                          <th class="text-center">Tồn</th>
-                          <th class="text-center">Tối thiểu</th>
-                          <th class="text-center">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody></tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              <script>
-                App3D.fill('#tbl-low-stock tbody', App3D.inventory
-                  .filter(function (i) { return i.stock <= i.min; })
-                  .map(function (i) {
-                    return '<tr>' +
-                      '<td class="align-middle"><h6 class="mb-0 fs--1">' + App3D.escapeHtml(i.name) + '</h6>' +
-                      '<p class="fs--2 mb-0 text-500">' + App3D.escapeHtml(i.location) + '</p></td>' +
-                      '<td class="align-middle text-center fw-semi-bold">' + App3D.number(i.stock) + '</td>' +
-                      '<td class="align-middle text-center text-500">' + App3D.number(i.min) + '</td>' +
-                      '<td class="align-middle text-center">' + App3D.stockBadge(i.stock, i.min) + '</td>' +
-                      '</tr>';
-                  }).join(''));
-              </script>
-            </div>
-          </div>
-
-          <!-- Đơn hàng gần đây + hoạt động -->
-          <div class="row g-3 mb-3">
-            <div class="col-xl-8">
-              <div class="card h-100">
-                <div class="card-header d-flex flex-between-center border-bottom">
-                  <h6 class="mb-0">Đơn hàng gần đây</h6>
-                  <a class="btn btn-link btn-sm px-0" href="don-hang.html">Tất cả đơn hàng<span class="fas fa-chevron-right ms-1 fs--2"></span></a>
-                </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive scrollbar">
-                    <table class="table table-sm table-hover mb-0 app3d-table" id="tbl-recent-orders">
-                      <thead class="bg-200 text-900">
-                        <tr>
-                          <th>Mã đơn</th>
-                          <th>Khách hàng</th>
-                          <th class="text-center">Trạng thái</th>
-                          <th>Ngày đặt</th>
-                          <th class="text-end">Giá trị</th>
-                        </tr>
-                      </thead>
-                      <tbody></tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              <script>
-                App3D.fill('#tbl-recent-orders tbody', App3D.orders.slice(0, 8).map(function (o) {
-                  return '<tr>' +
-                    '<td class="align-middle"><a class="fw-semi-bold" href="don-hang-chi-tiet.html">' + App3D.escapeHtml(o.id) + '</a></td>' +
-                    '<td class="align-middle">' + App3D.escapeHtml(o.customer) + '</td>' +
-                    '<td class="align-middle text-center fs-0">' + App3D.statusBadge(o.status) + '</td>' +
-                    '<td class="align-middle text-500">' + App3D.escapeHtml(o.date) + '</td>' +
-                    '<td class="align-middle text-end fw-semi-bold">' + App3D.money(o.total) + '</td>' +
-                    '</tr>';
-                }).join(''));
-              </script>
-            </div>
-
-            <div class="col-xl-4">
-              <div class="card h-100">
-                <div class="card-header border-bottom">
-                  <h6 class="mb-0">Hoạt động gần đây</h6>
-                </div>
-                <div class="card-body py-0" id="activity-feed"></div>
-              </div>
-              <script>App3D.fill('#activity-feed', App3D.activityList());</script>
-            </div>
-          </div>
-
-          <script>App3D.footer();</script>
         </div>
-      </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/echarts/echarts.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="vendors/list.js/list.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        App3D.revenueChart('chart-revenue');
-        App3D.pieChart('chart-category', App3D.stats.categoryShare, 'Danh mục');
-        App3D.pieChart('chart-channel', App3D.stats.channelShare, 'Kênh bán');
-        App3D.ordersChart('chart-orders');
-        App3D.sparkline('spark-revenue', App3D.stats.revenueThisYear.slice(-7), '#76b900');
-        App3D.sparkline('spark-orders', App3D.stats.ordersByMonth.slice(-7), '#f5b400');
-        App3D.sparkline('spark-machines', [58, 61, 54, 66, 72, 69, 67], '#76b900');
-        App3D.sparkline('spark-customers', [24, 29, 31, 28, 35, 38, 42], '#c49000');
-      });
-    </script>
-  </body>
+        <!-- Đơn gần nhất + sắp hết hàng -->
+        <div class="luoi-2">
+          <div class="the">
+            <div class="the-dau"><div><h3>Đơn hàng gần nhất</h3></div><a class="nut nut-vien nut-nho" href="don-hang.html">Xem tất cả</a></div>
+            <div class="the-than khong-dem bang-cuon">
+              <table class="bang">
+                <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th class="giua">Trạng thái</th><th class="phai">Tổng tiền</th></tr></thead>
+                <tbody id="bang-don-moi"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="the">
+            <div class="the-dau"><div><h3>Sắp hết hàng</h3></div><a class="nut nut-vien nut-nho" href="kho.html">Kho</a></div>
+            <div class="the-than khong-dem bang-cuon">
+              <table class="bang">
+                <thead><tr><th>Sản phẩm</th><th class="giua">Tồn</th></tr></thead>
+                <tbody id="bang-sap-het"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('tong-quan', 'Tổng quan');
+
+    (function () {
+      var don = Apex.orders;
+      var sp = Apex.products;
+      var doanhThu = don.reduce(function (s, o) { return s + o.total; }, 0);
+      var choXacNhan = don.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length;
+      var sapHet = sp.filter(function (p) { return p.stock <= p.min; });
+
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng doanh thu (đơn thật)', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
+        { nhan: 'Tổng đơn hàng', so: Apex.number(don.length) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
+        { nhan: 'Chờ xác nhận', so: Apex.number(choXacNhan) + ' đơn', icon: 'fa-clock', mau: choXacNhan ? 'bt-do' : 'bt-toi' },
+        { nhan: 'Sản phẩm đang bán', so: Apex.number(sp.length), icon: 'fa-cube', mau: 'bt-toi' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+
+      // Doanh thu theo tháng (số liệu minh hoạ khi DB chưa có lịch sử theo tháng)
+      Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
+        { ten: 'Năm nay', duLieu: Apex.stats.doanhThuNam },
+        { ten: 'Năm trước', duLieu: Apex.stats.doanhThuNamTruoc }
+      ]);
+
+      // Tỉ trọng trạng thái đơn từ dữ liệu thật
+      var dem = {};
+      don.forEach(function (o) { dem[o.status] = (dem[o.status] || 0) + 1; });
+      Apex.bieuDoTron('bd-trang-thai', Object.keys(dem).map(function (k) { return { name: k, value: dem[k] }; }));
+
+      // Đơn gần nhất
+      Apex.fill('#bang-don-moi', don.slice(0, 6).map(function (o) {
+        return '<tr><td><strong>' + Apex.esc(o.id) + '</strong></td><td>' + Apex.esc(o.customer) + '</td>' +
+          '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td></tr>';
+      }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--chu-mo);padding:24px;">Chưa có đơn hàng nào.</td></tr>');
+
+      // Sắp hết hàng
+      Apex.fill('#bang-sap-het', (sapHet.length ? sapHet : []).slice(0, 6).map(function (p) {
+        return '<tr><td><div class="o-ten"><img class="anh-sp" src="' + (Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name)) + '" alt="" />' +
+          '<span class="chinh">' + Apex.esc(p.name) + '</span></div></td>' +
+          '<td class="giua">' + Apex.badgeTon(p.stock, p.min) + ' <strong>' + p.stock + '</strong></td></tr>';
+      }).join('') || '<tr><td colspan="2" style="text-align:center;color:var(--chu-mo);padding:24px;">Kho đang ổn — không có hàng sắp hết.</td></tr>');
+    })();
+  </script>
+</body>
 </html>

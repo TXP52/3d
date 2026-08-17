@@ -1,204 +1,361 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kho &amp; vật tư | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <script src="assets/js/apex.js?v=5"></script>
+  <style>
+    .dong-het { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--vien); }
+    .dong-het:last-child { border-bottom: none; }
+    .dong-het .ten-vt { font-weight: 600; font-size: 14px; }
+    .dong-het .phu-vt { color: var(--chu-mo); font-size: 12.5px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Quản lý kho và vật tư in 3D - IN3D Store">
+        <!-- KPI -->
+        <div class="luoi-kpi" id="kpi"></div>
 
-    <title>Kho &amp; vật tư | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-    <script src="assets/js/app3d.js"></script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container" data-layout="container">
-        <script>
-          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
-          if (isFluid) {
-            var container = document.querySelector('[data-layout]');
-            container.classList.remove('container');
-            container.classList.add('container-fluid');
-          }
-        </script>
-
-        <script>App3D.sidebar('kho');</script>
-
-        <div class="content">
-          <script>App3D.topbar();</script>
-
-          <script>
-            App3D.pageHeader(
-              'Kho & vật tư',
-              'Theo dõi tồn kho máy in, nhựa in (PLA, PETG, TPU), resin và linh kiện thay thế.',
-              '<button class="btn btn-falcon-default btn-sm me-2" type="button"><span class="fas fa-file-import me-1"></span>Nhập kho hàng loạt</button>' +
-              '<button class="btn btn-primary btn-sm" type="button"><span class="fas fa-clipboard-check me-1"></span>Kiểm kê</button>'
-            );
-          </script>
-
-          <div class="row g-3 mb-3">
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Mặt hàng theo dõi</h6>
-                <h4 class="fw-normal text-700 mb-0" id="stat-items">0</h4>
-              </div></div>
+        <!-- Bảng kho vật tư -->
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Kho vật tư</h3>
+              <div class="phu">Bấm vào một vật tư để xem chi tiết, ghi nhận số gram đã in hoặc đổi trạng thái.</div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Dưới mức tối thiểu</h6>
-                <h4 class="fw-normal text-warning mb-0" id="stat-below">0</h4>
-              </div></div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Hết hàng</h6>
-                <h4 class="fw-normal text-danger mb-0" id="stat-out">0</h4>
-              </div></div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card h-100"><div class="card-body text-center">
-                <h6 class="text-600 mb-2">Tổng đơn vị tồn</h6>
-                <h4 class="fw-normal text-700 mb-0" id="stat-units">0</h4>
-              </div></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <select id="loc-trang-thai" class="nut nut-vien" style="padding:7px 10px;" onchange="veBang()">
+                <option value="">Tất cả trạng thái</option>
+              </select>
+              <button class="nut nut-chinh" type="button" onclick="moFormVatTu(null)">
+                <i class="fa-solid fa-plus"></i> Thêm vật tư
+              </button>
             </div>
           </div>
-
-          <div class="card mb-3" id="stockTable" data-list='{"valueNames":["sku","name","type","stock","location","updated"],"page":10,"pagination":true}'>
-            <div class="card-header">
-              <div class="row flex-between-center g-2">
-                <div class="col-sm-auto">
-                  <h6 class="mb-0 text-nowrap py-2 py-xl-0">Tồn kho chi tiết</h6>
-                </div>
-                <div class="col-sm-auto">
-                  <div class="row g-2">
-                    <div class="col-auto">
-                      <div class="input-group input-group-sm">
-                        <span class="input-group-text"><span class="fas fa-search"></span></span>
-                        <input class="form-control search" type="search" placeholder="Tìm mã SKU, tên vật tư..." aria-label="Tìm vật tư" />
-                      </div>
-                    </div>
-                    <div class="col-auto">
-                      <select class="form-select form-select-sm" id="filter-type" aria-label="Lọc theo loại">
-                        <option value="">Tất cả loại</option>
-                        <option value="Máy in">Máy in</option>
-                        <option value="Vật tư tiêu hao">Vật tư tiêu hao</option>
-                        <option value="Linh kiện">Linh kiện</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="card-body p-0">
-              <div class="table-responsive scrollbar">
-                <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden app3d-table">
-                  <thead class="bg-200 text-900">
-                    <tr>
-                      <th class="sort" data-sort="sku">Mã SKU</th>
-                      <th class="sort" data-sort="name">Mặt hàng</th>
-                      <th class="sort" data-sort="type">Loại</th>
-                      <th class="sort text-center" data-sort="stock">Tồn</th>
-                      <th class="text-center">Tối thiểu</th>
-                      <th>Mức tồn</th>
-                      <th class="sort" data-sort="location">Vị trí</th>
-                      <th class="sort" data-sort="updated">Cập nhật</th>
-                      <th class="text-center">Trạng thái</th>
-                      <th class="text-end">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody class="list"></tbody>
-                </table>
-              </div>
-              <div class="text-center py-4 fallback d-none">
-                <p class="fw-bold fs-1 mb-0">Không tìm thấy mặt hàng nào.</p>
-              </div>
-            </div>
-            <div class="card-footer">
-              <div class="d-flex justify-content-center">
-                <ul class="pagination mb-0"></ul>
-              </div>
-            </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Vật tư</th>
+                  <th class="giua">Trạng thái</th>
+                  <th>Màu</th>
+                  <th class="phai">Giá mua</th>
+                  <th class="giua">SL</th>
+                  <th class="giua">Đã dùng</th>
+                  <th class="phai">Tiền đã dùng</th>
+                  <th class="giua">Còn lại</th>
+                  <th>Nhà cung cấp</th>
+                </tr>
+              </thead>
+              <tbody id="bang-vat-tu"></tbody>
+            </table>
           </div>
-          <script>
-            App3D.fill('#stockTable tbody.list', App3D.inventoryRows());
-          </script>
-
-          <!-- Gợi ý nhập hàng -->
-          <div class="card mb-3">
-            <div class="card-header border-bottom">
-              <h6 class="mb-0">Đề xuất nhập hàng trong tuần</h6>
-            </div>
-            <div class="card-body" id="restock-suggestions"></div>
-          </div>
-          <script>
-            App3D.fill('#restock-suggestions', App3D.inventory
-              .filter(function (i) { return i.stock <= i.min; })
-              .map(function (i) {
-                var need = Math.max(i.min * 2 - i.stock, i.min);
-                return '<div class="d-flex align-items-center justify-content-between border-bottom border-200 py-2">' +
-                  '<div><h6 class="mb-0 fs--1">' + App3D.escapeHtml(i.name) + '</h6>' +
-                  '<span class="fs--2 text-500">' + App3D.escapeHtml(i.sku) + ' &middot; tồn ' + i.stock + '/' + i.min + '</span></div>' +
-                  '<div class="text-end"><span class="badge badge-soft-primary">Nên nhập ' + need + '</span></div></div>';
-              }).join('') || '<p class="mb-0 text-500">Tất cả mặt hàng đều trên mức tồn tối thiểu.</p>');
-          </script>
-
-          <script>App3D.footer();</script>
         </div>
-      </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="vendors/list.js/list.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var inv = App3D.inventory;
-        document.getElementById('stat-items').textContent = App3D.number(inv.length);
-        document.getElementById('stat-below').textContent = App3D.number(inv.filter(function (i) { return i.stock > 0 && i.stock <= i.min; }).length);
-        document.getElementById('stat-out').textContent = App3D.number(inv.filter(function (i) { return i.stock <= 0; }).length);
-        document.getElementById('stat-units').textContent = App3D.number(inv.reduce(function (s, i) { return s + i.stock; }, 0));
+        <!-- Nhựa sắp hết -->
+        <div class="the">
+          <div class="the-dau"><div><h3>Nhựa sắp hết</h3><div class="phu">Cuộn còn dưới 200g</div></div></div>
+          <div class="the-than" id="nhua-sap-het"></div>
+        </div>
 
-        var select = document.getElementById('filter-type');
-        var searchInput = document.querySelector('#stockTable .search');
-        select.addEventListener('change', function () {
-          searchInput.value = select.value;
-          searchInput.dispatchEvent(new Event('keyup', { bubbles: true }));
-        });
-      });
-    </script>
-  </body>
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
 
+  <script>
+    Apex.shell('kho', 'Kho & vật tư');
+
+    var VT = Apex.vatTu || [];
+    var NCC = Apex.nhaCungCap || [];
+
+    /* ---------------- KPI ---------------- */
+
+    (function veKpi() {
+      var cp = Apex.tinhChiPhi();
+      var soMayIn = VT.filter(function (v) { return v.loai === 'may_in'; }).length;
+      var soCuonNhua = VT.filter(function (v) { return v.loai === 'nhua'; })
+        .reduce(function (s, v) { return s + (v.soLuong || 0); }, 0);
+
+      Apex.fill('#kpi',
+        '<div class="kpi"><div class="dong-dau"><span class="nhan">Tổng vốn vật tư</span>' +
+        '<span class="bieu-tuong bt-xanh"><i class="fa-solid fa-sack-dollar"></i></span></div>' +
+        '<div class="so">' + Apex.money(cp.tienMuaVatTu) + '</div>' +
+        '<div class="thay-doi">Đã bỏ ra mua toàn bộ kho</div></div>' +
+
+        '<div class="kpi"><div class="dong-dau"><span class="nhan">Máy in</span>' +
+        '<span class="bieu-tuong bt-toi"><i class="fa-solid fa-print"></i></span></div>' +
+        '<div class="so">' + Apex.number(soMayIn) + ' máy</div>' +
+        '<div class="thay-doi">' + Apex.money(cp.tienMayIn) + '</div></div>' +
+
+        '<div class="kpi"><div class="dong-dau"><span class="nhan">Cuộn nhựa</span>' +
+        '<span class="bieu-tuong bt-vang"><i class="fa-solid fa-record-vinyl"></i></span></div>' +
+        '<div class="so">' + Apex.number(soCuonNhua) + ' cuộn</div>' +
+        '<div class="thay-doi">Tổng ' + Apex.number(cp.tongGramMua) + 'g nhựa đã mua</div></div>' +
+
+        '<div class="kpi"><div class="dong-dau"><span class="nhan">Nhựa còn lại</span>' +
+        '<span class="bieu-tuong ' + (cp.gramConLai < 200 ? 'bt-do' : 'bt-xanh') + '"><i class="fa-solid fa-weight-hanging"></i></span></div>' +
+        '<div class="so">' + Apex.number(cp.gramConLai) + 'g</div>' +
+        '<div class="thay-doi">đã dùng ' + Apex.number(cp.tongGramDaDung) + 'g</div></div>'
+      );
+    })();
+
+    /* ---------------- Bảng ---------------- */
+
+    function veLocTrangThai() {
+      var el = document.getElementById('loc-trang-thai');
+      var dangChon = el.value;
+      el.innerHTML = '<option value="">Tất cả trạng thái</option>' +
+        Object.keys(Apex.ttVatTu).map(function (k) {
+          var so = VT.filter(function (v) { return (v.trangThai || 'thanh_cong') === k; }).length;
+          return '<option value="' + k + '">' + Apex.ttVatTu[k].ten + ' (' + so + ')</option>';
+        }).join('');
+      el.value = dangChon;
+    }
+
+    function anhVatTu(v) { return Apex.anhDayDu(v.hinhAnh) || Apex.anhSanPham(v.ten); }
+
+    /* Chuỗi JS an toàn khi nhét vào thuộc tính onclick="..." */
+    function jsStr(s) { return JSON.stringify(String(s == null ? '' : s)).replace(/"/g, '&quot;'); }
+
+    function veBang() {
+      var loc = document.getElementById('loc-trang-thai').value;
+      var html = VT.map(function (v, i) { return { v: v, i: i }; })
+        .filter(function (x) { return !loc || (x.v.trangThai || 'thanh_cong') === loc; })
+        .map(function (x) {
+          var v = x.v;
+          var laNhua = v.loai === 'nhua';
+          var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+
+          var oDaDung = '<span style="color:var(--chu-mo)">—</span>';
+          if (laNhua) {
+            var pt = tongGram > 0 ? Math.min(100, (v.daDungGram || 0) / tongGram * 100) : 0;
+            var mau = pt > 70 ? 'var(--vang)' : 'var(--accent)';
+            oDaDung = '<div><strong>' + Apex.number(v.daDungGram || 0) + '</strong>g</div>' +
+              '<div class="tien-trinh" style="margin-top:6px;"><div style="width:' + pt.toFixed(1) + '%;background:' + mau + '"></div></div>';
+          }
+
+          return '<tr class="hang-bam" onclick="moChiTiet(' + x.i + ')" title="Bấm để xem chi tiết">' +
+            '<td><div class="o-ten"><img class="anh-sp" src="' + anhVatTu(v) + '" alt="" ' +
+            'onerror="this.src=\'' + Apex.anhSanPham(v.ten) + '\'" />' +
+            '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
+            '<div class="phu">' + Apex.esc(Apex.loaiVatTu[v.loai] || 'Khác') + '</div></div></div></td>' +
+            '<td class="giua">' + Apex.badgeTtVatTu(v.trangThai || 'thanh_cong') + '</td>' +
+            '<td>' + (v.mau ? '<span class="badge badge-xam">' + Apex.esc(v.mau) + '</span>' : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td class="phai">' + Apex.money(v.gia) + '</td>' +
+            '<td class="giua"><strong>' + Apex.number(v.soLuong || 0) + '</strong></td>' +
+            '<td class="giua">' + oDaDung + '</td>' +
+            '<td class="phai">' + (laNhua ? Apex.money(v.tienDaDung || 0) : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td class="giua">' + (laNhua ? '<strong>' + Apex.number(v.conLaiGram || 0) + 'g</strong>' : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td>' + (v.nhaCungCap ? Apex.esc(v.nhaCungCap) : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '</tr>';
+        }).join('');
+
+      Apex.fill('#bang-vat-tu', html ||
+        '<tr><td colspan="9" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        (loc ? 'Không có vật tư nào ở trạng thái này.' : 'Kho chưa có vật tư nào. Hãy bấm Thêm vật tư.') +
+        '</td></tr>');
+    }
+
+    /* ---------------- Hộp thoại CHI TIẾT ---------------- */
+
+    function moChiTiet(i) {
+      var v = VT[i];
+      if (!v) return;
+      var laNhua = v.loai === 'nhua';
+      var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+      var tt = v.trangThai || 'thanh_cong';
+
+      var dong = function (nhan, giaTri) {
+        return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
+          '<span class="gia-tri">' + giaTri + '</span></div>';
+      };
+
+      var chonTt = Object.keys(Apex.ttVatTu).map(function (k) {
+        return '<option value="' + k + '"' + (k === tt ? ' selected' : '') + '>' + Apex.ttVatTu[k].ten + '</option>';
+      }).join('');
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + Apex.esc(v.ten) + '</h3><div class="phu">' +
+        Apex.esc(Apex.loaiVatTu[v.loai] || 'Khác') + (v.mau ? ' · Màu ' + Apex.esc(v.mau) : '') + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
+        '<i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<img class="anh-chi-tiet" src="' + anhVatTu(v) + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(v.ten) + '\'" />' +
+        '<div style="margin-top:16px;">' +
+        dong('Trạng thái', Apex.badgeTtVatTu(tt)) +
+        dong('Giá mua 1 đơn vị', Apex.money(v.gia || 0)) +
+        dong('Số lượng', Apex.number(v.soLuong || 0)) +
+        dong('Tổng tiền đã mua', '<strong>' + Apex.money(v.tongTienMua || 0) + '</strong>') +
+        (laNhua ? dong('Khối lượng mỗi cuộn', Apex.number(v.khoiLuongGram || 0) + 'g') : '') +
+        (laNhua ? dong('Đơn giá theo gram', Math.round(v.donGiaMoiGram || 0).toLocaleString('vi-VN') + '₫/g') : '') +
+        (laNhua ? dong('Đã dùng', '<strong>' + Apex.number(v.daDungGram || 0) + 'g</strong> / ' + Apex.number(tongGram) + 'g') : '') +
+        (laNhua ? dong('Tiền nhựa đã tiêu hao', Apex.money(v.tienDaDung || 0)) : '') +
+        (laNhua ? dong('Còn lại', '<strong>' + Apex.number(v.conLaiGram || 0) + 'g</strong>') : '') +
+        dong('Nhà cung cấp', v.nhaCungCap ? Apex.esc(v.nhaCungCap) : '—') +
+        (v.ghiChu ? dong('Ghi chú', Apex.esc(v.ghiChu)) : '') +
+        '</div>' +
+        '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
+        '<label for="ct-tt-vt">Đổi nhanh trạng thái</label>' +
+        '<select id="ct-tt-vt" onchange="Apex.doiTrangThaiVatTu(' + v.id + ', this.value)">' + chonTt + '</select>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaVatTu(' + v.id + ')">' +
+        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        (laNhua
+          ? '<button class="nut nut-xanh" type="button" onclick="Apex.dungThemGram(' + v.id + ', ' +
+            jsStr(v.ten) + ')"><i class="fa-solid fa-plus"></i> Ghi nhận vừa in</button>'
+          : '') +
+        '<button class="nut nut-chinh" type="button" onclick="moFormVatTu(' + i + ')">' +
+        '<i class="fa-solid fa-pen-to-square"></i> Sửa</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    /* ---------------- Hộp thoại THÊM / SỬA ---------------- */
+
+    var layAnh = null;
+
+    function moFormVatTu(i) {
+      var v = (i === null || i === undefined) ? null : VT[i];
+      var moi = !v;
+      var anhHienTai = v ? (v.hinhAnh || '') : '';
+
+      var chonLoai = Object.keys(Apex.loaiVatTu).map(function (k) {
+        var macDinh = v ? v.loai : 'nhua';
+        return '<option value="' + k + '"' + (k === macDinh ? ' selected' : '') + '>' + Apex.loaiVatTu[k] + '</option>';
+      }).join('');
+
+      var chonTt = Object.keys(Apex.ttVatTu).map(function (k) {
+        var macDinh = v ? (v.trangThai || 'thanh_cong') : 'thanh_cong';
+        return '<option value="' + k + '"' + (k === macDinh ? ' selected' : '') + '>' + Apex.ttVatTu[k].ten + '</option>';
+      }).join('');
+
+      var chonNcc = '<option value="">— Không chọn —</option>' + NCC.map(function (n) {
+        return '<option value="' + n.id + '"' + (v && v.nhaCungCapId === n.id ? ' selected' : '') + '>' +
+          Apex.esc(n.ten) + '</option>';
+      }).join('');
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Thêm vật tư mới' : 'Sửa vật tư') + '</h3>' +
+        '<div class="phu">' + (moi ? 'Máy in, cuộn nhựa, phụ kiện...' : Apex.esc(v.ten)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
+        '<i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        Apex.htmlOTaiAnh('vt-anh', anhHienTai, moi ? 'Chọn ảnh vật tư' : 'Đổi ảnh') +
+        '<div class="o-nhap"><label for="f-ten">Tên vật tư *</label>' +
+        '<input type="text" id="f-ten" placeholder="VD: Cuộn nhựa PLA trắng" value="' +
+        (v ? Apex.esc(v.ten) : '') + '" /></div>' +
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-loai">Loại</label><select id="f-loai">' + chonLoai + '</select></div>' +
+        '<div class="o-nhap"><label for="f-mau">Màu</label>' +
+        '<input type="text" id="f-mau" placeholder="VD: Trắng" value="' + (v ? Apex.esc(v.mau || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-gia">Giá mua 1 đơn vị (VNĐ)</label>' +
+        '<input type="number" id="f-gia" min="0" step="1000" value="' + (v ? (v.gia || 0) : 0) + '" /></div>' +
+        '<div class="o-nhap"><label for="f-sl">Số lượng</label>' +
+        '<input type="number" id="f-sl" min="1" step="1" value="' + (v ? (v.soLuong || 1) : 1) + '" /></div>' +
+        '<div class="o-nhap"><label for="f-gram">Khối lượng 1 đơn vị (gram)</label>' +
+        '<input type="number" id="f-gram" min="0" step="50" value="' + (v ? (v.khoiLuongGram || 0) : 1000) + '" />' +
+        '<div class="goi-y">Cuộn nhựa thường 1000g; máy in để 0</div></div>' +
+        '<div class="o-nhap"><label for="f-tt">Trạng thái</label><select id="f-tt">' + chonTt + '</select></div>' +
+        '</div>' +
+        (moi ? '' :
+          '<div class="o-nhap"><label for="f-dung">Đã dùng (gram)</label>' +
+          '<input type="number" id="f-dung" min="0" step="1" value="' + (v.daDungGram || 0) + '" /></div>') +
+        '<div class="o-nhap"><label for="f-ncc">Nhà cung cấp</label><select id="f-ncc">' + chonNcc + '</select></div>' +
+        '<div class="o-nhap"><label for="f-ghichu">Ghi chú</label>' +
+        '<textarea id="f-ghichu" rows="2" placeholder="Mua ở đâu, ngày nào...">' +
+        (v ? Apex.esc(v.ghiChu || '') : '') + '</textarea></div>' +
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan"><div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (v ? v.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu vật tư</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+      layAnh = Apex.ganOTaiAnh('vt-anh', anhHienTai);
+    }
+
+    function luuForm(id) {
+      var loi = document.getElementById('loi-form');
+      var ten = document.getElementById('f-ten').value.trim();
+      if (!ten) { loi.textContent = 'Vui lòng nhập tên vật tư.'; return; }
+
+      var gia = parseInt(document.getElementById('f-gia').value, 10);
+      var soLuong = parseInt(document.getElementById('f-sl').value, 10);
+      var gram = parseInt(document.getElementById('f-gram').value, 10);
+      if (isNaN(gia) || gia < 0) { loi.textContent = 'Giá mua không hợp lệ, vui lòng nhập số không âm.'; return; }
+      if (isNaN(soLuong) || soLuong < 1) { loi.textContent = 'Số lượng phải là số nguyên từ 1 trở lên.'; return; }
+      if (isNaN(gram) || gram < 0) { loi.textContent = 'Khối lượng không hợp lệ, vui lòng nhập số không âm.'; return; }
+
+      var duLieu = {
+        ten: ten,
+        loai: document.getElementById('f-loai').value,
+        mau: document.getElementById('f-mau').value.trim(),
+        gia: gia,
+        soLuong: soLuong,
+        khoiLuongGram: gram,
+        trangThai: document.getElementById('f-tt').value,
+        ghiChu: document.getElementById('f-ghichu').value.trim(),
+        hinhAnh: layAnh ? layAnh() : '',
+        nhaCungCapId: document.getElementById('f-ncc').value
+          ? parseInt(document.getElementById('f-ncc').value, 10) : null
+      };
+
+      var oDung = document.getElementById('f-dung');
+      if (oDung) {
+        var daDung = parseInt(oDung.value, 10);
+        if (isNaN(daDung) || daDung < 0) { loi.textContent = 'Số gram đã dùng không hợp lệ.'; return; }
+        if (daDung > gram * soLuong) {
+          loi.textContent = 'Số gram đã dùng không thể lớn hơn tổng khối lượng (' + (gram * soLuong) + 'g).';
+          return;
+        }
+        duLieu.daDungGram = daDung;
+      }
+
+      loi.textContent = '';
+      var ok = id ? Apex.suaVatTu(id, duLieu) : Apex.themVatTu(duLieu);
+      if (ok) location.reload();
+      else loi.textContent = 'Không lưu được vật tư. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
+    }
+
+    /* ---------------- Nhựa sắp hết ---------------- */
+
+    (function veSapHet() {
+      var sapHet = VT.filter(function (v) { return v.loai === 'nhua' && (v.conLaiGram || 0) < 200; });
+      Apex.fill('#nhua-sap-het', sapHet.map(function (v) {
+        return '<div class="dong-het"><div>' +
+          '<div class="ten-vt">' + Apex.esc(v.ten) + '</div>' +
+          '<div class="phu-vt">Màu: ' + (v.mau ? Apex.esc(v.mau) : '—') + ' · Còn lại <strong>' +
+          Apex.number(v.conLaiGram || 0) + 'g</strong></div>' +
+          '</div><span class="badge badge-vang"><span class="cham"></span> Nên mua thêm</span></div>';
+      }).join('') || '<div style="text-align:center;color:var(--chu-mo);padding:28px;">Nhựa còn đủ dùng.</div>');
+    })();
+
+    veLocTrangThai();
+    veBang();
+  </script>
+</body>
 </html>

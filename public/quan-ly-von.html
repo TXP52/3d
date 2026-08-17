@@ -1,148 +1,236 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý vốn &amp; chi phí | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="assets/js/apex.js?v=5"></script>
+  <style>
+    .dong-tong td { font-weight: 700; background: #f6f7f8; }
+    .hang-gia { margin-top: 18px; }
+    .hang-gia .nhan-gia { color: var(--chu-mo); font-size: 13px; font-weight: 500; }
+    .hang-gia .so-gia { font-size: 20px; font-weight: 700; margin-top: 2px; }
+    .hang-gia .so-gia.lon { font-size: 28px; color: var(--accent-dam); }
+    .hang-ap-dung { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+    .hang-ap-dung .o-nhap { flex: 1; min-width: 160px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Quản lý vốn - IN3D Store">
+        <!-- PHẦN 1: KPI vốn & chi phí -->
+        <div class="luoi-kpi" id="kpi-von"></div>
 
-    <title>Quản lý vốn | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-    <script src="assets/js/app3d.js"></script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container" data-layout="container">
-        <script>
-          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
-          if (isFluid) {
-            var container = document.querySelector('[data-layout]');
-            container.classList.remove('container');
-            container.classList.add('container-fluid');
-          }
-        </script>
-
-        <script>App3D.sidebar('quan-ly-von');</script>
-
-        <div class="content">
-          <script>App3D.topbar();</script>
-
-          <script>
-            App3D.pageHeader(
-              'Quản lý vốn',
-              'Theo dõi vốn nhập hàng, giá trị tồn kho và lợi nhuận kỳ vọng theo từng sản phẩm. Giá vốn tạm tính 70% giá bán khi chưa nhập giá vốn thật.',
-              ''
-            );
-          </script>
-
-          <!-- Thẻ tổng quan vốn -->
-          <div class="row g-3 mb-3" id="von-stats"></div>
-          <script>
-            (function () {
-              var sp = App3D.products;
-              var vonTon = sp.reduce(function (s, p) { return s + (p.cost || 0) * (p.stock || 0); }, 0);
-              var giaTriBan = sp.reduce(function (s, p) { return s + (p.price || 0) * (p.stock || 0); }, 0);
-              var loiNhuanKyVong = giaTriBan - vonTon;
-              var doanhThuDaBan = App3D.orders.reduce(function (s, o) { return s + (o.total || 0); }, 0);
-
-              var cards = [
-                { label: 'Vốn đang nằm trong kho', value: App3D.money(vonTon), color: 'primary', icon: 'fas fa-coins' },
-                { label: 'Giá trị bán lẻ tồn kho', value: App3D.money(giaTriBan), color: 'warning', icon: 'fas fa-tags' },
-                { label: 'Lợi nhuận kỳ vọng', value: App3D.money(loiNhuanKyVong), color: 'success', icon: 'fas fa-chart-line' },
-                { label: 'Doanh thu đơn đã nhận', value: App3D.money(doanhThuDaBan), color: 'primary', icon: 'fas fa-wallet' }
-              ];
-              App3D.fill('#von-stats', cards.map(function (c) {
-                return '<div class="col-6 col-xxl-3"><div class="card h-100"><div class="card-body">' +
-                  '<div class="d-flex justify-content-between align-items-center">' +
-                  '<div><h6 class="text-600 mb-2">' + c.label + '</h6>' +
-                  '<h5 class="fw-normal text-700 mb-0">' + c.value + '</h5></div>' +
-                  '<div class="app3d-kpi-icon bg-soft-' + c.color + ' text-' + c.color + '"><span class="' + c.icon + '"></span></div>' +
-                  '</div></div></div></div>';
-              }).join(''));
-            })();
-          </script>
-
-          <!-- Bảng vốn theo sản phẩm -->
-          <div class="card mb-3">
-            <div class="card-header">
-              <h6 class="mb-0">Vốn theo từng sản phẩm</h6>
+        <div class="luoi-2">
+          <!-- PHẦN 2: Chi tiết chi phí -->
+          <div class="the">
+            <div class="the-dau"><div><h3>Chi tiết chi phí</h3><div class="phu">Bóc tách vốn đã bỏ ra</div></div></div>
+            <div class="the-than khong-dem bang-cuon">
+              <table class="bang">
+                <thead><tr><th>Khoản mục</th><th class="phai">Số tiền</th></tr></thead>
+                <tbody id="bang-chi-phi"></tbody>
+              </table>
             </div>
-            <div class="card-body p-0">
-              <div class="table-responsive scrollbar">
-                <table class="table table-sm table-striped fs--1 mb-0 app3d-table">
-                  <thead class="bg-200 text-900">
-                    <tr>
-                      <th>Sản phẩm</th>
-                      <th class="text-end">Giá vốn</th>
-                      <th class="text-end">Giá bán</th>
-                      <th class="text-center">Tồn</th>
-                      <th class="text-end">Vốn tồn kho</th>
-                      <th class="text-end">Giá trị bán</th>
-                      <th class="text-center">Biên LN</th>
-                    </tr>
-                  </thead>
-                  <tbody id="bang-von"></tbody>
-                </table>
-              </div>
+            <div class="the-than">
+              <div class="phu">Chi phí = tiền mua toàn bộ vật tư trong kho + tiền nhựa đã tiêu hao khi in.</div>
             </div>
           </div>
-          <script>
-            App3D.fill('#bang-von', App3D.products.map(function (p) {
-              var vonTon = (p.cost || 0) * (p.stock || 0);
-              var banTon = (p.price || 0) * (p.stock || 0);
-              var bien = p.price > 0 ? Math.round(((p.price - p.cost) / p.price) * 100) : 0;
-              return '<tr>' +
-                '<td class="align-middle"><div class="d-flex align-items-center"><img class="anh-sp-nho me-2" src="' + (p.img || App3D.anhSanPham(p.name)) + '" alt="" /><h6 class="mb-0 fs--1">' + App3D.escapeHtml(p.name) + '</h6></div></td>' +
-                '<td class="align-middle text-end">' + App3D.money(p.cost) + '</td>' +
-                '<td class="align-middle text-end">' + App3D.money(p.price) + '</td>' +
-                '<td class="align-middle text-center">' + App3D.number(p.stock) + '</td>' +
-                '<td class="align-middle text-end fw-semi-bold">' + App3D.money(vonTon) + '</td>' +
-                '<td class="align-middle text-end">' + App3D.money(banTon) + '</td>' +
-                '<td class="align-middle text-center"><span class="badge badge-soft-' + (bien >= 25 ? 'success' : bien >= 10 ? 'warning' : 'danger') + '">' + bien + '%</span></td>' +
-                '</tr>';
-            }).join(''));
-          </script>
 
-          <script>App3D.footer();</script>
+          <!-- PHẦN 3: Nhựa đã dùng theo cuộn -->
+          <div class="the">
+            <div class="the-dau"><div><h3>Nhựa đã dùng theo cuộn</h3><div class="phu">Theo dõi hao hụt từng cuộn nhựa</div></div></div>
+            <div class="the-than khong-dem bang-cuon">
+              <table class="bang">
+                <thead>
+                  <tr>
+                    <th>Cuộn nhựa</th>
+                    <th class="phai">Đơn giá/gram</th>
+                    <th class="giua">Đã dùng</th>
+                    <th class="giua">Còn lại</th>
+                    <th class="phai">Tiền đã dùng</th>
+                    <th class="giua">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="bang-nhua"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-  </body>
+        <!-- PHẦN 4 + 5: Giá bán theo gram (vẽ lại bằng veLai()) -->
+        <div id="khu-gia"></div>
 
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('quan-ly-von', 'Quản lý vốn & chi phí');
+
+    (function () {
+      var cp = Apex.tinhChiPhi();
+      var doanhThu = Apex.orders.reduce(function (s, o) { return s + (o.total || 0); }, 0);
+      var laiLo = doanhThu - cp.tongChiPhi;
+
+      /* ---------- PHẦN 1: KPI ---------- */
+      var dsKpi = [
+        {
+          nhan: 'Tổng chi phí', so: Apex.money(cp.tongChiPhi), icon: 'fa-coins', mau: 'bt-do',
+          phu: '<div class="thay-doi" style="color:var(--chu-mo);">Vật tư + nhựa đã dùng</div>'
+        },
+        {
+          nhan: 'Vốn mua vật tư', so: Apex.money(cp.tienMuaVatTu), icon: 'fa-boxes-stacked', mau: 'bt-toi',
+          phu: '<div class="thay-doi" style="color:var(--chu-mo);">Máy in ' + Apex.money(cp.tienMayIn) + '</div>'
+        },
+        {
+          nhan: 'Nhựa đã dùng', so: Apex.money(cp.tienNhuaDaDung), icon: 'fa-fill-drip', mau: 'bt-vang',
+          phu: '<div class="thay-doi" style="color:var(--chu-mo);">' + Apex.number(cp.tongGramDaDung) + 'g / ' + Apex.number(cp.tongGramMua) + 'g</div>'
+        },
+        {
+          nhan: 'Doanh thu đơn hàng', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh',
+          phu: '<div class="thay-doi ' + (laiLo >= 0 ? 'tang' : 'giam') + '">Lãi/Lỗ: ' + Apex.money(laiLo) + '</div>'
+        }
+      ];
+      Apex.fill('#kpi-von', dsKpi.map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div>' + k.phu + '</div>';
+      }).join(''));
+
+      /* ---------- PHẦN 2: Chi tiết chi phí ---------- */
+      Apex.fill('#bang-chi-phi',
+        '<tr><td>Tiền mua máy in</td><td class="phai">' + Apex.money(cp.tienMayIn) + '</td></tr>' +
+        '<tr><td>Tiền mua nhựa (toàn bộ cuộn)</td><td class="phai">' + Apex.money(cp.tienNhuaTong) + '</td></tr>' +
+        '<tr><td style="color:var(--vang);font-weight:700;">→ Trong đó nhựa ĐÃ DÙNG (tính vào giá thành)</td>' +
+        '<td class="phai" style="color:var(--vang);font-weight:700;">' + Apex.money(cp.tienNhuaDaDung) + '</td></tr>' +
+        '<tr class="dong-tong"><td>TỔNG CHI PHÍ</td><td class="phai">' + Apex.money(cp.tongChiPhi) + '</td></tr>');
+
+      /* ---------- PHẦN 3: Nhựa đã dùng theo cuộn ---------- */
+      var cuonNhua = Apex.vatTu.filter(function (v) { return v.loai === 'nhua'; });
+      Apex.fill('#bang-nhua', cuonNhua.map(function (v) {
+        var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+        return '<tr>' +
+          '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.anhSanPham(v.ten) + '" alt="" />' +
+          '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
+          (v.mau ? '<div class="phu"><span class="badge badge-xam">' + Apex.esc(v.mau) + '</span></div>' : '') +
+          '</div></div></td>' +
+          '<td class="phai">' + Apex.money(Math.round(v.donGiaMoiGram || 0)) + '/g</td>' +
+          '<td class="giua"><strong>' + Apex.number(v.daDungGram || 0) + 'g</strong></td>' +
+          '<td class="giua">' + Apex.number(v.conLaiGram != null ? v.conLaiGram : Math.max(0, tongGram - (v.daDungGram || 0))) + 'g</td>' +
+          '<td class="phai">' + Apex.money(v.tienDaDung || 0) + '</td>' +
+          '<td class="giua"><button class="nut nut-vien nut-nho" onclick="Apex.datDaDung(' + Apex.esc(JSON.stringify(v.id)) + ',' +
+          Apex.esc(JSON.stringify(v.ten)) + ',' + (v.daDungGram || 0) + ',' + tongGram + ')">Nhập số gram</button></td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có cuộn nhựa nào trong kho.</td></tr>');
+
+      /* ---------- PHẦN 4 + 5: Giá bán theo gram ---------- */
+      window.veLai = function () {
+        var c = Apex.tinhChiPhi();
+        var tiLe = Apex.layTiLeLai();
+        var giaVon = Math.round(c.giaNhuaTrungBinhMoiGram);
+        var giaBan = Math.round(Apex.giaBanMoiGram(tiLe));
+
+        var html =
+          '<div class="the">' +
+            '<div class="the-dau"><div><h3>Giá bán đề xuất theo gram</h3>' +
+            '<div class="phu">Lấy giá vốn nhựa mỗi gram cộng tỉ lệ lãi mong muốn</div></div></div>' +
+            '<div class="the-than"><div class="luoi-2-deu">' +
+              '<div>' +
+                '<div class="hang-ap-dung">' +
+                  '<div class="o-nhap"><label for="ti-le-lai">Tỉ lệ lãi mong muốn (%)</label>' +
+                  '<input type="number" id="ti-le-lai" min="0" step="5" value="' + tiLe + '" /></div>' +
+                  '<button class="nut nut-chinh" onclick="apDungTiLe()">Áp dụng</button>' +
+                '</div>' +
+                '<div class="hang-gia"><div class="nhan-gia">Giá vốn nhựa</div>' +
+                '<div class="so-gia">' + Apex.number(giaVon) + ' đ/gram</div></div>' +
+                '<div class="hang-gia"><div class="nhan-gia">GIÁ BÁN ĐỀ XUẤT</div>' +
+                '<div class="so-gia lon">' + Apex.number(giaBan) + ' đ/gram</div></div>' +
+                '<div class="phu" style="margin-top:12px;">Tỉ lệ lãi hiện tại: ' + Apex.number(tiLe) + '% trên giá vốn nhựa.</div>' +
+              '</div>' +
+              '<div><div class="khung-bieu-do" id="bd-gia"></div></div>' +
+            '</div></div>' +
+          '</div>';
+
+        var ds = Apex.laySanPhamIn();
+        var hangSp = ds.map(function (m, i) {
+          var tienNhua = (m.gram || 0) * c.giaNhuaTrungBinhMoiGram;
+          var ban = Math.round((m.gram || 0) * Apex.giaBanMoiGram(tiLe) / 500) * 500;
+          var lai = ban - tienNhua;
+          return '<tr>' +
+            '<td><strong>' + Apex.esc(m.ten) + '</strong></td>' +
+            '<td class="giua">' + Apex.number(m.gram || 0) + 'g</td>' +
+            '<td class="phai">' + Apex.money(Math.round(tienNhua)) + '</td>' +
+            '<td class="phai" style="font-weight:700;color:var(--accent-dam);">' + Apex.money(ban) + '</td>' +
+            '<td class="phai" style="color:var(--accent-dam);">' + Apex.money(Math.round(lai)) + '</td>' +
+            '<td class="giua"><button class="nut nut-vien nut-nho" onclick="xoaMauIn(' + i + ')">Xoá</button></td>' +
+            '</tr>';
+        }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
+
+        var viDu = Math.round(5 * Apex.giaBanMoiGram(tiLe) / 500) * 500;
+
+        html +=
+          '<div class="the" style="margin-top:20px;">' +
+            '<div class="the-dau"><div><h3>Giá dự kiến từng sản phẩm in</h3>' +
+            '<div class="phu">Ước tính theo khối lượng nhựa mỗi mẫu</div></div>' +
+            '<button class="nut nut-vien nut-nho" onclick="themMauIn()">Thêm mẫu</button></div>' +
+            '<div class="the-than khong-dem bang-cuon">' +
+              '<table class="bang"><thead><tr>' +
+                '<th>Sản phẩm</th><th class="giua">Khối lượng</th><th class="phai">Tiền nhựa</th>' +
+                '<th class="phai">Giá bán đề xuất</th><th class="phai">Lãi dự kiến</th><th class="giua">Thao tác</th>' +
+              '</tr></thead><tbody>' + hangSp + '</tbody></table>' +
+            '</div>' +
+            '<div class="the-than"><div class="phu">Ví dụ: in đồ chơi hết 5g nhựa → giá bán đề xuất ≈ ' + Apex.number(viDu) + ' đ.</div></div>' +
+          '</div>';
+
+        Apex.fill('#khu-gia', html);
+        Apex.bieuDoCot('bd-gia', ['Giá vốn/gram', 'Giá bán/gram'], [giaVon, giaBan], 'Đồng / gram');
+      };
+
+      window.apDungTiLe = function () {
+        var o = document.getElementById('ti-le-lai');
+        var v = parseFloat(o.value);
+        if (isNaN(v) || v < 0) { alert('Tỉ lệ lãi không hợp lệ.'); return; }
+        Apex.luuTiLeLai(v);
+        veLai();
+      };
+
+      window.themMauIn = function () {
+        var ten = prompt('Tên mẫu sản phẩm in:', '');
+        if (ten === null) return;
+        ten = ten.trim();
+        if (!ten) { alert('Chưa nhập tên mẫu.'); return; }
+        var g = prompt('Mẫu "' + ten + '" tốn bao nhiêu gram nhựa?', '10');
+        if (g === null) return;
+        var gram = parseInt(g, 10);
+        if (isNaN(gram) || gram <= 0) { alert('Số gram không hợp lệ.'); return; }
+        var ds = Apex.laySanPhamIn();
+        ds.push({ ten: ten, gram: gram });
+        Apex.luuSanPhamIn(ds);
+        location.reload();
+      };
+
+      window.xoaMauIn = function (i) {
+        var ds = Apex.laySanPhamIn();
+        if (!ds[i]) return;
+        if (!confirm('Xoá mẫu "' + ds[i].ten + '" khỏi danh sách?')) return;
+        ds.splice(i, 1);
+        Apex.luuSanPhamIn(ds);
+        location.reload();
+      };
+
+      veLai();
+    })();
+  </script>
+</body>
 </html>

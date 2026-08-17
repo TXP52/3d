@@ -1,185 +1,295 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <style>
+    .o-otp {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 18px 0 10px 0;
+    }
+    .o-otp input {
+      width: 46px;
+      height: 56px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      border: 1px solid var(--vien);
+      border-radius: 10px;
+      outline: none;
+      font-family: inherit;
+    }
+    .o-otp input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-nhat); }
+    .dem-nguoc { text-align: center; color: var(--chu-mo); font-size: 13px; margin-bottom: 12px; }
+    .dem-nguoc strong { color: var(--accent-dam); }
+    .gui-lai { background: none; border: none; color: var(--accent-dam); font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; }
+    .gui-lai:disabled { color: var(--chu-mo); cursor: not-allowed; }
+    .buoc-2 { display: none; }
+    .hop-email {
+      background: var(--accent-nhat);
+      color: #065f46;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .nut-quay-lai { background: none; border: none; color: var(--chu-mo); font-size: 13px; cursor: pointer; font-family: inherit; }
+    .nut-quay-lai:hover { color: var(--chu); }
+  </style>
+</head>
+<body>
+  <div class="dang-nhap-nen">
+    <div class="dang-nhap-hop">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Đăng nhập hệ thống quản trị - IN3D Store">
-
-    <title>Đăng nhập | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container-fluid">
-        <div class="row min-vh-100 flex-center g-0">
-          <div class="col-lg-8 col-xxl-5 py-3 position-relative">
-            <div class="card overflow-hidden z-index-1">
-              <div class="card-body p-0">
-                <div class="row g-0 h-100">
-
-                  <!-- Cột giới thiệu -->
-                  <div class="col-md-5 text-center app3d-auth-cover">
-                    <div class="position-relative p-4 pt-md-5 pb-md-7">
-                      <div class="z-index-1 position-relative">
-                        <a class="link-light mb-4 font-sans-serif fs-4 d-inline-block fw-bolder" href="index.html"><img class="app3d-logo me-2" src="assets/img/logo.png" alt="IN3D Store" style="vertical-align: middle;" />IN3D Store</a>
-                        <p class="opacity-75 text-white">Hệ thống quản trị bán hàng máy in 3D dành cho showroom, đại lý và xưởng in dịch vụ.</p>
-                      </div>
-                    </div>
-                    <div class="mt-3 mb-4 mt-md-4 mb-md-5">
-                      <p class="text-white fs--1 mb-0 opacity-75">Chưa có tài khoản?<br />
-                        <a class="text-decoration-underline link-light" href="#!">Liên hệ quản trị viên</a>
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- Cột đăng nhập -->
-                  <div class="col-md-7 d-flex flex-center">
-                    <div class="p-4 p-md-5 flex-grow-1">
-                      <div class="row flex-between-center mb-4">
-                        <div class="col-auto">
-                          <h3 class="mb-0">Đăng nhập</h3>
-                          <p class="fs--1 text-600 mb-0">Truy cập trang quản trị cửa hàng</p>
-                        </div>
-                      </div>
-
-                      <form id="login-form" novalidate>
-                        <div class="mb-3">
-                          <label class="form-label" for="login-email">Email</label>
-                          <input class="form-control" id="login-email" type="email" placeholder="admin@in3dstore.vn" required />
-                          <div class="invalid-feedback">Vui lòng nhập email đăng nhập.</div>
-                        </div>
-                        <div class="mb-3">
-                          <div class="d-flex justify-content-between">
-                            <label class="form-label" for="login-password">Mật khẩu</label>
-                            <a class="fs--1" href="#!">Quên mật khẩu?</a>
-                          </div>
-                          <input class="form-control" id="login-password" type="password" placeholder="Nhập mật khẩu" required minlength="6" />
-                          <div class="invalid-feedback">Mật khẩu phải có ít nhất 6 ký tự.</div>
-                        </div>
-                        <div class="row flex-between-center mb-3">
-                          <div class="col-auto">
-                            <div class="form-check mb-0">
-                              <input class="form-check-input" id="login-remember" type="checkbox" checked />
-                              <label class="form-check-label mb-0" for="login-remember">Ghi nhớ đăng nhập</label>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="mb-3">
-                          <button class="btn btn-primary d-block w-100 mt-3" type="submit" id="login-submit">Đăng nhập</button>
-                        </div>
-                        <div class="alert alert-danger d-none py-2 fs--1" id="login-error" role="alert"></div>
-                        <div class="alert alert-success d-none py-2 fs--1" id="login-success" role="alert"></div>
-                      </form>
-
-                      <div class="position-relative mt-4">
-                        <hr />
-                        <div class="divider-content-center">hoặc</div>
-                      </div>
-                      <a class="btn btn-outline-secondary d-block w-100 mt-3" href="index.html">
-                        <span class="fas fa-eye me-2"></span>Xem thử trang quản trị
-                      </a>
-
-                      <p class="fs--2 text-500 text-center mt-4 mb-0">Tài khoản đăng ký trên website bán hàng (Login.html). Người đăng ký ĐẦU TIÊN tự động là admin; tài khoản lưu trong database qua backend Java.</p>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="logo-lon">
+        <img src="assets/img/logo.png" alt="IN3D Store">
+        <div>
+          <h1>IN3D Store</h1>
+          <div class="phu">Hệ thống quản trị bán hàng</div>
         </div>
       </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <script>
-      // Đăng nhập qua BACKEND JAVA - tài khoản lưu trong database (không dùng Supabase Auth)
-      var JAVA_API = 'http://localhost:8090/api';
+      <!-- BƯỚC 1: email + mật khẩu -->
+      <form id="buoc-1">
+        <div class="o-nhap">
+          <label for="email">Email quản trị</label>
+          <input type="email" id="email" placeholder="admin@example.com" autocomplete="username" required>
+        </div>
+        <div class="o-nhap">
+          <label for="mat-khau">Mật khẩu</label>
+          <input type="password" id="mat-khau" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+        </div>
+        <p class="bao-loi" id="loi-1"></p>
+        <button class="nut nut-chinh" type="submit" id="nut-1" style="width:100%;justify-content:center;padding:11px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Tiếp tục
+        </button>
+      </form>
 
-      document.addEventListener('DOMContentLoaded', function () {
-        var form = document.getElementById('login-form');
-        var oLoi = document.getElementById('login-error');
-        var oOk = document.getElementById('login-success');
-        var nut = document.getElementById('login-submit');
+      <!-- BƯỚC 2: nhập mã OTP -->
+      <div class="buoc-2" id="buoc-2">
+        <div class="hop-email" id="hop-email"></div>
+        <p style="text-align:center;color:var(--chu-mo);font-size:13px;margin-top:12px;">
+          Nhập mã gồm 6 chữ số để hoàn tất đăng nhập
+        </p>
 
-        function baoLoi(chu) {
-          oLoi.textContent = chu;
-          oLoi.classList.remove('d-none');
-          nut.disabled = false;
-          nut.textContent = 'Đăng nhập';
-        }
+        <div class="o-otp" id="o-otp">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="0">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="1">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="2">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="3">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="4">
+          <input type="text" inputmode="numeric" maxlength="1" data-i="5">
+        </div>
 
-        form.addEventListener('submit', async function (e) {
-          e.preventDefault();
-          form.classList.add('was-validated');
-          if (!form.checkValidity()) return;
+        <div class="dem-nguoc" id="dem-nguoc"></div>
+        <p class="bao-loi" id="loi-2"></p>
+        <p class="bao-ok" id="ok-2" style="display:none;text-align:center;"></p>
 
-          oLoi.classList.add('d-none');
-          oOk.classList.add('d-none');
-          nut.disabled = true;
-          nut.textContent = 'Đang đăng nhập...';
+        <button class="nut nut-chinh" type="button" id="nut-2" style="width:100%;justify-content:center;padding:11px;">
+          <i class="fa-solid fa-shield-halved"></i> Xác thực &amp; đăng nhập
+        </button>
 
-          try {
-            var resp = await fetch(JAVA_API + '/auth/dang-nhap', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: document.getElementById('login-email').value.trim(),
-                matKhau: document.getElementById('login-password').value
-              })
-            });
-            var kq = await resp.json();
-            if (!resp.ok) { baoLoi(kq.loi || ('Lỗi HTTP ' + resp.status)); return; }
+        <div style="text-align:center;margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
+          <button class="nut-quay-lai" type="button" onclick="veBuoc1()"><i class="fa-solid fa-arrow-left"></i> Quay lại</button>
+          <button class="gui-lai" type="button" id="nut-gui-lai" onclick="guiLaiMa()">Gửi lại mã</button>
+        </div>
+      </div>
 
-            if (kq.vaiTro !== 'admin') {
-              baoLoi('Tài khoản này không có quyền quản trị. (Người đăng ký ĐẦU TIÊN của hệ thống tự động là admin.)');
-              return;
-            }
-            localStorage.setItem('in3d_phien', JSON.stringify({
-              token: kq.token, hoTen: kq.hoTen, email: kq.email, vaiTro: kq.vaiTro
-            }));
-            oOk.textContent = 'Xin chào ' + kq.hoTen + '! Đang chuyển vào trang quản trị...';
-            oOk.classList.remove('d-none');
-            setTimeout(function () { window.location.href = 'index.html'; }, 800);
-          } catch (loi) {
-            baoLoi('Không kết nối được backend Java. Hãy chạy backend (cổng 8090) rồi thử lại.');
-          }
+      <p style="color:var(--chu-mo);font-size:12.5px;text-align:center;margin-top:20px;line-height:1.6;">
+        <i class="fa-solid fa-lock"></i> Chỉ tài khoản có quyền <strong>quản trị</strong> mới đăng nhập được.<br>
+        Hệ thống gửi mã xác thực về email mỗi lần đăng nhập.
+      </p>
+
+    </div>
+  </div>
+
+  <script>
+    var JAVA_API = 'http://localhost:8090/api';
+    var emailDangDangNhap = '';
+    var boDemNguoc = null;
+
+    var loi1 = document.getElementById('loi-1');
+    var loi2 = document.getElementById('loi-2');
+    var ok2 = document.getElementById('ok-2');
+    var nut1 = document.getElementById('nut-1');
+    var nut2 = document.getElementById('nut-2');
+    var oOtp = [].slice.call(document.querySelectorAll('#o-otp input'));
+
+    function datNut(nut, dangChay, chuGoc) {
+      nut.disabled = dangChay;
+      nut.innerHTML = dangChay ? 'Đang xử lý...' : chuGoc;
+    }
+
+    /* ---------- BƯỚC 1: kiểm tra email + mật khẩu, nhận OTP ---------- */
+
+    document.getElementById('buoc-1').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var email = document.getElementById('email').value.trim();
+      var matKhau = document.getElementById('mat-khau').value;
+
+      if (!email) { loi1.textContent = 'Vui lòng nhập email.'; return; }
+      if (!matKhau) { loi1.textContent = 'Vui lòng nhập mật khẩu.'; return; }
+
+      loi1.textContent = '';
+      datNut(nut1, true);
+
+      try {
+        var resp = await fetch(JAVA_API + '/auth/admin/dang-nhap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, matKhau: matKhau })
         });
-      });
-    </script>
-  </body>
+        var kq = await resp.json();
+        if (!resp.ok) {
+          loi1.textContent = kq.loi || ('Lỗi HTTP ' + resp.status);
+          datNut(nut1, false, '<i class="fa-solid fa-right-to-bracket"></i> Tiếp tục');
+          return;
+        }
+        emailDangDangNhap = kq.email;
+        sangBuoc2(kq);
+      } catch (err) {
+        loi1.textContent = 'Không kết nối được backend Java. Hãy chạy backend (cổng 8090) rồi thử lại.';
+        datNut(nut1, false, '<i class="fa-solid fa-right-to-bracket"></i> Tiếp tục');
+      }
+    });
 
+    function sangBuoc2(kq) {
+      document.getElementById('buoc-1').style.display = 'none';
+      document.getElementById('buoc-2').style.display = 'block';
+      document.getElementById('hop-email').innerHTML =
+        '<i class="fa-solid fa-envelope-circle-check"></i> ' + (kq.thongBao || '');
+      loi2.textContent = '';
+      ok2.style.display = 'none';
+      oOtp.forEach(function (o) { o.value = ''; });
+      oOtp[0].focus();
+      batDauDemNguoc((kq.phutHieuLuc || 5) * 60);
+      datNut(nut2, false, '<i class="fa-solid fa-shield-halved"></i> Xác thực &amp; đăng nhập');
+    }
+
+    function veBuoc1() {
+      clearInterval(boDemNguoc);
+      document.getElementById('buoc-2').style.display = 'none';
+      document.getElementById('buoc-1').style.display = 'block';
+      datNut(nut1, false, '<i class="fa-solid fa-right-to-bracket"></i> Tiếp tục');
+      document.getElementById('mat-khau').value = '';
+    }
+
+    function batDauDemNguoc(giay) {
+      clearInterval(boDemNguoc);
+      var o = document.getElementById('dem-nguoc');
+      var nutGL = document.getElementById('nut-gui-lai');
+      nutGL.disabled = true;
+      var conLai = giay;
+      var ve = function () {
+        if (conLai <= 0) {
+          o.innerHTML = 'Mã đã hết hạn — hãy bấm "Gửi lại mã".';
+          nutGL.disabled = false;
+          clearInterval(boDemNguoc);
+          return;
+        }
+        var p = Math.floor(conLai / 60), s = conLai % 60;
+        o.innerHTML = 'Mã có hiệu lực trong <strong>' + p + ':' + (s < 10 ? '0' : '') + s + '</strong>';
+        // Cho gửi lại sau khi còn dưới 4 phút (đã chờ ~1 phút)
+        if (conLai < giay - 60) nutGL.disabled = false;
+        conLai--;
+      };
+      ve();
+      boDemNguoc = setInterval(ve, 1000);
+    }
+
+    /* ---------- Ô nhập OTP: tự nhảy ô, dán được cả mã ---------- */
+
+    oOtp.forEach(function (o, i) {
+      o.addEventListener('input', function () {
+        o.value = o.value.replace(/\D/g, '');
+        if (o.value && i < oOtp.length - 1) oOtp[i + 1].focus();
+        if (layMa().length === 6) nut2.click();
+      });
+      o.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && !o.value && i > 0) oOtp[i - 1].focus();
+      });
+      o.addEventListener('paste', function (e) {
+        e.preventDefault();
+        var so = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+        so.forEach(function (ky, j) { if (oOtp[j]) oOtp[j].value = ky; });
+        if (so.length === 6) nut2.click(); else if (oOtp[so.length]) oOtp[so.length].focus();
+      });
+    });
+
+    function layMa() {
+      return oOtp.map(function (o) { return o.value; }).join('');
+    }
+
+    /* ---------- BƯỚC 2: xác thực OTP ---------- */
+
+    nut2.addEventListener('click', async function () {
+      var ma = layMa();
+      if (ma.length !== 6) { loi2.textContent = 'Vui lòng nhập đủ 6 chữ số.'; return; }
+
+      loi2.textContent = '';
+      datNut(nut2, true);
+
+      try {
+        var resp = await fetch(JAVA_API + '/auth/admin/xac-thuc-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailDangDangNhap, ma: ma })
+        });
+        var kq = await resp.json();
+        if (!resp.ok) {
+          loi2.textContent = kq.loi || ('Lỗi HTTP ' + resp.status);
+          oOtp.forEach(function (o) { o.value = ''; });
+          oOtp[0].focus();
+          datNut(nut2, false, '<i class="fa-solid fa-shield-halved"></i> Xác thực &amp; đăng nhập');
+          return;
+        }
+        clearInterval(boDemNguoc);
+        localStorage.setItem('in3d_phien', JSON.stringify({
+          token: kq.token, hoTen: kq.hoTen, email: kq.email, vaiTro: kq.vaiTro
+        }));
+        ok2.textContent = 'Xin chào ' + kq.hoTen + '! Đang vào trang quản trị...';
+        ok2.style.display = 'block';
+        setTimeout(function () { window.location.href = 'index.html'; }, 800);
+      } catch (err) {
+        loi2.textContent = 'Không kết nối được backend Java.';
+        datNut(nut2, false, '<i class="fa-solid fa-shield-halved"></i> Xác thực &amp; đăng nhập');
+      }
+    });
+
+    /* ---------- Gửi lại mã ---------- */
+
+    async function guiLaiMa() {
+      var nutGL = document.getElementById('nut-gui-lai');
+      nutGL.disabled = true;
+      nutGL.textContent = 'Đang gửi...';
+      loi2.textContent = '';
+      try {
+        var resp = await fetch(JAVA_API + '/auth/admin/dang-nhap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailDangDangNhap, matKhau: document.getElementById('mat-khau').value })
+        });
+        var kq = await resp.json();
+        if (!resp.ok) { loi2.textContent = kq.loi || 'Không gửi lại được mã.'; veBuoc1(); return; }
+        document.getElementById('hop-email').innerHTML =
+          '<i class="fa-solid fa-envelope-circle-check"></i> Đã gửi lại mã. ' + (kq.thongBao || '');
+        oOtp.forEach(function (o) { o.value = ''; });
+        oOtp[0].focus();
+        batDauDemNguoc((kq.phutHieuLuc || 5) * 60);
+      } catch (err) {
+        loi2.textContent = 'Không kết nối được backend Java.';
+      }
+      nutGL.textContent = 'Gửi lại mã';
+    }
+  </script>
+</body>
 </html>

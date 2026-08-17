@@ -1,239 +1,121 @@
 <!DOCTYPE html>
-<html lang="vi" dir="ltr">
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Báo cáo doanh thu | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=5" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="assets/js/apex.js?v=5"></script>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Báo cáo doanh thu bán máy in 3D - IN3D Store">
+        <!-- KPI -->
+        <div class="luoi-kpi" id="kpi"></div>
 
-    <title>Báo cáo doanh thu | IN3D Store</title>
-
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicons/favicon-16x16.png">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <script src="assets/js/config.js"></script>
-    <script src="vendors/overlayscrollbars/OverlayScrollbars.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,600,700%7cPoppins:300,400,500,600,700,800,900&amp;display=swap" rel="stylesheet">
-    <link href="vendors/overlayscrollbars/OverlayScrollbars.min.css" rel="stylesheet">
-    <link href="assets/css/theme-rtl.min.css" rel="stylesheet" id="style-rtl">
-    <link href="assets/css/theme.min.css" rel="stylesheet" id="style-default">
-    <link href="assets/css/user-rtl.min.css" rel="stylesheet" id="user-style-rtl">
-    <link href="assets/css/user.min.css" rel="stylesheet" id="user-style-default">
-    <link href="assets/css/app3d.css" rel="stylesheet">
-    <script>
-      var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-      if (isRTL) {
-        document.getElementById('style-default').setAttribute('disabled', true);
-        document.getElementById('user-style-default').setAttribute('disabled', true);
-        document.querySelector('html').setAttribute('dir', 'rtl');
-      } else {
-        document.getElementById('style-rtl').setAttribute('disabled', true);
-        document.getElementById('user-style-rtl').setAttribute('disabled', true);
-      }
-    </script>
-    <script src="assets/js/app3d.js"></script>
-  </head>
-
-  <body>
-    <main class="main" id="top">
-      <div class="container" data-layout="container">
-        <script>
-          var isFluid = JSON.parse(localStorage.getItem('isFluid'));
-          if (isFluid) {
-            var container = document.querySelector('[data-layout]');
-            container.classList.remove('container');
-            container.classList.add('container-fluid');
-          }
-        </script>
-
-        <script>App3D.sidebar('bao-cao');</script>
-
-        <div class="content">
-          <script>App3D.topbar();</script>
-
-          <script>
-            App3D.pageHeader(
-              'Báo cáo doanh thu',
-              'Phân tích doanh thu, lợi nhuận và hiệu quả bán hàng theo tháng, danh mục và kênh bán.',
-              '<select class="form-select form-select-sm d-inline-block w-auto me-2"><option>Năm 2026</option><option>Năm 2025</option></select>' +
-              '<button class="btn btn-primary btn-sm" type="button"><span class="fas fa-download me-1"></span>Tải PDF</button>'
-            );
-          </script>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100"><div class="card-body">
-                <h6 class="text-600 mb-2">Tổng doanh thu năm</h6>
-                <h4 class="fw-normal text-700 mb-1" id="r-total">-</h4>
-                <span class="badge badge-soft-success rounded-pill fs--2"><span class="fas fa-caret-up me-1"></span>32,6%</span>
-                <span class="fs--2 text-500 ms-1">so với 2025</span>
-              </div></div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100"><div class="card-body">
-                <h6 class="text-600 mb-2">Lợi nhuận gộp ước tính</h6>
-                <h4 class="fw-normal text-700 mb-1" id="r-profit">-</h4>
-                <span class="fs--2 text-500">Biên lợi nhuận trung bình <span id="r-margin">-</span></span>
-              </div></div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100"><div class="card-body">
-                <h6 class="text-600 mb-2">Tổng số đơn</h6>
-                <h4 class="fw-normal text-700 mb-1" id="r-orders">-</h4>
-                <span class="fs--2 text-500">Giá trị đơn trung bình <span id="r-aov">-</span></span>
-              </div></div>
-            </div>
-            <div class="col-md-6 col-xxl-3">
-              <div class="card h-100"><div class="card-body">
-                <h6 class="text-600 mb-2">Tháng cao nhất</h6>
-                <h4 class="fw-normal text-700 mb-1" id="r-best">-</h4>
-                <span class="fs--2 text-500">Doanh thu <span id="r-best-value">-</span></span>
-              </div></div>
+        <!-- Doanh thu theo tháng -->
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Doanh thu theo tháng (triệu đồng)</h3>
+              <div class="phu">Số liệu minh hoạ khi cơ sở dữ liệu chưa có lịch sử theo tháng.</div>
             </div>
           </div>
-
-          <div class="card mb-3">
-            <div class="card-header border-bottom"><h6 class="mb-0">Doanh thu 2026 so với 2025 (triệu ₫)</h6></div>
-            <div class="card-body">
-              <div class="app3d-chart" id="chart-revenue"></div>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header border-bottom"><h6 class="mb-0">Cơ cấu doanh thu theo danh mục</h6></div>
-                <div class="card-body"><div class="app3d-chart-sm" id="chart-category"></div></div>
-              </div>
-            </div>
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header border-bottom"><h6 class="mb-0">Đóng góp theo kênh bán</h6></div>
-                <div class="card-body"><div class="app3d-chart-sm" id="chart-channel"></div></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-3">
-            <div class="card-header border-bottom"><h6 class="mb-0">Chi tiết doanh thu theo tháng</h6></div>
-            <div class="card-body p-0">
-              <div class="table-responsive scrollbar">
-                <table class="table table-sm table-striped fs--1 mb-0 app3d-table" id="tbl-monthly">
-                  <thead class="bg-200 text-900">
-                    <tr>
-                      <th>Tháng</th>
-                      <th class="text-end">Doanh thu 2026</th>
-                      <th class="text-end">Doanh thu 2025</th>
-                      <th class="text-end">Tăng trưởng</th>
-                      <th class="text-center">Số đơn</th>
-                      <th class="text-end">Giá trị đơn TB</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-3">
-            <div class="card-header border-bottom"><h6 class="mb-0">Top 10 sản phẩm theo doanh thu</h6></div>
-            <div class="card-body p-0">
-              <div class="table-responsive scrollbar">
-                <table class="table table-sm table-striped fs--1 mb-0 app3d-table" id="tbl-top">
-                  <thead class="bg-200 text-900">
-                    <tr>
-                      <th>#</th>
-                      <th>Sản phẩm</th>
-                      <th>Danh mục</th>
-                      <th class="text-center">Đã bán</th>
-                      <th class="text-end">Doanh thu</th>
-                      <th class="text-end">Lợi nhuận</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <script>App3D.footer();</script>
+          <div class="the-than"><div class="khung-bieu-do" id="bd-doanh-thu"></div></div>
         </div>
-      </div>
-    </main>
 
-    <script src="vendors/popper/popper.min.js"></script>
-    <script src="vendors/bootstrap/bootstrap.min.js"></script>
-    <script src="vendors/is/is.min.js"></script>
-    <script src="vendors/echarts/echarts.min.js"></script>
-    <script src="vendors/fontawesome/all.min.js"></script>
-    <script src="vendors/lodash/lodash.min.js"></script>
-    <script src="vendors/list.js/list.min.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var s = App3D.stats;
-        var e = App3D.escapeHtml;
-        var MILLION = 1000000;
+        <!-- Số đơn theo tháng + tỉ trọng trạng thái -->
+        <div class="luoi-2-deu">
+          <div class="the">
+            <div class="the-dau"><div><h3>Số đơn theo tháng</h3><div class="phu">Đơn vị: đơn hàng</div></div></div>
+            <div class="the-than"><div class="khung-bieu-do-nho" id="bd-don"></div></div>
+          </div>
+          <div class="the">
+            <div class="the-dau"><div><h3>Tỉ trọng doanh thu theo trạng thái</h3><div class="phu">Tính trên đơn hàng thật</div></div></div>
+            <div class="the-than"><div class="khung-bieu-do-nho" id="bd-tron"></div></div>
+          </div>
+        </div>
 
-        var totalNow = s.revenueThisYear.reduce(function (a, b) { return a + b; }, 0);
-        var totalOrders = s.ordersByMonth.reduce(function (a, b) { return a + b; }, 0);
-        var margin = 0.22; // biên lợi nhuận gộp trung bình của cửa hàng
-        var bestIndex = s.revenueThisYear.indexOf(Math.max.apply(null, s.revenueThisYear));
+        <!-- Chi tiết doanh thu theo đơn -->
+        <div class="the">
+          <div class="the-dau"><div><h3>Chi tiết doanh thu theo đơn</h3><div class="phu">Toàn bộ đơn hàng trong hệ thống</div></div></div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Khách hàng</th>
+                  <th>Ngày</th>
+                  <th class="giua">Trạng thái</th>
+                  <th class="phai">Tổng tiền</th>
+                </tr>
+              </thead>
+              <tbody id="bang-chi-tiet"></tbody>
+            </table>
+          </div>
+        </div>
 
-        document.getElementById('r-total').textContent = App3D.money(totalNow * MILLION);
-        document.getElementById('r-profit').textContent = App3D.money(Math.round(totalNow * MILLION * margin));
-        document.getElementById('r-margin').textContent = Math.round(margin * 100) + '%';
-        document.getElementById('r-orders').textContent = App3D.number(totalOrders) + ' đơn';
-        document.getElementById('r-aov').textContent = App3D.money(Math.round((totalNow * MILLION) / totalOrders));
-        document.getElementById('r-best').textContent = 'Tháng ' + (bestIndex + 1);
-        document.getElementById('r-best-value').textContent = App3D.money(s.revenueThisYear[bestIndex] * MILLION);
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
 
-        // Bảng theo tháng
-        App3D.fill('#tbl-monthly tbody', App3D.months.map(function (m, i) {
-          var now = s.revenueThisYear[i];
-          var last = s.revenueLastYear[i];
-          var growth = Math.round(((now - last) / last) * 100);
-          var orders = s.ordersByMonth[i];
-          return '<tr>' +
-            '<td class="align-middle fw-semi-bold">Tháng ' + (i + 1) + '</td>' +
-            '<td class="align-middle text-end">' + App3D.money(now * MILLION) + '</td>' +
-            '<td class="align-middle text-end text-500">' + App3D.money(last * MILLION) + '</td>' +
-            '<td class="align-middle text-end"><span class="badge badge-soft-' + (growth >= 0 ? 'success' : 'danger') + '">' +
-            (growth >= 0 ? '+' : '') + growth + '%</span></td>' +
-            '<td class="align-middle text-center">' + orders + '</td>' +
-            '<td class="align-middle text-end">' + App3D.money(Math.round((now * MILLION) / orders)) + '</td>' +
-            '</tr>';
-        }).join(''));
+  <script>
+    Apex.shell('bao-cao', 'Báo cáo doanh thu');
 
-        // Top sản phẩm
-        var top = App3D.products.slice().sort(function (a, b) {
-          return b.sold * b.price - a.sold * a.price;
-        }).slice(0, 10);
+    (function () {
+      var don = Apex.orders || [];
+      var doanhThu = don.reduce(function (s, o) { return s + (o.total || 0); }, 0);
+      var soDon = don.length;
+      var trungBinh = soDon ? doanhThu / soDon : 0;
+      var hoanThanh = don.filter(function (o) { return o.status === 'Hoàn thành'; }).length;
+      var tiLe = soDon ? Math.round(hoanThanh * 1000 / soDon) / 10 : 0;
 
-        App3D.fill('#tbl-top tbody', top.map(function (p, i) {
-          var revenue = p.sold * p.price;
-          var profit = p.sold * (p.price - p.cost);
-          return '<tr>' +
-            '<td class="align-middle text-500">' + (i + 1) + '</td>' +
-            '<td class="align-middle"><h6 class="mb-0 fs--1">' + e(p.name) + '</h6>' +
-            '<span class="fs--2 text-500">' + e(p.sku) + '</span></td>' +
-            '<td class="align-middle">' + e(p.cat) + '</td>' +
-            '<td class="align-middle text-center">' + App3D.number(p.sold) + '</td>' +
-            '<td class="align-middle text-end fw-semi-bold">' + App3D.money(revenue) + '</td>' +
-            '<td class="align-middle text-end text-success">' + App3D.money(profit) + '</td>' +
-            '</tr>';
-        }).join(''));
+      Apex.fill('#kpi', [
+        { nhan: 'Doanh thu', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
+        { nhan: 'Số đơn', so: Apex.number(soDon) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
+        { nhan: 'Giá trị đơn trung bình', so: Apex.money(Math.round(trungBinh)), icon: 'fa-chart-simple', mau: 'bt-toi' },
+        { nhan: 'Tỉ lệ hoàn thành', so: tiLe + '%', icon: 'fa-circle-check', mau: tiLe >= 50 ? 'bt-xanh' : 'bt-do' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
 
-        App3D.revenueChart('chart-revenue');
-        App3D.pieChart('chart-category', s.categoryShare, 'Danh mục');
-        App3D.pieChart('chart-channel', s.channelShare, 'Kênh bán');
-      });
-    </script>
-  </body>
+      // Doanh thu theo tháng
+      Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
+        { ten: 'Năm nay', duLieu: Apex.stats.doanhThuNam },
+        { ten: 'Năm trước', duLieu: Apex.stats.doanhThuNamTruoc }
+      ]);
 
+      // Số đơn theo tháng
+      Apex.bieuDoCot('bd-don', Apex.stats.thang, Apex.stats.donTheoThang, 'Số đơn');
+
+      // Tỉ trọng doanh thu theo trạng thái
+      var gom = {};
+      don.forEach(function (o) { gom[o.status] = (gom[o.status] || 0) + (o.total || 0); });
+      Apex.bieuDoTron('bd-tron', Object.keys(gom).map(function (k) {
+        return { name: k, value: gom[k] };
+      }));
+
+      // Bảng chi tiết
+      Apex.fill('#bang-chi-tiet', don.map(function (o) {
+        return '<tr><td><strong>' + Apex.esc(o.id) + '</strong></td>' +
+          '<td>' + Apex.esc(o.customer) + '</td>' +
+          '<td>' + Apex.ngayVN(o.date) + '</td>' +
+          '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td></tr>';
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có đơn hàng nào để lập báo cáo.</td></tr>');
+    })();
+  </script>
+</body>
 </html>
