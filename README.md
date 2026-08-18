@@ -24,6 +24,7 @@ public/
 ├── san-pham.html              Sản phẩm — bấm vào hàng để mở MODAL chi tiết/sửa/xoá/đổi trạng thái
 ├── kho.html                   Kho & vật tư — cũng dùng modal, có trạng thái vật tư
 ├── nha-cung-cap.html          Nhà cung cấp (nơi mua vật tư)
+├── mau-sac.html               Bảng màu (tên + mã màu) cho nhựa và sản phẩm
 ├── quan-ly-von.html           Vốn + CHI PHÍ + giá bán theo gram
 ├── quan-ly-xuat-nhap.html     Phiếu xuất từ đơn hàng + đề xuất nhập
 ├── bao-cao.html               Báo cáo doanh thu (3 biểu đồ + bảng chi tiết)
@@ -76,6 +77,7 @@ Copy khuôn từ `index.html`, đổi `Apex.shell('key-menu', 'Tiêu đề')`, t
 | Định dạng | `money(n)`, `number(n)`, `esc(s)`, `ngayVN(iso)`, `anhSanPham(ten)` |
 | Hiển thị | `fill(sel, html)`, `badgeTrangThai(tt)`, `badgeTon(ton, min)`, `shell(key, tieuDe)` |
 | Trạng thái | `ttSanPham`, `ttVatTu` (bảng tra), `badgeTtSanPham(tt)`, `badgeTtVatTu(tt)` |
+| Màu sắc | `mauSac`, `oMau(maMau)`, `timMau(id)`, `themMauSac`, `suaMauSac`, `xoaMauSac` |
 | Hộp thoại | `moHopThoai(html, rong)`, `dongHopThoai()` — bấm nền hoặc Esc để đóng |
 | Ảnh | `taiAnhLen(file, xong, loi)`, `htmlOTaiAnh(idGoc, url, nhan)`, `ganOTaiAnh(idGoc, url)` |
 | Thao tác | `doiTrangThai`, `danhDauDaTT`, `xoaDon`, `luuSanPham`, `xoaSanPham`, `anHienSanPham`, `nhapKho`, `doiTrangThaiSanPham`, `doiTrangThaiVatTu` |

@@ -124,6 +124,7 @@ window.Apex = (function () {
     doanhThuNamTruoc: [318, 302, 401, 388, 452, 439, 516, 495, 548, 592, 634, 688],
     donTheoThang: [86, 79, 104, 98, 121, 116, 138, 131, 146, 158, 171, 184]
   };
+  var MAU_SAC = [];       // bảng màu dùng cho nhựa in và sản phẩm
   var VAT_TU = [];        // kho vật tư: máy in, cuộn nhựa...
   var NHA_CUNG_CAP = [];  // nơi mua vật tư
   var DATA_SOURCE = 'demo';
@@ -202,6 +203,8 @@ window.Apex = (function () {
     if (vt) VAT_TU = vt;
     var ncc = taiDongBo(JAVA_API + '/nha-cung-cap');
     if (ncc) NHA_CUNG_CAP = ncc;
+    var ms = taiDongBo(JAVA_API + '/mau-sac');
+    if (ms) MAU_SAC = ms;
 
     // Khách hàng: tài khoản đăng ký (cần token admin) + khách vãng lai từ đơn
     var nhom = {};
@@ -446,6 +449,27 @@ window.Apex = (function () {
     if (goiJava('DELETE', '/vat-tu/' + id, null)) { location.reload(); return true; }
     return false;
   };
+  /** Ô vuông màu nhỏ đứng trước tên màu. */
+  var oMau = function (maMau) {
+    var m = /^#[0-9a-fA-F]{6}$/.test(maMau || '') ? maMau : '#e4e6e9';
+    return '<span style="display:inline-block;width:13px;height:13px;border-radius:4px;vertical-align:-2px;' +
+      'margin-right:6px;border:1px solid rgba(0,0,0,.18);background:' + m + '"></span>';
+  };
+
+  /** Tìm màu theo id trong bảng màu đã nạp. */
+  var timMau = function (id) {
+    for (var i = 0; i < MAU_SAC.length; i++) if (MAU_SAC[i].id === id) return MAU_SAC[i];
+    return null;
+  };
+
+  var themMauSac = function (duLieu) { return goiJava('POST', '/mau-sac', duLieu); };
+  var suaMauSac = function (id, td) { return goiJava('PUT', '/mau-sac/' + id, td); };
+  var xoaMauSac = function (id) {
+    if (!confirm('Xoá màu này? Vật tư đang dùng màu vẫn giữ nguyên tên màu cũ.')) return false;
+    if (goiJava('DELETE', '/mau-sac/' + id, null)) { location.reload(); return true; }
+    return false;
+  };
+
   var themNhaCungCap = function (duLieu) { return goiJava('POST', '/nha-cung-cap', duLieu); };
   var suaNhaCungCap = function (id, td) { return goiJava('PUT', '/nha-cung-cap/' + id, td); };
   var xoaNhaCungCap = function (id) {
@@ -529,7 +553,8 @@ window.Apex = (function () {
     { label: 'Quản lý sản phẩm', items: [
       { key: 'san-pham', text: 'Danh sách sản phẩm', href: 'san-pham.html', icon: 'fa-cube' },
       { key: 'kho', text: 'Kho & vật tư', href: 'kho.html', icon: 'fa-warehouse' },
-      { key: 'nha-cung-cap', text: 'Nhà cung cấp', href: 'nha-cung-cap.html', icon: 'fa-truck-field' }
+      { key: 'nha-cung-cap', text: 'Nhà cung cấp', href: 'nha-cung-cap.html', icon: 'fa-truck-field' },
+      { key: 'mau-sac', text: 'Màu sắc', href: 'mau-sac.html', icon: 'fa-palette' }
     ]},
     { label: 'Quản lý tài chính', items: [
       { key: 'quan-ly-von', text: 'Quản lý vốn', href: 'quan-ly-von.html', icon: 'fa-coins' },
@@ -685,6 +710,7 @@ window.Apex = (function () {
     inventory: INVENTORY,
     vatTu: VAT_TU,
     nhaCungCap: NHA_CUNG_CAP,
+    mauSac: MAU_SAC,
     loaiVatTu: LOAI_VAT_TU,
     stats: STATS,
     tinhChiPhi: tinhChiPhi,
@@ -698,6 +724,11 @@ window.Apex = (function () {
     dungThemGram: dungThemGram,
     themVatTu: themVatTu,
     xoaVatTu: xoaVatTu,
+    oMau: oMau,
+    timMau: timMau,
+    themMauSac: themMauSac,
+    suaMauSac: suaMauSac,
+    xoaMauSac: xoaMauSac,
     themNhaCungCap: themNhaCungCap,
     suaNhaCungCap: suaNhaCungCap,
     xoaNhaCungCap: xoaNhaCungCap,

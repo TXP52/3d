@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Màu sắc | IN3D Store</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=6" rel="stylesheet">
+  <script src="assets/js/apex.js?v=6"></script>
+  <style>
+    .o-mau-lon {
+      width: 34px; height: 34px; border-radius: 9px;
+      border: 1px solid rgba(0,0,0,.18); flex-shrink: 0;
+    }
+    .luoi-mau { display: flex; flex-wrap: wrap; gap: 10px; }
+    .the-mau {
+      display: flex; align-items: center; gap: 10px;
+      border: 1px solid var(--vien); border-radius: var(--radius-nho);
+      padding: 8px 14px 8px 8px; background: var(--the);
+    }
+    .the-mau .ten-mau { font-weight: 600; font-size: 13.5px; }
+    .the-mau .ma-mau { color: var(--chu-mo); font-size: 12px; font-family: ui-monospace, monospace; }
+    input[type=color] {
+      width: 100%; height: 42px; padding: 3px;
+      border: 1px solid var(--vien); border-radius: var(--radius-nho);
+      background: #fff; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
+
+        <div class="luoi-kpi" id="kpi"></div>
+
+        <!-- Xem nhanh bảng màu -->
+        <div class="the">
+          <div class="the-dau">
+            <div><h3>Bảng màu</h3><div class="phu">Dùng chung cho nhựa in và sản phẩm</div></div>
+            <button class="nut nut-chinh" type="button" onclick="moFormMau(null)">
+              <i class="fa-solid fa-plus"></i> Thêm màu
+            </button>
+          </div>
+          <div class="the-than"><div class="luoi-mau" id="luoi-mau"></div></div>
+        </div>
+
+        <!-- Bảng chi tiết -->
+        <div class="the">
+          <div class="the-dau">
+            <div><h3>Danh sách màu</h3><div class="phu">Bấm vào một màu để sửa tên, mã màu hoặc xoá.</div></div>
+          </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Màu</th>
+                  <th>Mã màu</th>
+                  <th class="giua">Thứ tự</th>
+                  <th class="giua">Đang dùng</th>
+                  <th>Ghi chú</th>
+                  <th>Ngày tạo</th>
+                </tr>
+              </thead>
+              <tbody id="bang-mau"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('mau-sac', 'Màu sắc');
+
+    var MS = Apex.mauSac || [];
+    var VT = Apex.vatTu || [];
+
+    /* Đếm xem mỗi màu đang được bao nhiêu vật tư dùng */
+    function demDung(m) {
+      return VT.filter(function (v) {
+        return v.mauSacId === m.id || (!v.mauSacId && (v.mau || '') === m.ten);
+      }).length;
+    }
+
+    (function veKpi() {
+      var dangDung = MS.filter(function (m) { return demDung(m) > 0; }).length;
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng số màu', so: Apex.number(MS.length) + ' màu', icon: 'fa-palette', mau: 'bt-toi' },
+        { nhan: 'Đang dùng trong kho', so: Apex.number(dangDung) + ' màu', icon: 'fa-circle-check', mau: 'bt-xanh' },
+        { nhan: 'Chưa dùng', so: Apex.number(MS.length - dangDung) + ' màu', icon: 'fa-circle-minus', mau: 'bt-vang' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+    })();
+
+    function veLuoi() {
+      Apex.fill('#luoi-mau', MS.map(function (m, i) {
+        return '<div class="the-mau hang-bam" onclick="moFormMau(' + i + ')" title="Bấm để sửa">' +
+          '<span class="o-mau-lon" style="background:' + Apex.esc(m.maMau || '#e4e6e9') + '"></span>' +
+          '<div><div class="ten-mau">' + Apex.esc(m.ten) + '</div>' +
+          '<div class="ma-mau">' + Apex.esc(m.maMau || '—') + '</div></div></div>';
+      }).join('') || '<div style="color:var(--chu-mo);padding:20px;">Chưa có màu nào. Bấm "Thêm màu" để tạo.</div>');
+    }
+
+    function veBang() {
+      Apex.fill('#bang-mau', MS.map(function (m, i) {
+        var dung = demDung(m);
+        return '<tr class="hang-bam" onclick="moFormMau(' + i + ')" title="Bấm để sửa">' +
+          '<td><div class="o-ten"><span class="o-mau-lon" style="background:' + Apex.esc(m.maMau || '#e4e6e9') + '"></span>' +
+          '<span class="chinh">' + Apex.esc(m.ten) + '</span></div></td>' +
+          '<td><span class="ma-mau">' + Apex.esc(m.maMau || '—') + '</span></td>' +
+          '<td class="giua">' + Apex.number(m.thuTu || 0) + '</td>' +
+          '<td class="giua">' + (dung > 0
+            ? '<span class="badge badge-xanh">' + dung + ' vật tư</span>'
+            : '<span class="badge badge-xam">Chưa dùng</span>') + '</td>' +
+          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(m.ghiChu || '—') + '</td>' +
+          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(Apex.ngayVN(m.createdAt)) + '</td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có màu nào.</td></tr>');
+    }
+
+    /* ---------------- Hộp thoại thêm / sửa ---------------- */
+
+    function moFormMau(i) {
+      var m = (i === null || i === undefined) ? null : MS[i];
+      var moi = !m;
+      var dung = m ? demDung(m) : 0;
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Thêm màu mới' : 'Sửa màu') + '</h3>' +
+        '<div class="phu">' + (moi ? 'Đặt tên và chọn mã màu' : Apex.esc(m.ten)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-ten">Tên màu *</label>' +
+        '<input type="text" id="f-ten" placeholder="VD: Xanh ngọc" value="' + (m ? Apex.esc(m.ten) : '') + '" /></div>' +
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-ma">Mã màu</label>' +
+        '<input type="color" id="f-ma" value="' + (m && /^#[0-9a-fA-F]{6}$/.test(m.maMau || '') ? m.maMau : '#10b981') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
+        '<input type="number" id="f-thu-tu" min="0" step="1" value="' + (m ? (m.thuTu || 0) : (MS.length + 1)) + '" />' +
+        '<div class="goi-y">Số nhỏ hiện lên trước</div></div>' +
+        '</div>' +
+        '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
+        '<input type="text" id="f-ghi-chu" placeholder="VD: chỉ dùng cho PETG" value="' + (m ? Apex.esc(m.ghiChu || '') : '') + '" /></div>' +
+        (dung > 0
+          ? '<div class="bao-ok" style="display:block;">Đang có <strong>' + dung + '</strong> vật tư dùng màu này.</div>'
+          : '') +
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaMauSac(' + m.id + ')">' +
+          '<i class="fa-solid fa-trash"></i> Xoá</button>') +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuMau(' + (m ? m.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu màu</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    function luuMau(id) {
+      var loi = document.getElementById('loi-form');
+      var ten = document.getElementById('f-ten').value.trim();
+      if (!ten) { loi.textContent = 'Vui lòng nhập tên màu.'; return; }
+
+      var duLieu = {
+        ten: ten,
+        maMau: document.getElementById('f-ma').value,
+        thuTu: parseInt(document.getElementById('f-thu-tu').value, 10) || 0,
+        ghiChu: document.getElementById('f-ghi-chu').value.trim()
+      };
+      loi.textContent = '';
+      var ok = id ? Apex.suaMauSac(id, duLieu) : Apex.themMauSac(duLieu);
+      if (ok) location.reload();
+      else loi.textContent = 'Không lưu được màu. Kiểm tra lại backend Java (cổng 8090).';
+    }
+
+    veLuoi();
+    veBang();
+  </script>
+</body>
+</html>

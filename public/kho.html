@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=5" rel="stylesheet">
-  <script src="assets/js/apex.js?v=5"></script>
+  <link href="assets/css/apex.css?v=6" rel="stylesheet">
+  <script src="assets/js/apex.js?v=6"></script>
   <style>
     .dong-het { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--vien); }
     .dong-het:last-child { border-bottom: none; }
@@ -152,7 +152,9 @@
             '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
             '<div class="phu">' + Apex.esc(Apex.loaiVatTu[v.loai] || 'Khác') + '</div></div></div></td>' +
             '<td class="giua">' + Apex.badgeTtVatTu(v.trangThai || 'thanh_cong') + '</td>' +
-            '<td>' + (v.mau ? '<span class="badge badge-xam">' + Apex.esc(v.mau) + '</span>' : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td>' + (v.mau
+              ? '<span class="badge badge-xam">' + Apex.oMau(v.maMau) + Apex.esc(v.mau) + '</span>'
+              : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
             '<td class="phai">' + Apex.money(v.gia) + '</td>' +
             '<td class="giua"><strong>' + Apex.number(v.soLuong || 0) + '</strong></td>' +
             '<td class="giua">' + oDaDung + '</td>' +
@@ -189,7 +191,8 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + Apex.esc(v.ten) + '</h3><div class="phu">' +
-        Apex.esc(Apex.loaiVatTu[v.loai] || 'Khác') + (v.mau ? ' · Màu ' + Apex.esc(v.mau) : '') + '</div></div>' +
+        Apex.esc(Apex.loaiVatTu[v.loai] || 'Khác') +
+        (v.mau ? ' · ' + Apex.oMau(v.maMau) + Apex.esc(v.mau) : '') + '</div></div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
@@ -248,6 +251,11 @@
         return '<option value="' + k + '"' + (k === macDinh ? ' selected' : '') + '>' + Apex.ttVatTu[k].ten + '</option>';
       }).join('');
 
+      var chonMau = '<option value="">— Không chọn —</option>' + (Apex.mauSac || []).map(function (m) {
+        var dangChon = v && (v.mauSacId === m.id || (!v.mauSacId && v.mau === m.ten));
+        return '<option value="' + m.id + '"' + (dangChon ? ' selected' : '') + '>' + Apex.esc(m.ten) + '</option>';
+      }).join('');
+
       var chonNcc = '<option value="">— Không chọn —</option>' + NCC.map(function (n) {
         return '<option value="' + n.id + '"' + (v && v.nhaCungCapId === n.id ? ' selected' : '') + '>' +
           Apex.esc(n.ten) + '</option>';
@@ -268,7 +276,8 @@
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-loai">Loại</label><select id="f-loai">' + chonLoai + '</select></div>' +
         '<div class="o-nhap"><label for="f-mau">Màu</label>' +
-        '<input type="text" id="f-mau" placeholder="VD: Trắng" value="' + (v ? Apex.esc(v.mau || '') : '') + '" /></div>' +
+        '<select id="f-mau">' + chonMau + '</select>' +
+        '<div class="goi-y">Thêm màu mới ở trang <a href="mau-sac.html">Màu sắc</a></div></div>' +
         '<div class="o-nhap"><label for="f-gia">Giá mua 1 đơn vị (VNĐ)</label>' +
         '<input type="number" id="f-gia" min="0" step="1000" value="' + (v ? (v.gia || 0) : 0) + '" /></div>' +
         '<div class="o-nhap"><label for="f-sl">Số lượng</label>' +
@@ -313,7 +322,8 @@
       var duLieu = {
         ten: ten,
         loai: document.getElementById('f-loai').value,
-        mau: document.getElementById('f-mau').value.trim(),
+        mauSacId: document.getElementById('f-mau').value
+          ? parseInt(document.getElementById('f-mau').value, 10) : null,
         gia: gia,
         soLuong: soLuong,
         khoiLuongGram: gram,
