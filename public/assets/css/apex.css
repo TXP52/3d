@@ -240,6 +240,7 @@ a { color: inherit; text-decoration: none; }
 .kpi .bt-xanh { background: var(--accent-nhat); color: var(--accent-dam); }
 .kpi .bt-vang { background: var(--vang-nhat); color: #a17800; }
 .kpi .bt-do { background: var(--do-nhat); color: var(--do); }
+.kpi .bt-tim { background: #ede9fe; color: #6d28d9; }
 .kpi .bt-toi { background: #eef0f2; color: var(--chu); }
 
 /* ---------------- Bảng ---------------- */

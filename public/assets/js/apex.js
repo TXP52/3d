@@ -126,6 +126,7 @@ window.Apex = (function () {
     donTheoThang: [86, 79, 104, 98, 121, 116, 138, 131, 146, 158, 171, 184]
   };
   var MAU_SAC = [];       // bảng màu dùng cho nhựa in và sản phẩm
+  var BAI_VIET = [];      // bài viết kiến thức in 3D hiện ở cuối trang chủ khách
   var VAT_TU = [];        // kho vật tư: máy in, cuộn nhựa...
   var NHA_CUNG_CAP = [];  // nơi mua vật tư
   var DATA_SOURCE = 'demo';
@@ -208,6 +209,9 @@ window.Apex = (function () {
     if (ncc) NHA_CUNG_CAP = ncc;
     var ms = taiDongBo(JAVA_API + '/mau-sac');
     if (ms) MAU_SAC = ms;
+    // tatCa=true: trang quản trị thấy cả bài đang tắt hiển thị
+    var bv = taiDongBo(JAVA_API + '/bai-viet?tatCa=true');
+    if (bv) BAI_VIET = bv;
 
     // Khách hàng: tài khoản đăng ký (cần token admin) + khách vãng lai từ đơn
     var nhom = {};
@@ -518,6 +522,23 @@ window.Apex = (function () {
     return false;
   };
 
+  var themBaiViet = function (duLieu) { return goiJava('POST', '/bai-viet', duLieu); };
+  var suaBaiViet = function (id, td) { return goiJava('PUT', '/bai-viet/' + id, td); };
+  var xoaBaiViet = function (id) {
+    if (!confirm('Xoá bài viết này? Bài vào thùng rác, khôi phục lại được.')) return false;
+    if (goiJava('DELETE', '/bai-viet/' + id, null)) { location.reload(); return true; }
+    return false;
+  };
+
+  /** Bảng tra chuyên mục bài viết — dùng chung cho trang quản trị và trang khách. */
+  var CHUYEN_MUC = {
+    'huong-dan':   { ten: 'Hướng dẫn',   mau: 'badge-duong', icon: 'fa-screwdriver-wrench' },
+    'vat-lieu':    { ten: 'Vật liệu',    mau: 'badge-xanh',  icon: 'fa-layer-group' },
+    'kinh-nghiem': { ten: 'Kinh nghiệm', mau: 'badge-vang',  icon: 'fa-lightbulb' },
+    'tin-shop':    { ten: 'Tin shop',    mau: 'badge-tim',   icon: 'fa-bullhorn' }
+  };
+  var badgeChuyenMuc = function (cm) { return badgeTheoMap(CHUYEN_MUC, cm || 'huong-dan'); };
+
   var themNhaCungCap = function (duLieu) { return goiJava('POST', '/nha-cung-cap', duLieu); };
   var suaNhaCungCap = function (id, td) { return goiJava('PUT', '/nha-cung-cap/' + id, td); };
   var xoaNhaCungCap = function (id) {
@@ -603,6 +624,9 @@ window.Apex = (function () {
       { key: 'kho', text: 'Kho & vật tư', href: 'kho.html', icon: 'fa-warehouse' },
       { key: 'nha-cung-cap', text: 'Nhà cung cấp', href: 'nha-cung-cap.html', icon: 'fa-truck-field' },
       { key: 'mau-sac', text: 'Màu sắc', href: 'mau-sac.html', icon: 'fa-palette' }
+    ]},
+    { label: 'Nội dung website', items: [
+      { key: 'bai-viet', text: 'Bài viết', href: 'bai-viet.html', icon: 'fa-newspaper' }
     ]},
     { label: 'Quản lý tài chính', items: [
       { key: 'quan-ly-von', text: 'Quản lý vốn', href: 'quan-ly-von.html', icon: 'fa-coins' },
@@ -759,6 +783,7 @@ window.Apex = (function () {
     vatTu: VAT_TU,
     nhaCungCap: NHA_CUNG_CAP,
     mauSac: MAU_SAC,
+    baiViet: BAI_VIET,
     loaiVatTu: LOAI_VAT_TU,
     stats: STATS,
     tinhChiPhi: tinhChiPhi,
@@ -780,6 +805,11 @@ window.Apex = (function () {
     themMauSac: themMauSac,
     suaMauSac: suaMauSac,
     xoaMauSac: xoaMauSac,
+    themBaiViet: themBaiViet,
+    suaBaiViet: suaBaiViet,
+    xoaBaiViet: xoaBaiViet,
+    chuyenMuc: CHUYEN_MUC,
+    badgeChuyenMuc: badgeChuyenMuc,
     themNhaCungCap: themNhaCungCap,
     suaNhaCungCap: suaNhaCungCap,
     xoaNhaCungCap: xoaNhaCungCap,

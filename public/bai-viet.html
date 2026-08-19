@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài viết</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=10" rel="stylesheet">
+  <script src="assets/js/apex.js?v=9"></script>
+  <style>
+    .o-tieu-de { max-width: 460px; }
+    .o-tieu-de .chinh { display: block; line-height: 1.4; }
+    .o-tieu-de .tom { color: var(--chu-mo); font-size: 12.5px; margin-top: 3px; line-height: 1.5; }
+    .duong-dan-bai {
+      font-family: ui-monospace, monospace; font-size: 12px; color: var(--chu-mo);
+    }
+    /* Xem trước nội dung trong hộp thoại chi tiết */
+    .xem-noi-dung {
+      max-height: 300px; overflow-y: auto; background: var(--nen-phu);
+      border: 1px solid var(--vien); border-radius: var(--radius-nho);
+      padding: 14px 16px; font-size: 13.5px; line-height: 1.75;
+    }
+    .xem-noi-dung h4 { font-size: 14px; margin: 14px 0 5px 0; }
+    .xem-noi-dung h4:first-child { margin-top: 0; }
+    .xem-noi-dung p { margin-bottom: 9px; color: var(--chu-mo); }
+    .xem-noi-dung ul { margin: 0 0 10px 18px; color: var(--chu-mo); }
+    textarea.o-noi-dung {
+      width: 100%; min-height: 260px; resize: vertical;
+      font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.7;
+      padding: 11px 13px; border: 1px solid var(--vien);
+      border-radius: var(--radius-nho); background: var(--the); color: var(--chu);
+    }
+    textarea.o-noi-dung:focus { outline: none; border-color: var(--chinh); }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
+
+        <div class="luoi-kpi" id="kpi"></div>
+
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Bài viết trên trang chủ</h3>
+              <div class="phu">Bấm vào một bài để xem, sửa, ẩn hoặc xoá.</div>
+            </div>
+            <button class="nut nut-chinh" type="button" onclick="moFormBai(null)">
+              <i class="fa-solid fa-plus"></i> Viết bài mới
+            </button>
+          </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Bài viết</th>
+                  <th class="giua">Chuyên mục</th>
+                  <th class="giua">Hiển thị</th>
+                  <th class="giua">Lượt đọc</th>
+                  <th class="giua">Thứ tự</th>
+                  <th>Ngày tạo</th>
+                </tr>
+              </thead>
+              <tbody id="bang-bai"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('bai-viet', 'Bài viết');
+
+    var BV = Apex.baiViet || [];
+    var LINK_KHACH = 'http://localhost:8123/bai-viet.html?bai=';
+
+    /* ---------------- KPI ---------------- */
+
+    (function veKpi() {
+      var hien = BV.filter(function (b) { return b.hienThi; }).length;
+      var luot = BV.reduce(function (t, b) { return t + (b.luotXem || 0); }, 0);
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng số bài', so: Apex.number(BV.length) + ' bài', icon: 'fa-newspaper', mau: 'bt-toi' },
+        { nhan: 'Đang hiện trên web', so: Apex.number(hien) + ' bài', icon: 'fa-eye', mau: 'bt-xanh' },
+        { nhan: 'Đang tắt', so: Apex.number(BV.length - hien) + ' bài', icon: 'fa-eye-slash', mau: 'bt-vang' },
+        { nhan: 'Tổng lượt đọc', so: Apex.number(luot) + ' lượt', icon: 'fa-chart-simple', mau: 'bt-tim' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+    })();
+
+    /* ---------------- Bảng ---------------- */
+
+    function veBang() {
+      Apex.fill('#bang-bai', BV.map(function (b, i) {
+        return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
+          '<td><div class="o-tieu-de"><span class="chinh">' + Apex.esc(b.tieuDe) + '</span>' +
+          '<span class="tom">' + Apex.esc(catBot(b.tomTat, 110)) + '</span></div></td>' +
+          '<td class="giua">' + Apex.badgeChuyenMuc(b.chuyenMuc) + '</td>' +
+          '<td class="giua">' + (b.hienThi
+            ? '<span class="badge badge-xanh">Đang hiện</span>'
+            : '<span class="badge badge-xam">Đang tắt</span>') + '</td>' +
+          '<td class="giua">' + Apex.number(b.luotXem || 0) + '</td>' +
+          '<td class="giua">' + Apex.number(b.thuTu || 0) + '</td>' +
+          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(Apex.ngayVN(b.createdAt)) + '</td>' +
+          '</tr>';
+      }).join('') ||
+        '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        'Chưa có bài viết nào. Bấm "Viết bài mới" để tạo.</td></tr>');
+    }
+
+    function catBot(chuoi, n) {
+      var t = (chuoi || '').trim();
+      return t.length > n ? t.slice(0, n) + '…' : (t || '—');
+    }
+
+    /**
+     * Văn bản thường -> HTML xem trước (đã escape trước khi dựng thẻ).
+     * Cùng quy ước với trang khách: "## " tiêu đề, "- " gạch đầu dòng, dòng trống ngăn đoạn.
+     */
+    function xemNoiDung(vanBan) {
+      var ra = '', doan = [], gach = [];
+      function xaDoan() { if (doan.length) { ra += '<p>' + Apex.esc(doan.join(' ')) + '</p>'; doan = []; } }
+      function xaGach() {
+        if (gach.length) {
+          ra += '<ul>' + gach.map(function (g) { return '<li>' + Apex.esc(g) + '</li>'; }).join('') + '</ul>';
+          gach = [];
+        }
+      }
+      String(vanBan || '').split(/\r?\n/).forEach(function (d) {
+        var t = d.trim();
+        if (t === '') { xaGach(); xaDoan(); return; }
+        if (t.indexOf('## ') === 0) { xaGach(); xaDoan(); ra += '<h4>' + Apex.esc(t.slice(3)) + '</h4>'; return; }
+        if (t.indexOf('- ') === 0) { xaDoan(); gach.push(t.slice(2)); return; }
+        xaGach(); doan.push(t);
+      });
+      xaGach(); xaDoan();
+      return ra || '<p>Bài này chưa có nội dung.</p>';
+    }
+
+    /* ---------------- Hộp thoại chi tiết ---------------- */
+
+    function moChiTiet(i) {
+      var b = BV[i];
+      var anh = b.hinhAnh ? Apex.anhDayDu(b.hinhAnh) : '';
+
+      function dong(nhan, giaTri) {
+        return '<div class="dong-tt"><span class="nhan">' + nhan + '</span>' +
+          '<span class="gt">' + giaTri + '</span></div>';
+      }
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + Apex.esc(b.tieuDe) + '</h3>' +
+        '<div class="phu">' + Apex.esc(b.tacGia || 'Không rõ tác giả') + ' · ' +
+        Apex.esc(Apex.ngayVN(b.createdAt)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        (anh ? '<img src="' + Apex.esc(anh) + '" alt="" style="width:100%;max-height:190px;object-fit:cover;' +
+               'border-radius:var(--radius-nho);margin-bottom:14px;" onerror="this.remove()" />' : '') +
+        dong('Chuyên mục', Apex.badgeChuyenMuc(b.chuyenMuc)) +
+        dong('Trạng thái', b.hienThi
+          ? '<span class="badge badge-xanh">Đang hiện trên web</span>'
+          : '<span class="badge badge-xam">Đang tắt</span>') +
+        dong('Lượt đọc', Apex.number(b.luotXem || 0) + ' lượt') +
+        dong('Thứ tự hiển thị', Apex.number(b.thuTu || 0)) +
+        dong('Đường dẫn', '<span class="duong-dan-bai">' + Apex.esc(b.duongDan || '—') + '</span>') +
+        (b.tomTat ? '<div style="margin:14px 0 10px 0;font-size:13.5px;line-height:1.7;">' +
+                    Apex.esc(b.tomTat) + '</div>' : '') +
+        '<div class="xem-noi-dung">' + xemNoiDung(b.noiDung) + '</div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaBaiViet(' + b.id + ')">' +
+        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        (b.duongDan ? '<a class="nut nut-vien" target="_blank" rel="noopener" ' +
+          'href="' + Apex.esc(LINK_KHACH + encodeURIComponent(b.duongDan)) + '">' +
+          '<i class="fa-solid fa-arrow-up-right-from-square"></i> Xem trên web</a>' : '') +
+        '<button class="nut nut-vien" type="button" onclick="doiHienThi(' + b.id + ',' + (b.hienThi ? 'true' : 'false') + ')">' +
+        '<i class="fa-solid fa-' + (b.hienThi ? 'eye-slash' : 'eye') + '"></i> ' +
+        (b.hienThi ? 'Tắt hiển thị' : 'Bật hiển thị') + '</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="moFormBai(' + i + ')">' +
+        '<i class="fa-solid fa-pen"></i> Sửa</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    function doiHienThi(id, dangHien) {
+      if (Apex.suaBaiViet(id, { hienThi: !dangHien })) location.reload();
+    }
+
+    /* ---------------- Hộp thoại thêm / sửa ---------------- */
+
+    var layAnh = function () { return ''; };
+
+    function moFormBai(i) {
+      var b = (i === null || i === undefined) ? null : BV[i];
+      var moi = !b;
+      var anhHienTai = b ? (b.hinhAnh || '') : '';
+
+      var chonCm = Object.keys(Apex.chuyenMuc).map(function (k) {
+        var macDinh = b ? (b.chuyenMuc || 'huong-dan') : 'huong-dan';
+        return '<option value="' + k + '"' + (k === macDinh ? ' selected' : '') + '>' +
+          Apex.chuyenMuc[k].ten + '</option>';
+      }).join('');
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Viết bài mới' : 'Sửa bài viết') + '</h3>' +
+        '<div class="phu">' + (moi ? 'Bài sẽ hiện ở cuối trang chủ' : Apex.esc(b.tieuDe)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-tieu-de">Tiêu đề *</label>' +
+        '<input type="text" id="f-tieu-de" placeholder="VD: Chọn nhựa nào cho đồ để ngoài trời?" ' +
+        'value="' + (b ? Apex.esc(b.tieuDe) : '') + '" /></div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-cm">Chuyên mục</label>' +
+        '<select id="f-cm">' + chonCm + '</select></div>' +
+        '<div class="o-nhap"><label for="f-tac-gia">Tác giả</label>' +
+        '<input type="text" id="f-tac-gia" placeholder="VD: Bedecraft" ' +
+        'value="' + (b ? Apex.esc(b.tacGia || '') : 'Bedecraft') + '" /></div>' +
+        '</div>' +
+
+        '<div class="o-nhap"><label for="f-tom-tat">Tóm tắt</label>' +
+        '<input type="text" id="f-tom-tat" placeholder="1-2 câu hiện ở thẻ ngoài trang chủ" ' +
+        'value="' + (b ? Apex.esc(b.tomTat || '') : '') + '" /></div>' +
+
+        '<div class="o-nhap"><label for="f-noi-dung">Nội dung</label>' +
+        '<textarea class="o-noi-dung" id="f-noi-dung" spellcheck="false">' +
+        (b ? Apex.esc(b.noiDung || '') : '') + '</textarea>' +
+        '<div class="goi-y">Gõ chữ thường. Dòng bắt đầu bằng <b>## </b> là tiêu đề mục nhỏ, ' +
+        'bằng <b>- </b> là gạch đầu dòng, để trống một dòng là sang đoạn mới.</div></div>' +
+
+        Apex.htmlOTaiAnh('bv-anh', anhHienTai, moi ? 'Chọn ảnh bìa' : 'Đổi ảnh bìa') +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
+        '<input type="number" id="f-thu-tu" min="0" step="1" value="' +
+        (b ? (b.thuTu || 0) : (BV.length + 1)) + '" />' +
+        '<div class="goi-y">Số nhỏ hiện lên trước</div></div>' +
+        '<div class="o-nhap"><label for="f-hien">Hiển thị trên web</label>' +
+        '<select id="f-hien">' +
+        '<option value="true"' + (!b || b.hienThi ? ' selected' : '') + '>Có</option>' +
+        '<option value="false"' + (b && !b.hienThi ? ' selected' : '') + '>Không</option>' +
+        '</select></div>' +
+        '</div>' +
+
+        '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
+        '<input type="text" id="f-duong-dan" placeholder="Bỏ trống để tự sinh từ tiêu đề" ' +
+        'value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" />' +
+        '<div class="goi-y">Phần sau dấu ? trên địa chỉ bài viết. Đổi đường dẫn là link cũ đã chia sẻ sẽ hỏng.</div></div>' +
+
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaBaiViet(' + b.id + ')">' +
+          '<i class="fa-solid fa-trash"></i> Xoá</button>') +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuBai(' + (b ? b.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu bài viết</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+      layAnh = Apex.ganOTaiAnh('bv-anh', anhHienTai);
+    }
+
+    function luuBai(id) {
+      var loi = document.getElementById('loi-form');
+      var tieuDe = document.getElementById('f-tieu-de').value.trim();
+      if (!tieuDe) { loi.textContent = 'Vui lòng nhập tiêu đề bài viết.'; return; }
+
+      var duLieu = {
+        tieuDe: tieuDe,
+        chuyenMuc: document.getElementById('f-cm').value,
+        tacGia: document.getElementById('f-tac-gia').value.trim(),
+        tomTat: document.getElementById('f-tom-tat').value.trim(),
+        noiDung: document.getElementById('f-noi-dung').value,
+        hinhAnh: layAnh(),
+        thuTu: parseInt(document.getElementById('f-thu-tu').value, 10) || 0,
+        hienThi: document.getElementById('f-hien').value === 'true',
+        duongDan: document.getElementById('f-duong-dan').value.trim()
+      };
+      loi.textContent = '';
+      var ok = id ? Apex.suaBaiViet(id, duLieu) : Apex.themBaiViet(duLieu);
+      if (ok) location.reload();
+      else loi.textContent = 'Không lưu được bài viết. Kiểm tra lại backend Java (cổng 8090).';
+    }
+
+    veBang();
+  </script>
+</body>
+</html>
