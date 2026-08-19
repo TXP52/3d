@@ -83,6 +83,29 @@ window.Apex = (function () {
     dich_vu: { ten: 'Dịch vụ',  mau: 'badge-duong', icon: 'fa-screwdriver-wrench' }
   };
 
+  /* Loại khuyến mãi: giảm %, giảm thẳng tiền, miễn phí ship */
+  var LOAI_KHUYEN_MAI = {
+    phan_tram: { ten: 'Giảm %',        mau: 'badge-tim',   icon: 'fa-percent' },
+    so_tien:   { ten: 'Giảm tiền',     mau: 'badge-xanh',  icon: 'fa-money-bill-wave' },
+    mien_ship: { ten: 'Miễn phí ship', mau: 'badge-duong', icon: 'fa-truck-fast' }
+  };
+
+  /* Trạng thái khuyến mãi — backend tự tính từ ngày tháng và số lượt, không lưu trong database */
+  var TT_KHUYEN_MAI = {
+    dang_chay:   { ten: 'Đang chạy',   mau: 'badge-xanh', icon: 'fa-circle-play' },
+    sap_dien_ra: { ten: 'Sắp diễn ra', mau: 'badge-vang', icon: 'fa-hourglass-start' },
+    het_han:     { ten: 'Hết hạn',     mau: 'badge-toi',  icon: 'fa-calendar-xmark' },
+    het_luot:    { ten: 'Hết lượt',    mau: 'badge-cam',  icon: 'fa-ticket' },
+    tam_dung:    { ten: 'Tạm dừng',    mau: 'badge-xam',  icon: 'fa-circle-pause' }
+  };
+
+  /* Phạm vi áp dụng — hiện chỉ để chủ shop ghi nhớ, chưa lọc theo giỏ hàng */
+  var AP_DUNG_CHO = {
+    tat_ca:   { ten: 'Tất cả',   mau: 'badge-xam',   icon: 'fa-layer-group' },
+    san_pham: { ten: 'Sản phẩm', mau: 'badge-xanh',  icon: 'fa-cube' },
+    dich_vu:  { ten: 'Dịch vụ',  mau: 'badge-duong', icon: 'fa-screwdriver-wrench' }
+  };
+
   /* Trạng thái VẬT TƯ: đặt mua -> vận chuyển -> về kho -> hết */
   var TT_VAT_TU = {
     da_dat:          { ten: 'Đã đặt',           mau: 'badge-tim',   icon: 'fa-bookmark' },
@@ -98,6 +121,18 @@ window.Apex = (function () {
   var badgeTtSanPham = function (tt) { return badgeTheoMap(TT_SAN_PHAM, tt); };
   var badgeTtVatTu = function (tt) { return badgeTheoMap(TT_VAT_TU, tt); };
   var badgeLoaiSanPham = function (l) { return badgeTheoMap(LOAI_SAN_PHAM, l || 'ban'); };
+  var badgeLoaiKm = function (l) { return badgeTheoMap(LOAI_KHUYEN_MAI, l || 'phan_tram'); };
+  var badgeTtKm = function (tt) { return badgeTheoMap(TT_KHUYEN_MAI, tt || 'tam_dung'); };
+
+  /** "Giảm 10% (tối đa 50.000₫)" — mô tả ưu đãi bằng một câu ngắn. */
+  var moTaUuDai = function (km) {
+    if (!km) return '—';
+    if (km.loai === 'phan_tram') {
+      return 'Giảm ' + km.giaTri + '%' + (km.giamToiDa > 0 ? ' (tối đa ' + money(km.giamToiDa) + ')' : '');
+    }
+    if (km.loai === 'mien_ship') return 'Miễn ship ' + money(km.giaTri);
+    return 'Giảm ' + money(km.giaTri);
+  };
 
   var badgeTon = function (ton, toiThieu) {
     if (ton <= 0) return '<span class="badge badge-do">Hết hàng</span>';
@@ -127,6 +162,7 @@ window.Apex = (function () {
   };
   var MAU_SAC = [];       // bảng màu dùng cho nhựa in và sản phẩm
   var BAI_VIET = [];      // bài viết kiến thức in 3D hiện ở cuối trang chủ khách
+  var KHUYEN_MAI = [];    // mã giảm giá khách nhập ở giỏ hàng
   var VAT_TU = [];        // kho vật tư: máy in, cuộn nhựa...
   var NHA_CUNG_CAP = [];  // nơi mua vật tư
   var DATA_SOURCE = 'demo';
@@ -167,6 +203,7 @@ window.Apex = (function () {
           dbId: d.id, id: d.maDon, customer: d.tenKhach, phone: d.soDienThoai || '',
           date: ngayVN(d.createdAt), items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
           total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
+          maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
           payment: tt ? (PT_MAP[tt.phuongThuc] || 'COD') + (tt.trangThai === 'da_thanh_toan' ? ' (đã TT)' : '') : 'COD',
           channel: 'Website',
           chiTiet: (d.chiTiet || []).map(function (c) { return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia }; })
@@ -212,6 +249,9 @@ window.Apex = (function () {
     // tatCa=true: trang quản trị thấy cả bài đang tắt hiển thị
     var bv = taiDongBo(JAVA_API + '/bai-viet?tatCa=true');
     if (bv) BAI_VIET = bv;
+    // tatCa=true: trang quản trị thấy cả mã tạm dừng và hết hạn
+    var km = taiDongBo(JAVA_API + '/khuyen-mai?tatCa=true');
+    if (km) KHUYEN_MAI = km;
 
     // Khách hàng: tài khoản đăng ký (cần token admin) + khách vãng lai từ đơn
     var nhom = {};
@@ -522,6 +562,14 @@ window.Apex = (function () {
     return false;
   };
 
+  var themKhuyenMai = function (duLieu) { return goiJava('POST', '/khuyen-mai', duLieu); };
+  var suaKhuyenMai = function (id, td) { return goiJava('PUT', '/khuyen-mai/' + id, td); };
+  var xoaKhuyenMai = function (id) {
+    if (!confirm('Xoá mã khuyến mãi này? Mã vào thùng rác, đơn cũ đã dùng vẫn giữ nguyên.')) return false;
+    if (goiJava('DELETE', '/khuyen-mai/' + id, null)) { location.reload(); return true; }
+    return false;
+  };
+
   var themBaiViet = function (duLieu) { return goiJava('POST', '/bai-viet', duLieu); };
   var suaBaiViet = function (id, td) { return goiJava('PUT', '/bai-viet/' + id, td); };
   var xoaBaiViet = function (id) {
@@ -617,7 +665,8 @@ window.Apex = (function () {
     { label: 'Quản lý bán hàng', items: [
       { key: 'tong-quan', text: 'Tổng quan', href: 'index.html', icon: 'fa-chart-pie' },
       { key: 'don-hang', text: 'Đơn hàng', href: 'don-hang.html', icon: 'fa-cart-shopping', badge: function () { return ORDERS.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length || ''; } },
-      { key: 'khach-hang', text: 'Khách hàng', href: 'khach-hang.html', icon: 'fa-users' }
+      { key: 'khach-hang', text: 'Khách hàng', href: 'khach-hang.html', icon: 'fa-users' },
+      { key: 'khuyen-mai', text: 'Khuyến mãi', href: 'khuyen-mai.html', icon: 'fa-tags' }
     ]},
     { label: 'Quản lý sản phẩm', items: [
       { key: 'san-pham', text: 'Danh sách sản phẩm', href: 'san-pham.html', icon: 'fa-cube' },
@@ -784,6 +833,7 @@ window.Apex = (function () {
     nhaCungCap: NHA_CUNG_CAP,
     mauSac: MAU_SAC,
     baiViet: BAI_VIET,
+    khuyenMai: KHUYEN_MAI,
     loaiVatTu: LOAI_VAT_TU,
     stats: STATS,
     tinhChiPhi: tinhChiPhi,
@@ -805,6 +855,15 @@ window.Apex = (function () {
     themMauSac: themMauSac,
     suaMauSac: suaMauSac,
     xoaMauSac: xoaMauSac,
+    themKhuyenMai: themKhuyenMai,
+    suaKhuyenMai: suaKhuyenMai,
+    xoaKhuyenMai: xoaKhuyenMai,
+    loaiKhuyenMai: LOAI_KHUYEN_MAI,
+    ttKhuyenMai: TT_KHUYEN_MAI,
+    apDungCho: AP_DUNG_CHO,
+    badgeLoaiKm: badgeLoaiKm,
+    badgeTtKm: badgeTtKm,
+    moTaUuDai: moTaUuDai,
     themBaiViet: themBaiViet,
     suaBaiViet: suaBaiViet,
     xoaBaiViet: xoaBaiViet,

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khuyến mãi</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=11" rel="stylesheet">
+  <script src="assets/js/apex.js?v=10"></script>
+  <style>
+    /* Mã giảm giá: kiểu vé, dễ nhìn ra ngay giữa bảng */
+    .ma-km {
+      display: inline-block;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      background: repeating-linear-gradient(-45deg, #f6f8fa, #f6f8fa 6px, #eef1f4 6px, #eef1f4 12px);
+      border: 1px dashed var(--vien);
+      border-radius: 7px;
+      padding: 5px 11px;
+      color: var(--chu);
+    }
+    .ma-km.tat { opacity: .55; }
+    .dieu-kien { font-size: 12.5px; color: var(--chu-mo); line-height: 1.55; }
+    .thanh-luot {
+      height: 5px; border-radius: 3px; background: #e9edf1;
+      overflow: hidden; margin-top: 5px; min-width: 70px;
+    }
+    .thanh-luot i { display: block; height: 100%; background: var(--accent-dam); }
+
+    /* Khối "vé" trong hộp thoại chi tiết */
+    .ve-km {
+      background: linear-gradient(135deg, #101317, #232a33);
+      border-radius: var(--radius-nho);
+      padding: 18px 20px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .ve-km .ma {
+      font-family: ui-monospace, monospace;
+      font-size: 25px; font-weight: 800; letter-spacing: 2px;
+      color: #a3ff12;
+    }
+    .ve-km .uu-dai { font-size: 14px; margin-top: 6px; color: #cfd5dc; }
+    .ve-km .sao-chep {
+      background: rgba(255,255,255,.12); color: #fff; border: 0;
+      border-radius: 7px; padding: 6px 12px; font-size: 12.5px;
+      cursor: pointer; margin-top: 12px;
+    }
+    .ve-km .sao-chep:hover { background: rgba(255,255,255,.22); }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
+
+        <div class="luoi-kpi" id="kpi"></div>
+
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Chương trình khuyến mãi</h3>
+              <div class="phu">Bấm vào một mã để xem, sửa, bật/tắt hoặc xoá.</div>
+            </div>
+            <button class="nut nut-chinh" type="button" onclick="moFormKm(null)">
+              <i class="fa-solid fa-plus"></i> Tạo mã mới
+            </button>
+          </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Mã</th>
+                  <th>Chương trình</th>
+                  <th>Ưu đãi</th>
+                  <th>Điều kiện</th>
+                  <th>Thời gian</th>
+                  <th class="giua">Lượt dùng</th>
+                  <th class="giua">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="bang-km"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+      <div id="apex-chan-cho"></div>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('khuyen-mai', 'Khuyến mãi');
+
+    var KM = Apex.khuyenMai || [];
+    var DON = Apex.orders || [];
+
+    /* Đếm số đơn đã dùng mã + tổng tiền đã giảm thật sự */
+    function donDaDung(ma) {
+      return DON.filter(function (d) { return (d.maKhuyenMai || '') === ma; });
+    }
+
+    /* ---------------- KPI ---------------- */
+
+    (function veKpi() {
+      var dangChay = KM.filter(function (k) { return k.trangThai === 'dang_chay'; }).length;
+      var luot = KM.reduce(function (t, k) { return t + (k.daDung || 0); }, 0);
+      var daGiam = DON.reduce(function (t, d) { return t + (d.tienGiam || 0); }, 0);
+
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng số mã', so: Apex.number(KM.length) + ' mã', icon: 'fa-tags', mau: 'bt-toi' },
+        { nhan: 'Đang chạy', so: Apex.number(dangChay) + ' mã', icon: 'fa-circle-play', mau: 'bt-xanh' },
+        { nhan: 'Lượt đã dùng', so: Apex.number(luot) + ' lượt', icon: 'fa-ticket', mau: 'bt-tim' },
+        { nhan: 'Tiền đã giảm', so: Apex.money(daGiam), icon: 'fa-arrow-trend-down', mau: 'bt-vang' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+    })();
+
+    /* ---------------- Bảng ---------------- */
+
+    function moTaDieuKien(k) {
+      var d = [];
+      if (k.donToiThieu > 0) d.push('Đơn từ ' + Apex.money(k.donToiThieu));
+      if (k.apDungCho && k.apDungCho !== 'tat_ca') {
+        d.push('Chỉ ' + (Apex.apDungCho[k.apDungCho] || {}).ten);
+      }
+      return d.length ? d.join('<br>') : 'Không kèm điều kiện';
+    }
+
+    function moTaThoiGian(k) {
+      if (!k.batDau && !k.ketThuc) return 'Không giới hạn';
+      var b = k.batDau ? Apex.ngayVN(k.batDau) : '…';
+      var kt = k.ketThuc ? Apex.ngayVN(k.ketThuc) : '…';
+      return b + '<br>→ ' + kt;
+    }
+
+    function moTaLuot(k) {
+      if (!k.soLuong) return Apex.number(k.daDung || 0) + ' / ∞';
+      var pt = Math.min(100, Math.round((k.daDung || 0) / k.soLuong * 100));
+      return Apex.number(k.daDung || 0) + ' / ' + Apex.number(k.soLuong) +
+        '<div class="thanh-luot"><i style="width:' + pt + '%"></i></div>';
+    }
+
+    function veBang() {
+      Apex.fill('#bang-km', KM.map(function (k, i) {
+        return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
+          '<td><span class="ma-km' + (k.trangThai === 'dang_chay' ? '' : ' tat') + '">' +
+          Apex.esc(k.ma) + '</span></td>' +
+          '<td><span class="chinh">' + Apex.esc(k.ten) + '</span></td>' +
+          '<td>' + Apex.badgeLoaiKm(k.loai) +
+          '<div class="dieu-kien">' + Apex.esc(Apex.moTaUuDai(k)) + '</div></td>' +
+          '<td><div class="dieu-kien">' + moTaDieuKien(k) + '</div></td>' +
+          '<td><div class="dieu-kien">' + moTaThoiGian(k) + '</div></td>' +
+          '<td class="giua"><div class="dieu-kien">' + moTaLuot(k) + '</div></td>' +
+          '<td class="giua">' + Apex.badgeTtKm(k.trangThai) + '</td>' +
+          '</tr>';
+      }).join('') ||
+        '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        'Chưa có mã khuyến mãi nào. Bấm "Tạo mã mới" để thêm.</td></tr>');
+    }
+
+    /* ---------------- Hộp thoại chi tiết ---------------- */
+
+    function moChiTiet(i) {
+      var k = KM[i];
+      var don = donDaDung(k.ma);
+      var tienGiam = don.reduce(function (t, d) { return t + (d.tienGiam || 0); }, 0);
+
+      function dong(nhan, giaTri) {
+        return '<div class="dong-tt"><span class="nhan">' + nhan + '</span>' +
+          '<span class="gt">' + giaTri + '</span></div>';
+      }
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + Apex.esc(k.ten) + '</h3>' +
+        '<div class="phu">Tạo ngày ' + Apex.esc(Apex.ngayVN(k.createdAt)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="ve-km">' +
+        '<div class="ma">' + Apex.esc(k.ma) + '</div>' +
+        '<div class="uu-dai">' + Apex.esc(Apex.moTaUuDai(k)) +
+        (k.donToiThieu > 0 ? ' · đơn từ ' + Apex.money(k.donToiThieu) : '') + '</div>' +
+        '<button class="sao-chep" type="button" onclick="chepMa(\'' + Apex.esc(k.ma) + '\', this)">' +
+        '<i class="fa-regular fa-copy"></i> Chép mã</button>' +
+        '</div>' +
+
+        dong('Trạng thái', Apex.badgeTtKm(k.trangThai)) +
+        dong('Loại', Apex.badgeLoaiKm(k.loai)) +
+        dong('Mức giảm', Apex.esc(Apex.moTaUuDai(k))) +
+        dong('Đơn tối thiểu', k.donToiThieu > 0 ? Apex.money(k.donToiThieu) : 'Không yêu cầu') +
+        dong('Phạm vi', (Apex.apDungCho[k.apDungCho] || {}).ten || 'Tất cả') +
+        dong('Thời gian', (k.batDau ? Apex.ngayVN(k.batDau) : 'Không giới hạn') + ' → ' +
+             (k.ketThuc ? Apex.ngayVN(k.ketThuc) : 'Không giới hạn')) +
+        dong('Lượt dùng', Apex.number(k.daDung || 0) + ' / ' +
+             (k.soLuong ? Apex.number(k.soLuong) + ' lượt' : 'không giới hạn')) +
+        dong('Đơn đã áp mã', Apex.number(don.length) + ' đơn · giảm ' + Apex.money(tienGiam)) +
+        dong('Hiện trên trang chủ', k.hienThi
+          ? '<span class="badge badge-xanh">Có</span>'
+          : '<span class="badge badge-xam">Không</span>') +
+        (k.moTa ? '<div style="margin-top:14px;font-size:13.5px;line-height:1.7;color:var(--chu-mo);">' +
+                  Apex.esc(k.moTa) + '</div>' : '') +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaKhuyenMai(' + k.id + ')">' +
+        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="batTat(' + k.id + ',' + (k.hoatDong ? 'true' : 'false') + ')">' +
+        '<i class="fa-solid fa-' + (k.hoatDong ? 'circle-pause' : 'circle-play') + '"></i> ' +
+        (k.hoatDong ? 'Tạm dừng' : 'Bật mã') + '</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="moFormKm(' + i + ')">' +
+        '<i class="fa-solid fa-pen"></i> Sửa</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    function chepMa(ma, nut) {
+      var xong = function () { nut.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ma).then(xong, function () {});
+      } else {
+        // Trình duyệt cũ hoặc trang không chạy trên https
+        var o = document.createElement('textarea');
+        o.value = ma; document.body.appendChild(o); o.select();
+        try { document.execCommand('copy'); xong(); } catch (e) {}
+        document.body.removeChild(o);
+      }
+    }
+
+    function batTat(id, dangBat) {
+      if (Apex.suaKhuyenMai(id, { hoatDong: !dangBat })) location.reload();
+    }
+
+    /* ---------------- Hộp thoại thêm / sửa ---------------- */
+
+    function moFormKm(i) {
+      var k = (i === null || i === undefined) ? null : KM[i];
+      var moi = !k;
+
+      function chon(map, hienTai, macDinh) {
+        return Object.keys(map).map(function (key) {
+          var d = hienTai || macDinh;
+          return '<option value="' + key + '"' + (key === d ? ' selected' : '') + '>' +
+            map[key].ten + '</option>';
+        }).join('');
+      }
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Tạo mã khuyến mãi' : 'Sửa mã khuyến mãi') + '</h3>' +
+        '<div class="phu">' + (moi ? 'Khách nhập mã này ở giỏ hàng để được giảm tiền'
+                                   : Apex.esc(k.ma)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-ma">Mã khuyến mãi *</label>' +
+        '<input type="text" id="f-ma" placeholder="VD: GIAM10" style="text-transform:uppercase;" ' +
+        'value="' + (k ? Apex.esc(k.ma) : '') + '" />' +
+        '<div class="goi-y">Chữ HOA không dấu, số, gạch ngang. Khách sẽ gõ đúng mã này.</div></div>' +
+        '<div class="o-nhap"><label for="f-ten">Tên chương trình *</label>' +
+        '<input type="text" id="f-ten" placeholder="VD: Giảm 10% cho khách mới" ' +
+        'value="' + (k ? Apex.esc(k.ten) : '') + '" /></div>' +
+        '</div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-loai">Kiểu giảm</label>' +
+        '<select id="f-loai" onchange="doiKieuGiam()">' +
+        chon(Apex.loaiKhuyenMai, k && k.loai, 'phan_tram') + '</select></div>' +
+        '<div class="o-nhap"><label for="f-gia-tri" id="nhan-gia-tri">Mức giảm *</label>' +
+        '<input type="number" id="f-gia-tri" min="1" step="1" ' +
+        'value="' + (k ? k.giaTri : 10) + '" />' +
+        '<div class="goi-y" id="goi-y-gia-tri"></div></div>' +
+        '</div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap" id="o-giam-toi-da"><label for="f-giam-toi-da">Giảm tối đa</label>' +
+        '<input type="number" id="f-giam-toi-da" min="0" step="1000" ' +
+        'value="' + (k ? k.giamToiDa : 0) + '" />' +
+        '<div class="goi-y">Trần tiền giảm. Để 0 là không chặn.</div></div>' +
+        '<div class="o-nhap"><label for="f-don-toi-thieu">Đơn tối thiểu</label>' +
+        '<input type="number" id="f-don-toi-thieu" min="0" step="1000" ' +
+        'value="' + (k ? k.donToiThieu : 0) + '" />' +
+        '<div class="goi-y">Đơn chưa đạt mức này thì mã không dùng được. Để 0 là không yêu cầu.</div></div>' +
+        '</div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-bat-dau">Bắt đầu</label>' +
+        '<input type="date" id="f-bat-dau" value="' + (k && k.batDau ? k.batDau : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-ket-thuc">Kết thúc</label>' +
+        '<input type="date" id="f-ket-thuc" value="' + (k && k.ketThuc ? k.ketThuc : '') + '" />' +
+        '<div class="goi-y">Bỏ trống cả hai là chạy vô thời hạn.</div></div>' +
+        '</div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-so-luong">Số lượt cho phép</label>' +
+        '<input type="number" id="f-so-luong" min="0" step="1" value="' + (k ? k.soLuong : 0) + '" />' +
+        '<div class="goi-y">' + (k ? 'Đã dùng ' + Apex.number(k.daDung || 0) + ' lượt. ' : '') +
+        'Để 0 là không giới hạn.</div></div>' +
+        '<div class="o-nhap"><label for="f-ap-dung">Áp dụng cho</label>' +
+        '<select id="f-ap-dung">' + chon(Apex.apDungCho, k && k.apDungCho, 'tat_ca') + '</select></div>' +
+        '</div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-hoat-dong">Trạng thái</label>' +
+        '<select id="f-hoat-dong">' +
+        '<option value="true"' + (k && k.hoatDong ? ' selected' : '') + '>Bật — khách dùng được</option>' +
+        '<option value="false"' + (!k || !k.hoatDong ? ' selected' : '') + '>Tạm dừng</option>' +
+        '</select></div>' +
+        '<div class="o-nhap"><label for="f-hien-thi">Khoe ở trang chủ</label>' +
+        '<select id="f-hien-thi">' +
+        '<option value="true"' + (!k || k.hienThi ? ' selected' : '') + '>Có</option>' +
+        '<option value="false"' + (k && !k.hienThi ? ' selected' : '') + '>Không</option>' +
+        '</select></div>' +
+        '</div>' +
+
+        '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
+        '<input type="text" id="f-mo-ta" placeholder="Câu ngắn hiện cho khách xem" ' +
+        'value="' + (k ? Apex.esc(k.moTa || '') : '') + '" /></div>' +
+
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaKhuyenMai(' + k.id + ')">' +
+          '<i class="fa-solid fa-trash"></i> Xoá</button>') +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuKm(' + (k ? k.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu mã</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+      doiKieuGiam();
+    }
+
+    /** Đổi kiểu giảm thì đổi luôn nhãn và ẩn/hiện ô "Giảm tối đa" cho khỏi rối. */
+    function doiKieuGiam() {
+      var loai = document.getElementById('f-loai').value;
+      var nhan = document.getElementById('nhan-gia-tri');
+      var goiY = document.getElementById('goi-y-gia-tri');
+      var oToiDa = document.getElementById('o-giam-toi-da');
+      var oGiaTri = document.getElementById('f-gia-tri');
+
+      if (loai === 'phan_tram') {
+        nhan.textContent = 'Giảm bao nhiêu phần trăm? *';
+        goiY.textContent = 'Nhập 10 nghĩa là giảm 10% tổng đơn.';
+        oGiaTri.max = 100;
+        oGiaTri.step = 1;
+        oToiDa.style.display = '';
+      } else if (loai === 'mien_ship') {
+        nhan.textContent = 'Miễn phí ship bao nhiêu? *';
+        goiY.textContent = 'Số tiền ship được trừ khỏi đơn, VD: 25000.';
+        oGiaTri.removeAttribute('max');
+        oGiaTri.step = 1000;
+        oToiDa.style.display = 'none';
+      } else {
+        nhan.textContent = 'Giảm bao nhiêu tiền? *';
+        goiY.textContent = 'Số tiền trừ thẳng vào đơn, VD: 50000.';
+        oGiaTri.removeAttribute('max');
+        oGiaTri.step = 1000;
+        oToiDa.style.display = 'none';
+      }
+    }
+
+    function luuKm(id) {
+      var loi = document.getElementById('loi-form');
+      var ma = document.getElementById('f-ma').value.trim().toUpperCase().replace(/\s+/g, '');
+      var ten = document.getElementById('f-ten').value.trim();
+      var giaTri = parseInt(document.getElementById('f-gia-tri').value, 10) || 0;
+      var loai = document.getElementById('f-loai').value;
+
+      if (!ma) { loi.textContent = 'Vui lòng nhập mã khuyến mãi.'; return; }
+      if (!/^[A-Z0-9_-]{3,40}$/.test(ma)) {
+        loi.textContent = 'Mã chỉ gồm chữ HOA không dấu, số, gạch ngang hoặc gạch dưới, dài 3-40 ký tự.';
+        return;
+      }
+      if (!ten) { loi.textContent = 'Vui lòng nhập tên chương trình.'; return; }
+      if (giaTri <= 0) { loi.textContent = 'Mức giảm phải lớn hơn 0.'; return; }
+      if (loai === 'phan_tram' && giaTri > 100) { loi.textContent = 'Giảm theo phần trăm không được quá 100%.'; return; }
+
+      var batDau = document.getElementById('f-bat-dau').value;
+      var ketThuc = document.getElementById('f-ket-thuc').value;
+      if (batDau && ketThuc && ketThuc < batDau) {
+        loi.textContent = 'Ngày kết thúc phải sau ngày bắt đầu.';
+        return;
+      }
+
+      var duLieu = {
+        ma: ma,
+        ten: ten,
+        moTa: document.getElementById('f-mo-ta').value.trim(),
+        loai: loai,
+        giaTri: giaTri,
+        giamToiDa: loai === 'phan_tram' ? (parseInt(document.getElementById('f-giam-toi-da').value, 10) || 0) : 0,
+        donToiThieu: parseInt(document.getElementById('f-don-toi-thieu').value, 10) || 0,
+        batDau: batDau || null,
+        ketThuc: ketThuc || null,
+        soLuong: parseInt(document.getElementById('f-so-luong').value, 10) || 0,
+        apDungCho: document.getElementById('f-ap-dung').value,
+        hoatDong: document.getElementById('f-hoat-dong').value === 'true',
+        hienThi: document.getElementById('f-hien-thi').value === 'true'
+      };
+      loi.textContent = '';
+      var ok = id ? Apex.suaKhuyenMai(id, duLieu) : Apex.themKhuyenMai(duLieu);
+      if (ok) location.reload();
+      else loi.textContent = 'Không lưu được mã. Kiểm tra lại backend Java (cổng 8090).';
+    }
+
+    veBang();
+  </script>
+</body>
+</html>
