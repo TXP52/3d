@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nhà cung cấp | IN3D Store</title>
+  <title>Nhà cung cấp</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=6" rel="stylesheet">
-  <script src="assets/js/apex.js?v=6"></script>
+  <link href="assets/css/apex.css?v=9" rel="stylesheet">
+  <script src="assets/js/apex.js?v=8"></script>
   <style>
     .nhom-ncc { padding: 14px 0; border-bottom: 1px solid var(--vien); }
     .nhom-ncc:first-child { padding-top: 0; }
@@ -31,37 +31,17 @@
       <div id="apex-topbar-cho"></div>
       <main class="apex-trang">
 
-        <!-- KPI -->
         <div class="luoi-kpi" id="kpi-ncc"></div>
 
-        <!-- Danh sách nhà cung cấp -->
         <div class="the">
           <div class="the-dau">
-            <div><h3>Danh sách nhà cung cấp</h3><div class="phu">Nơi mua máy in, nhựa in và phụ kiện</div></div>
-            <button class="nut nut-chinh" type="button" onclick="moFormThem()">
+            <div>
+              <h3>Danh sách nhà cung cấp</h3>
+              <div class="phu">Bấm vào một nhà cung cấp để xem chi tiết, sửa hoặc xoá.</div>
+            </div>
+            <button class="nut nut-chinh" type="button" onclick="moForm(null)">
               <i class="fa-solid fa-plus"></i> Thêm nhà cung cấp
             </button>
-          </div>
-
-          <!-- Form thêm (ẩn sẵn) -->
-          <div class="the-than" id="form-them" style="display:none;">
-            <div class="o-nhap">
-              <label for="f-ten">Tên nhà cung cấp *</label>
-              <input type="text" id="f-ten" placeholder="Ví dụ: Shop 3D Việt Nam">
-            </div>
-            <div class="o-nhap">
-              <label for="f-lien-he">Liên hệ</label>
-              <input type="text" id="f-lien-he" placeholder="Link shop / số điện thoại / địa chỉ">
-            </div>
-            <div class="o-nhap">
-              <label for="f-ghi-chu">Ghi chú</label>
-              <textarea id="f-ghi-chu" rows="2" placeholder="Ví dụ: giao nhanh, giá tốt cho nhựa PLA"></textarea>
-            </div>
-            <p class="bao-loi" id="bao-loi" style="display:none;"></p>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="nut nut-chinh" type="button" onclick="luuNhaCungCap()">Lưu</button>
-              <button class="nut nut-vien" type="button" onclick="dongFormThem()">Huỷ</button>
-            </div>
           </div>
 
           <div class="the-than khong-dem bang-cuon">
@@ -73,7 +53,6 @@
                   <th>Ghi chú</th>
                   <th class="giua">Số vật tư</th>
                   <th class="phai">Tổng đã nhập</th>
-                  <th class="giua">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="bang-ncc"></tbody>
@@ -81,7 +60,6 @@
           </div>
         </div>
 
-        <!-- Vật tư theo nhà cung cấp -->
         <div class="the">
           <div class="the-dau">
             <div><h3>Vật tư theo nhà cung cấp</h3><div class="phu">Danh sách vật tư đã nhập từ từng nơi</div></div>
@@ -97,67 +75,34 @@
   <script>
     Apex.shell('nha-cung-cap', 'Nhà cung cấp');
 
-    function moFormThem() {
-      var f = document.getElementById('form-them');
-      f.style.display = (f.style.display === 'none') ? '' : 'none';
-      if (f.style.display === '') document.getElementById('f-ten').focus();
+    var NCC = Apex.nhaCungCap || [];
+    var VT = Apex.vatTu || [];
+
+    function vatTuCua(id) {
+      return VT.filter(function (v) { return v.nhaCungCapId === id; });
     }
-
-    function dongFormThem() {
-      document.getElementById('form-them').style.display = 'none';
-      document.getElementById('bao-loi').style.display = 'none';
+    function tienCua(id) {
+      return vatTuCua(id).reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
     }
-
-    function luuNhaCungCap() {
-      var loi = document.getElementById('bao-loi');
-      var ten = document.getElementById('f-ten').value.trim();
-      var lienHe = document.getElementById('f-lien-he').value.trim();
-      var ghiChu = document.getElementById('f-ghi-chu').value.trim();
-
-      if (!ten) {
-        loi.textContent = 'Vui lòng nhập tên nhà cung cấp.';
-        loi.style.display = '';
-        document.getElementById('f-ten').focus();
-        return;
+    function oLienHe(lienHe) {
+      var lh = (lienHe || '').trim();
+      if (!lh) return '<span style="color:var(--chu-mo);">—</span>';
+      if (/^https?:\/\//i.test(lh)) {
+        var rutGon = lh.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+        if (rutGon.length > 32) rutGon = rutGon.slice(0, 32) + '…';
+        return '<a href="' + Apex.esc(lh) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' +
+          Apex.esc(rutGon) + '</a>';
       }
-      loi.style.display = 'none';
-
-      if (Apex.themNhaCungCap({ ten: ten, lienHe: lienHe, ghiChu: ghiChu })) {
-        location.reload();
-      } else {
-        loi.textContent = 'Không lưu được nhà cung cấp. Vui lòng kiểm tra kết nối backend rồi thử lại.';
-        loi.style.display = '';
-      }
+      return Apex.esc(lh);
     }
 
-    function suaNCC(id, ten, lienHe, ghiChu) {
-      var tenMoi = prompt('Tên nhà cung cấp:', ten || '');
-      if (tenMoi === null) return;
-      tenMoi = tenMoi.trim();
-      if (!tenMoi) { alert('Tên nhà cung cấp không được để trống.'); return; }
+    /* ---------------- KPI ---------------- */
 
-      var lienHeMoi = prompt('Liên hệ (link shop / SĐT / địa chỉ):', lienHe || '');
-      if (lienHeMoi === null) return;
-
-      var ghiChuMoi = prompt('Ghi chú:', ghiChu || '');
-      if (ghiChuMoi === null) return;
-
-      if (Apex.suaNhaCungCap(id, { ten: tenMoi, lienHe: lienHeMoi.trim(), ghiChu: ghiChuMoi.trim() })) {
-        location.reload();
-      } else {
-        alert('Không cập nhật được nhà cung cấp.');
-      }
-    }
-
-    (function () {
-      var dsNCC = Apex.nhaCungCap || [];
-      var dsVT = Apex.vatTu || [];
-      var coNguon = dsVT.filter(function (v) { return v.nhaCungCapId; });
+    (function veKpi() {
+      var coNguon = VT.filter(function (v) { return v.nhaCungCapId; });
       var tongTienNhap = coNguon.reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
-
-      /* ---- KPI ---- */
       Apex.fill('#kpi-ncc', [
-        { nhan: 'Nhà cung cấp', so: Apex.number(dsNCC.length), icon: 'fa-truck-field', mau: 'bt-xanh' },
+        { nhan: 'Nhà cung cấp', so: Apex.number(NCC.length), icon: 'fa-truck-field', mau: 'bt-xanh' },
         { nhan: 'Vật tư đã nhập', so: Apex.number(coNguon.length), icon: 'fa-boxes-stacked', mau: 'bt-vang' },
         { nhan: 'Tổng tiền đã nhập', so: Apex.money(tongTienNhap), icon: 'fa-wallet', mau: 'bt-toi' }
       ].map(function (k) {
@@ -165,61 +110,140 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
+    })();
 
-      /* ---- Hàm phụ trợ ---- */
-      function vatTuCua(id) {
-        return dsVT.filter(function (v) { return v.nhaCungCapId === id; });
-      }
+    /* ---------------- Bảng ---------------- */
 
-      function oLienHe(lienHe) {
-        var lh = (lienHe || '').trim();
-        if (!lh) return '<span style="color:var(--chu-mo);">—</span>';
-        if (/^https?:\/\//i.test(lh)) {
-          var rutGon = lh.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-          if (rutGon.length > 32) rutGon = rutGon.slice(0, 32) + '…';
-          return '<a href="' + Apex.esc(lh) + '" target="_blank" rel="noopener">' + Apex.esc(rutGon) + '</a>';
-        }
-        return Apex.esc(lh);
-      }
-
-      function chuoiJS(s) {
-        return String(s === null || s === undefined ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ');
-      }
-
-      /* ---- Bảng nhà cung cấp ---- */
-      Apex.fill('#bang-ncc', dsNCC.map(function (n) {
+    function veBang() {
+      Apex.fill('#bang-ncc', NCC.map(function (n, i) {
         var vt = vatTuCua(n.id);
-        var tien = vt.reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
-        var thamSo = n.id + ",'" + chuoiJS(n.ten) + "','" + chuoiJS(n.lienHe) + "','" + chuoiJS(n.ghiChu) + "'";
-        return '<tr>' +
+        return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
           '<td><strong>' + Apex.esc(n.ten || '') + '</strong></td>' +
           '<td>' + oLienHe(n.lienHe) + '</td>' +
           '<td>' + (n.ghiChu ? Apex.esc(n.ghiChu) : '<span style="color:var(--chu-mo);">—</span>') + '</td>' +
           '<td class="giua">' + Apex.number(vt.length) + '</td>' +
-          '<td class="phai"><strong>' + Apex.money(tien) + '</strong></td>' +
-          '<td class="giua">' +
-            '<div class="thao-tac"><button type="button"><i class="fa-solid fa-ellipsis"></i></button><div class="menu">' +
-            '<div class="nhan-menu">Nhà cung cấp</div>' +
-            '<a href="#" onclick="suaNCC(' + thamSo + ');return false;"><i class="fa-solid fa-pen-to-square"></i> Sửa thông tin</a>' +
-            '<a class="nguy-hiem" href="#" onclick="Apex.xoaNhaCungCap(' + n.id + ');return false;"><i class="fa-solid fa-trash"></i> Xoá</a>' +
-            '</div></div>' +
-          '</td>' +
+          '<td class="phai"><strong>' + Apex.money(tienCua(n.id)) + '</strong></td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào.</td></tr>');
+      }).join('') ||
+        '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào. Bấm "Thêm nhà cung cấp" để tạo.</td></tr>');
+    }
 
-      /* ---- Vật tư theo nhà cung cấp ---- */
-      Apex.fill('#vat-tu-theo-ncc', dsNCC.map(function (n) {
+    function veVatTuTheoNcc() {
+      Apex.fill('#vat-tu-theo-ncc', NCC.map(function (n) {
         var vt = vatTuCua(n.id);
         var ds = vt.length
           ? '<div class="ds-vat-tu">' + vt.map(function (v) {
               return '<div class="dong-vt"><span><strong>' + Apex.esc(v.ten || '') + '</strong>' +
-                (v.mau ? ' <span class="mau-vt">· ' + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
+                (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
                 '<span><strong>' + Apex.money(Number(v.tongTienMua) || 0) + '</strong></span></div>';
             }).join('') + '</div>'
           : '<div class="ds-vat-tu"><div class="trong">Chưa nhập vật tư nào.</div></div>';
         return '<div class="nhom-ncc"><div class="ten-ncc">' + Apex.esc(n.ten || '') + '</div>' + ds + '</div>';
       }).join('') || '<div style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào.</div>');
-    })();
+    }
+
+    /* ---------------- Hộp thoại CHI TIẾT ---------------- */
+
+    function moChiTiet(i) {
+      var n = NCC[i];
+      if (!n) return;
+      var vt = vatTuCua(n.id);
+
+      var dong = function (nhan, giaTri) {
+        return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
+          '<span class="gia-tri">' + giaTri + '</span></div>';
+      };
+
+      var dsVt = vt.length
+        ? '<div class="ds-vat-tu" style="margin-top:10px;">' + vt.map(function (v) {
+            return '<div class="dong-vt"><span><strong>' + Apex.esc(v.ten) + '</strong>' +
+              (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
+              '<span><strong>' + Apex.money(Number(v.tongTienMua) || 0) + '</strong></span></div>';
+          }).join('') + '</div>'
+        : '<div style="color:var(--chu-mo);font-size:13.5px;margin-top:8px;">Chưa nhập vật tư nào từ nơi này.</div>';
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + Apex.esc(n.ten) + '</h3><div class="phu">Nhà cung cấp</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div>' +
+        dong('Liên hệ', oLienHe(n.lienHe)) +
+        dong('Số vật tư đã nhập', Apex.number(vt.length)) +
+        dong('Tổng tiền đã nhập', '<strong>' + Apex.money(tienCua(n.id)) + '</strong>') +
+        (n.createdAt ? dong('Ngày tạo', Apex.ngayVN(n.createdAt)) : '') +
+        '</div>' +
+        (n.ghiChu
+          ? '<div style="margin-top:14px;"><div style="font-weight:600;margin-bottom:5px;">Ghi chú</div>' +
+            '<div style="color:var(--chu-mo);font-size:13.5px;white-space:pre-wrap;">' + Apex.esc(n.ghiChu) + '</div></div>'
+          : '') +
+        '<div style="margin-top:16px;font-weight:600;">Vật tư đã nhập</div>' + dsVt +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaNhaCungCap(' + n.id + ')">' +
+        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        '<button class="nut nut-chinh" type="button" onclick="moForm(' + i + ')">' +
+        '<i class="fa-solid fa-pen-to-square"></i> Sửa</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    /* ---------------- Hộp thoại THÊM / SỬA ---------------- */
+
+    function moForm(i) {
+      var n = (i === null || i === undefined) ? null : NCC[i];
+      var moi = !n;
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Thêm nhà cung cấp' : 'Sửa nhà cung cấp') + '</h3>' +
+        '<div class="phu">' + (moi ? 'Nơi mua máy in, nhựa in và phụ kiện' : Apex.esc(n.ten)) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-ten">Tên nhà cung cấp *</label>' +
+        '<input type="text" id="f-ten" placeholder="VD: Shopee 3D Thinking" value="' +
+        (n ? Apex.esc(n.ten || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-lien-he">Liên hệ</label>' +
+        '<input type="text" id="f-lien-he" placeholder="Link shop / số điện thoại / địa chỉ" value="' +
+        (n ? Apex.esc(n.lienHe || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
+        '<textarea id="f-ghi-chu" rows="2" placeholder="VD: giao nhanh, giá tốt cho nhựa PLA">' +
+        (n ? Apex.esc(n.ghiChu || '') : '') + '</textarea></div>' +
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan"><div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (n ? n.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    function luuForm(id) {
+      var loi = document.getElementById('loi-form');
+      var ten = document.getElementById('f-ten').value.trim();
+      if (!ten) { loi.textContent = 'Vui lòng nhập tên nhà cung cấp.'; return; }
+
+      var duLieu = {
+        ten: ten,
+        lienHe: document.getElementById('f-lien-he').value.trim(),
+        ghiChu: document.getElementById('f-ghi-chu').value.trim()
+      };
+      loi.textContent = '';
+      var ok = id ? Apex.suaNhaCungCap(id, duLieu) : Apex.themNhaCungCap(duLieu);
+      if (ok) location.reload();
+      else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
+    }
+
+    veBang();
+    veVatTuTheoNcc();
   </script>
 </body>
 </html>

@@ -3,13 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đơn hàng | IN3D Store</title>
+  <title>Đơn hàng</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=6" rel="stylesheet">
-  <script src="assets/js/apex.js?v=6"></script>
+  <link href="assets/css/apex.css?v=9" rel="stylesheet">
+  <script src="assets/js/apex.js?v=8"></script>
+  <style>
+    .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .dong-mon {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      font-size: 13.5px; padding: 8px 12px; border: 1px solid var(--vien); border-radius: 9px;
+    }
+  </style>
 </head>
 <body>
   <div class="apex-khung">
@@ -39,7 +46,7 @@
               <thead>
                 <tr>
                   <th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Thanh toán</th>
-                  <th class="giua">Trạng thái</th><th>Ngày đặt</th><th class="phai">Tổng tiền</th><th class="phai">Thao tác</th>
+                  <th class="giua">Trạng thái</th><th>Ngày đặt</th><th class="phai">Tổng tiền</th>
                 </tr>
               </thead>
               <tbody id="bang-don"></tbody>
@@ -75,19 +82,10 @@
 
     function veBang(loc) {
       var don = Apex.orders.filter(function (o) { return !loc || o.status === loc; });
-      Apex.fill('#bang-don', don.map(function (o, i) {
+      Apex.fill('#bang-don', don.map(function (o) {
+        var i = Apex.orders.indexOf(o);
         var mon = (o.chiTiet || []).map(function (c) { return Apex.esc(c.ten) + ' ×' + c.soLuong; }).join('<br>') || (o.items + ' món');
-        var thaoTac = o.dbId
-          ? '<div class="thao-tac"><button type="button"><i class="fa-solid fa-ellipsis"></i></button><div class="menu">' +
-            '<div class="nhan-menu">Đổi trạng thái</div>' +
-            Object.keys(Apex.ttMap).map(function (k) {
-              return '<a href="#" onclick="Apex.doiTrangThai(' + o.dbId + ',\'' + k + '\');return false;">' + Apex.ttMap[k] + '</a>';
-            }).join('') +
-            '<hr /><a class="tot" href="#" onclick="Apex.danhDauDaTT(' + o.dbId + ');return false;"><i class="fa-solid fa-check me-1"></i> Đã thanh toán</a>' +
-            '<a class="nguy-hiem" href="#" onclick="Apex.xoaDon(' + o.dbId + ');return false;"><i class="fa-solid fa-trash me-1"></i> Xoá đơn</a>' +
-            '</div></div>'
-          : '<span style="color:var(--chu-mo);font-size:12px;">(dữ liệu mẫu)</span>';
-        return '<tr>' +
+        return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
           '<td><strong>' + Apex.esc(o.id) + '</strong></td>' +
           '<td><div class="o-ten"><div><div class="chinh">' + Apex.esc(o.customer) + '</div><div class="phu">' + Apex.esc(o.phone) + '</div></div></div></td>' +
           '<td style="font-size:12.5px;color:var(--chu-mo);">' + mon + '</td>' +
@@ -95,9 +93,66 @@
           '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
           '<td>' + Apex.esc(o.date) + '</td>' +
           '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td>' +
-          '<td class="phai">' + thaoTac + '</td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--chu-mo);padding:28px;">Không có đơn hàng nào' + (loc ? ' ở trạng thái "' + loc + '"' : '') + '.</td></tr>');
+      }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Không có đơn hàng nào' + (loc ? ' ở trạng thái "' + loc + '"' : '') + '.</td></tr>');
+    }
+
+    /* ---------------- Hộp thoại chi tiết đơn ---------------- */
+
+    function moChiTiet(i) {
+      var o = Apex.orders[i];
+      if (!o) return;
+      var laMau = !o.dbId;
+
+      var dong = function (nhan, giaTri) {
+        return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
+          '<span class="gia-tri">' + giaTri + '</span></div>';
+      };
+
+      var mon = (o.chiTiet || []).length
+        ? '<div class="ds-mon">' + o.chiTiet.map(function (c) {
+            return '<div class="dong-mon"><span>' + Apex.esc(c.ten) +
+              ' <span style="color:var(--chu-mo)">×' + c.soLuong + '</span></span>' +
+              '<strong>' + Apex.money((c.donGia || 0) * (c.soLuong || 0)) + '</strong></div>';
+          }).join('') + '</div>'
+        : '<div style="color:var(--chu-mo);font-size:13.5px;">' + Apex.esc(o.items || 0) + ' món</div>';
+
+      var chonTt = Object.keys(Apex.ttMap).map(function (k) {
+        return '<option value="' + k + '"' + (Apex.ttMap[k] === o.status ? ' selected' : '') + '>' +
+          Apex.ttMap[k] + '</option>';
+      }).join('');
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>Đơn ' + Apex.esc(o.id) + '</h3><div class="phu">Đặt ngày ' + Apex.esc(o.date) + '</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div>' +
+        dong('Trạng thái', Apex.badgeTrangThai(o.status)) +
+        dong('Khách hàng', Apex.esc(o.customer)) +
+        dong('Số điện thoại', Apex.esc(o.phone || '—')) +
+        dong('Thanh toán', Apex.esc(o.payment)) +
+        dong('Tổng tiền', '<strong>' + Apex.money(o.total) + '</strong>') +
+        '</div>' +
+        '<div style="margin-top:16px;font-weight:600;">Sản phẩm đã đặt</div>' + mon +
+        (laMau
+          ? '<div class="bao-loi" style="margin-top:14px;">Đây là dữ liệu mẫu (backend Java chưa chạy) nên không thao tác được.</div>'
+          : '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
+            '<label for="ct-tt-don">Đổi trạng thái đơn</label>' +
+            '<select id="ct-tt-don" onchange="Apex.doiTrangThai(' + o.dbId + ', this.value)">' + chonTt + '</select></div>') +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (laMau ? '' :
+          '<button class="nut nut-do" type="button" onclick="Apex.xoaDon(' + o.dbId + ')">' +
+          '<i class="fa-solid fa-trash"></i> Xoá đơn</button>' +
+          '<div class="day-phai">' +
+          '<button class="nut nut-xanh" type="button" onclick="Apex.danhDauDaTT(' + o.dbId + ')">' +
+          '<i class="fa-solid fa-check"></i> Đã thanh toán</button></div>') +
+        '</div>';
+
+      Apex.moHopThoai(html);
     }
 
     function locDon() { veBang(document.getElementById('loc-trang-thai').value); }

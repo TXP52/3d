@@ -551,9 +551,69 @@ table.bang { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .apex-phu-mo.hien { display: block; }
 }
 
-@media (max-width: 560px) {
+/* ---------------- Điện thoại ---------------- */
+
+@media (max-width: 768px) {
   .apex-trang { padding: 14px; }
-  .apex-topbar { padding: 0 14px; }
-  .apex-topbar .tim input { width: 150px; }
-  .apex-topbar .nguoi-dung .ten { max-width: 80px; }
+
+  /* Topbar: tiêu đề 1 dòng, ô tìm kiếm co giãn, không đè nhau */
+  .apex-topbar {
+    padding: 0 12px;
+    gap: 8px;
+    height: 58px;
+  }
+  .apex-topbar .tieu-de {
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .apex-topbar .tim {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .apex-topbar .tim input {
+    width: 100%;
+    min-width: 0;
+  }
+  .apex-topbar .nguoi-dung { flex-shrink: 0; }
+  .apex-topbar .nguoi-dung .ten,
+  .apex-topbar .nguoi-dung .thoat { display: none; }
+
+  /* KPI: 2 thẻ mỗi hàng cho đỡ dài trang */
+  .luoi-kpi { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi { padding: 14px; }
+  .kpi .so { font-size: 20px; }
+  .kpi .nhan { font-size: 12px; }
+
+  /* Thẻ và bảng */
+  .the-dau { flex-wrap: wrap; gap: 10px; padding: 14px; }
+  .the-dau h3 { font-size: 15px; }
+  .the-than { padding: 14px; }
+  .bang th, .bang td { padding: 10px 12px; }
+  .bang th { font-size: 10.5px; }
+  .bang td { font-size: 13px; }
+
+  /* Hộp thoại: gần như full màn hình, nút xuống hàng cho dễ bấm */
+  .lop-phu { padding: 10px; align-items: flex-end; }
+  .hop-thoai { max-width: 100%; max-height: calc(100vh - 20px); border-radius: 16px; }
+  .hop-thoai .ht-dau, .hop-thoai .ht-than, .hop-thoai .ht-chan { padding: 14px 16px; }
+  .hop-thoai .ht-chan { flex-direction: column-reverse; }
+  .hop-thoai .ht-chan .nut { width: 100%; justify-content: center; }
+  .hop-thoai .ht-chan .day-phai {
+    margin-left: 0;
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+  .anh-chi-tiet { height: 150px; }
+}
+
+@media (max-width: 420px) {
+  .luoi-kpi { grid-template-columns: 1fr; }
+  /* Giữ tiêu đề để biết đang ở trang nào, thu nhỏ ô tìm kiếm lại */
+  .apex-topbar { gap: 6px; padding: 0 10px; }
+  .apex-topbar .tim { flex: 0 1 120px; }
+  .apex-topbar .tim input { font-size: 13px; }
 }

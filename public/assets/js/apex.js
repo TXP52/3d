@@ -1,14 +1,7 @@
-/* ============================================================
-   IN3D Store — Khung quản trị kiểu Apex shadcn (dùng chung mọi trang)
-   - Vẽ sidebar + topbar + footer
-   - Nạp DỮ LIỆU THẬT: backend Java (8090) -> Supabase REST -> dữ liệu mẫu
-   - Thao tác đơn hàng / sản phẩm gọi thẳng backend Java
-   - Phiên đăng nhập (token Java) lưu localStorage 'in3d_phien'
-   ============================================================ */
 window.Apex = (function () {
   'use strict';
 
-  var BRAND = 'IN3D Store';
+  var BRAND = 'Bedecraft';
   var TAGLINE = 'Quản trị bán hàng máy in 3D';
   var JAVA_API = 'http://localhost:8090/api';
   var SB_URL = 'https://nmptxzbtngztzxpwdprs.supabase.co';
@@ -83,6 +76,13 @@ window.Apex = (function () {
     het_hang:        { ten: 'Hết hàng',         mau: 'badge-toi',   icon: 'fa-ban' }
   };
 
+  /* Loại sản phẩm: hàng bán / hàng mẫu trưng bày / dịch vụ nhận in */
+  var LOAI_SAN_PHAM = {
+    ban:     { ten: 'Hàng bán', mau: 'badge-xanh', icon: 'fa-tag' },
+    mau:     { ten: 'Hàng mẫu', mau: 'badge-tim',  icon: 'fa-eye' },
+    dich_vu: { ten: 'Dịch vụ',  mau: 'badge-duong', icon: 'fa-screwdriver-wrench' }
+  };
+
   /* Trạng thái VẬT TƯ: đặt mua -> vận chuyển -> về kho -> hết */
   var TT_VAT_TU = {
     da_dat:          { ten: 'Đã đặt',           mau: 'badge-tim',   icon: 'fa-bookmark' },
@@ -97,6 +97,7 @@ window.Apex = (function () {
   };
   var badgeTtSanPham = function (tt) { return badgeTheoMap(TT_SAN_PHAM, tt); };
   var badgeTtVatTu = function (tt) { return badgeTheoMap(TT_VAT_TU, tt); };
+  var badgeLoaiSanPham = function (l) { return badgeTheoMap(LOAI_SAN_PHAM, l || 'ban'); };
 
   var badgeTon = function (ton, toiThieu) {
     if (ton <= 0) return '<span class="badge badge-do">Hết hàng</span>';
@@ -175,7 +176,8 @@ window.Apex = (function () {
           dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
           price: s.gia || 0, cost: Math.round((s.gia || 0) * 0.7), // giá vốn tạm tính 70%
           stock: s.tonKho || 0, min: 5, img: s.hinhAnh || '', dangBan: !!s.dangBan,
-          moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || ''
+          moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || '',
+          loaiSanPham: s.loaiSanPham || 'ban'
         };
       });
     } else {
@@ -188,7 +190,8 @@ window.Apex = (function () {
             dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dang_ban ? 'Đang bán' : 'Đang ẩn',
             price: Number(s.gia) || 0, cost: Math.round((Number(s.gia) || 0) * 0.7),
             stock: s.ton_kho || 0, min: 5, img: s.hinh_anh || '', dangBan: !!s.dang_ban,
-            moTa: s.mo_ta || '', trangThai: s.trang_thai || 'san_hang', ngayTao: s.created_at || ''
+            moTa: s.mo_ta || '', trangThai: s.trang_thai || 'san_hang', ngayTao: s.created_at || '',
+            loaiSanPham: s.loai_san_pham || 'ban'
           };
         });
       }
@@ -257,11 +260,30 @@ window.Apex = (function () {
   var anHienSanPham = function (dbId, dangBan) {
     if (goiJava('PUT', '/san-pham/' + dbId, { dangBan: !dangBan })) location.reload();
   };
+  /** Nhập thêm hàng vào kho — mở hộp thoại thay cho prompt của trình duyệt. */
   var nhapKho = function (dbId, tenHienTai, tonHienTai) {
-    var them = prompt('Nhập thêm bao nhiêu "' + tenHienTai + '" vào kho? (tồn hiện tại: ' + tonHienTai + ')', '10');
-    if (them === null) return;
-    var moi = (parseInt(tonHienTai, 10) || 0) + (parseInt(them, 10) || 0);
-    if (goiJava('PUT', '/san-pham/' + dbId, { tonKho: moi })) location.reload();
+    var ton = parseInt(tonHienTai, 10) || 0;
+    moHopThoai(
+      '<div class="ht-dau"><div><h3>Nhập thêm kho</h3>' +
+      '<div class="phu">' + esc(tenHienTai) + ' — đang có ' + number(ton) + '</div></div>' +
+      '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+      '<div class="ht-than">' +
+      '<div class="o-nhap"><label for="ht-them-kho">Nhập thêm bao nhiêu?</label>' +
+      '<input type="number" id="ht-them-kho" min="1" step="1" value="10" /></div>' +
+      '<div class="bao-loi" id="ht-loi-kho"></div></div>' +
+      '<div class="ht-chan"><div class="day-phai">' +
+      '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+      '<button class="nut nut-chinh" type="button" onclick="Apex.luuNhapKho(' + dbId + ',' + ton + ')">' +
+      '<i class="fa-solid fa-boxes-packing"></i> Nhập kho</button></div></div>'
+    );
+  };
+
+  var luuNhapKho = function (dbId, ton) {
+    var loi = document.getElementById('ht-loi-kho');
+    var them = parseInt(document.getElementById('ht-them-kho').value, 10);
+    if (isNaN(them) || them <= 0) { loi.textContent = 'Số lượng phải lớn hơn 0.'; return; }
+    if (goiJava('PUT', '/san-pham/' + dbId, { tonKho: ton + them })) location.reload();
+    else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090).';
   };
   var themSanPhamMoi = function (duLieu) {
     return goiJava('POST', '/san-pham', duLieu);
@@ -424,24 +446,50 @@ window.Apex = (function () {
 
   var suaVatTu = function (id, thayDoi) { return goiJava('PUT', '/vat-tu/' + id, thayDoi); };
 
-  /** Nhập số gram đã dùng cho 1 cuộn nhựa (ghi đè tổng đã dùng). */
-  var datDaDung = function (id, ten, daDungHienTai, tongGram) {
-    var g = prompt('Đã dùng bao nhiêu gram nhựa "' + ten + '"?\n(Tổng cuộn: ' + tongGram + 'g)', daDungHienTai);
-    if (g === null) return;
-    var so = parseInt(g, 10);
-    if (isNaN(so) || so < 0) { alert('Số gram không hợp lệ.'); return; }
-    if (so > tongGram) { alert('Số gram đã dùng không thể lớn hơn tổng khối lượng (' + tongGram + 'g).'); return; }
-    if (suaVatTu(id, { daDungGram: so })) location.reload();
+  /**
+   * Hộp thoại ghi nhận số gram nhựa đã dùng — thay cho prompt của trình duyệt.
+   * Nhập tổng đã dùng, hoặc cộng thêm phần vừa in xong.
+   */
+  var moFormGram = function (id) {
+    var v = null;
+    for (var i = 0; i < VAT_TU.length; i++) if (VAT_TU[i].id === id) v = VAT_TU[i];
+    if (!v) return;
+    var tong = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+
+    moHopThoai(
+      '<div class="ht-dau"><div><h3>' + esc(v.ten) + '</h3>' +
+      '<div class="phu">' + (v.mau ? oMau(v.maMau) + esc(v.mau) + ' · ' : '') +
+      'cuộn ' + number(tong) + 'g · ' + money(Math.round(v.donGiaMoiGram || 0)) + '/g</div></div>' +
+      '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+      '<div class="ht-than">' +
+      '<div class="o-nhap"><label for="ht-gram">Tổng số gram đã dùng</label>' +
+      '<input type="number" id="ht-gram" min="0" max="' + tong + '" step="1" value="' + (v.daDungGram || 0) + '" /></div>' +
+      '<div class="o-nhap"><label for="ht-them-gram">Hoặc cộng thêm vừa in xong (gram)</label>' +
+      '<input type="number" id="ht-them-gram" min="0" step="1" placeholder="VD: 5" /></div>' +
+      '<div class="bao-loi" id="ht-loi-gram"></div></div>' +
+
+      '<div class="ht-chan"><div class="day-phai">' +
+      '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+      '<button class="nut nut-chinh" type="button" onclick="Apex.luuGram(' + id + ',' + tong + ')">' +
+      '<i class="fa-solid fa-floppy-disk"></i> Lưu</button></div></div>'
+    );
   };
 
-  /** Ghi nhận vừa in xong tốn thêm N gram. */
-  var dungThemGram = function (id, ten) {
-    var g = prompt('Vừa in xong tốn bao nhiêu gram nhựa "' + ten + '"?', '5');
-    if (g === null) return;
-    var so = parseInt(g, 10);
-    if (isNaN(so) || so <= 0) { alert('Số gram không hợp lệ.'); return; }
-    if (goiJava('PUT', '/vat-tu/' + id + '/dung-them', { gram: so })) location.reload();
+  var luuGram = function (id, tong) {
+    var loi = document.getElementById('ht-loi-gram');
+    var them = parseInt(document.getElementById('ht-them-gram').value, 10);
+    var gram = parseInt(document.getElementById('ht-gram').value, 10);
+    if (!isNaN(them) && them > 0) gram = (isNaN(gram) ? 0 : gram) + them;
+    if (isNaN(gram) || gram < 0) { loi.textContent = 'Số gram không hợp lệ.'; return; }
+    if (gram > tong) { loi.textContent = 'Không thể dùng quá ' + tong + 'g của cuộn này.'; return; }
+    if (suaVatTu(id, { daDungGram: gram })) location.reload();
+    else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090).';
   };
+
+  /* Giữ tên cũ cho các trang đang gọi */
+  var datDaDung = function (id) { moFormGram(id); };
+  var dungThemGram = function (id) { moFormGram(id); };
 
   var themVatTu = function (duLieu) { return goiJava('POST', '/vat-tu', duLieu); };
   var xoaVatTu = function (id) {
@@ -720,6 +768,9 @@ window.Apex = (function () {
     laySanPhamIn: laySanPhamIn,
     luuSanPhamIn: luuSanPhamIn,
     suaVatTu: suaVatTu,
+    moFormGram: moFormGram,
+    luuGram: luuGram,
+    luuNhapKho: luuNhapKho,
     datDaDung: datDaDung,
     dungThemGram: dungThemGram,
     themVatTu: themVatTu,
@@ -747,6 +798,8 @@ window.Apex = (function () {
     ttMap: TT_MAP,
     ttSanPham: TT_SAN_PHAM,
     ttVatTu: TT_VAT_TU,
+    loaiSanPham: LOAI_SAN_PHAM,
+    badgeLoaiSanPham: badgeLoaiSanPham,
     moHopThoai: moHopThoai,
     dongHopThoai: dongHopThoai,
     taiAnhLen: taiAnhLen,

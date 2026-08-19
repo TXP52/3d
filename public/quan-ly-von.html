@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quản lý vốn &amp; chi phí | IN3D Store</title>
+  <title>Quản lý vốn &amp; chi phí</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=6" rel="stylesheet">
+  <link href="assets/css/apex.css?v=9" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=6"></script>
+  <script src="assets/js/apex.js?v=8"></script>
   <style>
     .dong-tong td { font-weight: 700; background: #f6f7f8; }
     .hang-gia { margin-top: 18px; }
@@ -58,7 +58,6 @@
                     <th class="giua">Đã dùng</th>
                     <th class="giua">Còn lại</th>
                     <th class="phai">Tiền đã dùng</th>
-                    <th class="giua">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="bang-nhua"></tbody>
@@ -120,7 +119,7 @@
       var cuonNhua = Apex.vatTu.filter(function (v) { return v.loai === 'nhua'; });
       Apex.fill('#bang-nhua', cuonNhua.map(function (v) {
         var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
-        return '<tr>' +
+        return '<tr class="hang-bam" onclick="moFormGram(' + v.id + ')" title="Bấm để nhập số gram đã dùng">' +
           '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.anhSanPham(v.ten) + '" alt="" />' +
           '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
           (v.mau ? '<div class="phu"><span class="badge badge-xam">' + Apex.esc(v.mau) + '</span></div>' : '') +
@@ -129,10 +128,8 @@
           '<td class="giua"><strong>' + Apex.number(v.daDungGram || 0) + 'g</strong></td>' +
           '<td class="giua">' + Apex.number(v.conLaiGram != null ? v.conLaiGram : Math.max(0, tongGram - (v.daDungGram || 0))) + 'g</td>' +
           '<td class="phai">' + Apex.money(v.tienDaDung || 0) + '</td>' +
-          '<td class="giua"><button class="nut nut-vien nut-nho" onclick="Apex.datDaDung(' + Apex.esc(JSON.stringify(v.id)) + ',' +
-          Apex.esc(JSON.stringify(v.ten)) + ',' + (v.daDungGram || 0) + ',' + tongGram + ')">Nhập số gram</button></td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có cuộn nhựa nào trong kho.</td></tr>');
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có cuộn nhựa nào trong kho.</td></tr>');
 
       /* ---------- PHẦN 4 + 5: Giá bán theo gram ---------- */
       window.veLai = function () {
@@ -167,15 +164,14 @@
           var tienNhua = (m.gram || 0) * c.giaNhuaTrungBinhMoiGram;
           var ban = Math.round((m.gram || 0) * Apex.giaBanMoiGram(tiLe) / 500) * 500;
           var lai = ban - tienNhua;
-          return '<tr>' +
+          return '<tr class="hang-bam" onclick="moFormMau(' + i + ')" title="Bấm để sửa hoặc xoá mẫu">' +
             '<td><strong>' + Apex.esc(m.ten) + '</strong></td>' +
             '<td class="giua">' + Apex.number(m.gram || 0) + 'g</td>' +
             '<td class="phai">' + Apex.money(Math.round(tienNhua)) + '</td>' +
             '<td class="phai" style="font-weight:700;color:var(--accent-dam);">' + Apex.money(ban) + '</td>' +
             '<td class="phai" style="color:var(--accent-dam);">' + Apex.money(Math.round(lai)) + '</td>' +
-            '<td class="giua"><button class="nut nut-vien nut-nho" onclick="xoaMauIn(' + i + ')">Xoá</button></td>' +
             '</tr>';
-        }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
+        }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
 
         var viDu = Math.round(5 * Apex.giaBanMoiGram(tiLe) / 500) * 500;
 
@@ -187,7 +183,7 @@
             '<div class="the-than khong-dem bang-cuon">' +
               '<table class="bang"><thead><tr>' +
                 '<th>Sản phẩm</th><th class="giua">Khối lượng</th><th class="phai">Tiền nhựa</th>' +
-                '<th class="phai">Giá bán đề xuất</th><th class="phai">Lãi dự kiến</th><th class="giua">Thao tác</th>' +
+                '<th class="phai">Giá bán đề xuất</th><th class="phai">Lãi dự kiến</th>' +
               '</tr></thead><tbody>' + hangSp + '</tbody></table>' +
             '</div>' +
             '<div class="the-than"><div class="phu">Ví dụ: in đồ chơi hết 5g nhựa → giá bán đề xuất ≈ ' + Apex.number(viDu) + ' đ.</div></div>' +
@@ -205,19 +201,98 @@
         veLai();
       };
 
-      window.themMauIn = function () {
-        var ten = prompt('Tên mẫu sản phẩm in:', '');
-        if (ten === null) return;
-        ten = ten.trim();
-        if (!ten) { alert('Chưa nhập tên mẫu.'); return; }
-        var g = prompt('Mẫu "' + ten + '" tốn bao nhiêu gram nhựa?', '10');
-        if (g === null) return;
-        var gram = parseInt(g, 10);
-        if (isNaN(gram) || gram <= 0) { alert('Số gram không hợp lệ.'); return; }
+      /* ---------- Hộp thoại: nhập số gram đã dùng ---------- */
+
+      window.moFormGram = function (id) {
+        var v = (Apex.vatTu || []).filter(function (x) { return x.id === id; })[0];
+        if (!v) return;
+        var tong = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+
+        Apex.moHopThoai(
+          '<div class="ht-dau"><div><h3>' + Apex.esc(v.ten) + '</h3>' +
+          '<div class="phu">' + (v.mau ? Apex.oMau(v.maMau) + Apex.esc(v.mau) + ' \u00b7 ' : '') +
+          'cu\u1ed9n ' + Apex.number(tong) + 'g</div></div>' +
+          '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+          '<div class="ht-than">' +
+          '<div class="o-nhap"><label for="f-gram">T\u1ed5ng s\u1ed1 gram \u0111\u00e3 d\u00f9ng</label>' +
+          '<input type="number" id="f-gram" min="0" max="' + tong + '" step="1" value="' + (v.daDungGram || 0) + '" />' +
+          '<div class="goi-y">\u0110ang d\u00f9ng ' + Apex.number(v.daDungGram || 0) + 'g / ' + Apex.number(tong) + 'g' +
+          ' \u00b7 \u0111\u01a1n gi\u00e1 ' + Apex.money(Math.round(v.donGiaMoiGram || 0)) + '/g</div></div>' +
+          '<div class="o-nhap"><label for="f-them">Ho\u1eb7c c\u1ed9ng th\u00eam v\u1eeba in xong (gram)</label>' +
+          '<input type="number" id="f-them" min="0" step="1" placeholder="VD: 5" /></div>' +
+          '<div class="bao-loi" id="loi-gram"></div>' +
+          '</div>' +
+
+          '<div class="ht-chan"><div class="day-phai">' +
+          '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Hu\u1ef7</button>' +
+          '<button class="nut nut-chinh" type="button" onclick="luuGram(' + id + ',' + tong + ')">' +
+          '<i class="fa-solid fa-floppy-disk"></i> L\u01b0u</button>' +
+          '</div></div>'
+        );
+      };
+
+      window.luuGram = function (id, tong) {
+        var loi = document.getElementById('loi-gram');
+        var them = parseInt(document.getElementById('f-them').value, 10);
+        var gram = parseInt(document.getElementById('f-gram').value, 10);
+
+        if (!isNaN(them) && them > 0) gram = (isNaN(gram) ? 0 : gram) + them;
+        if (isNaN(gram) || gram < 0) { loi.textContent = 'S\u1ed1 gram kh\u00f4ng h\u1ee3p l\u1ec7.'; return; }
+        if (gram > tong) { loi.textContent = 'Kh\u00f4ng th\u1ec3 d\u00f9ng qu\u00e1 ' + tong + 'g c\u1ee7a cu\u1ed9n n\u00e0y.'; return; }
+
+        loi.textContent = '';
+        if (Apex.suaVatTu(id, { daDungGram: gram })) location.reload();
+        else loi.textContent = 'Kh\u00f4ng l\u01b0u \u0111\u01b0\u1ee3c. Ki\u1ec3m tra l\u1ea1i backend Java (c\u1ed5ng 8090).';
+      };
+
+      /* ---------- Hộp thoại: thêm / sửa mẫu sản phẩm in ---------- */
+
+      window.themMauIn = function () { moFormMau(null); };
+
+      window.moFormMau = function (i) {
         var ds = Apex.laySanPhamIn();
-        ds.push({ ten: ten, gram: gram });
+        var m = (i === null || i === undefined) ? null : ds[i];
+        var laMoi = !m;
+
+        Apex.moHopThoai(
+          '<div class="ht-dau"><div><h3>' + (laMoi ? 'Th\u00eam m\u1eabu s\u1ea3n ph\u1ea9m in' : 'S\u1eeda m\u1eabu') + '</h3>' +
+          '<div class="phu">' + (laMoi ? '\u0110\u1ec3 \u01b0\u1edbc t\u00ednh gi\u00e1 b\u00e1n theo kh\u1ed1i l\u01b0\u1ee3ng nh\u1ef1a' : Apex.esc(m.ten)) + '</div></div>' +
+          '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+
+          '<div class="ht-than">' +
+          '<div class="o-nhap"><label for="f-ten-mau">T\u00ean m\u1eabu *</label>' +
+          '<input type="text" id="f-ten-mau" placeholder="VD: M\u00f3c kho\u00e1 mini" value="' +
+          (m ? Apex.esc(m.ten) : '') + '" /></div>' +
+          '<div class="o-nhap"><label for="f-gram-mau">T\u1ed1n bao nhi\u00eau gram nh\u1ef1a? *</label>' +
+          '<input type="number" id="f-gram-mau" min="1" step="1" value="' + (m ? (m.gram || 10) : 10) + '" /></div>' +
+          '<div class="bao-loi" id="loi-mau"></div>' +
+          '</div>' +
+
+          '<div class="ht-chan">' +
+          (laMoi ? '' : '<button class="nut nut-do" type="button" onclick="xoaMauIn(' + i + ')">' +
+            '<i class="fa-solid fa-trash"></i> Xo\u00e1</button>') +
+          '<div class="day-phai">' +
+          '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Hu\u1ef7</button>' +
+          '<button class="nut nut-chinh" type="button" onclick="luuMauIn(' + (laMoi ? 'null' : i) + ')">' +
+          '<i class="fa-solid fa-floppy-disk"></i> L\u01b0u</button>' +
+          '</div></div>'
+        );
+      };
+
+      window.luuMauIn = function (i) {
+        var loi = document.getElementById('loi-mau');
+        var ten = document.getElementById('f-ten-mau').value.trim();
+        if (!ten) { loi.textContent = 'Vui l\u00f2ng nh\u1eadp t\u00ean m\u1eabu.'; return; }
+        var gram = parseInt(document.getElementById('f-gram-mau').value, 10);
+        if (isNaN(gram) || gram <= 0) { loi.textContent = 'S\u1ed1 gram ph\u1ea3i l\u1edbn h\u01a1n 0.'; return; }
+
+        var ds = Apex.laySanPhamIn();
+        if (i === null || i === undefined) ds.push({ ten: ten, gram: gram });
+        else ds[i] = { ten: ten, gram: gram };
         Apex.luuSanPhamIn(ds);
-        location.reload();
+        Apex.dongHopThoai();
+        veLai();
       };
 
       window.xoaMauIn = function (i) {
