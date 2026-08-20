@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=11" rel="stylesheet">
-  <script src="assets/js/apex.js?v=10"></script>
+  <link href="assets/css/apex.css?v=12" rel="stylesheet">
+  <script src="assets/js/apex.js?v=11"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -111,9 +111,14 @@
 
       var mon = (o.chiTiet || []).length
         ? '<div class="ds-mon">' + o.chiTiet.map(function (c) {
+            var goc = c.donGiaGoc || c.donGia || 0;
+            var duocGiam = goc > (c.donGia || 0);
             return '<div class="dong-mon"><span>' + Apex.esc(c.ten) +
               ' <span style="color:var(--chu-mo)">×' + c.soLuong + '</span></span>' +
-              '<strong>' + Apex.money((c.donGia || 0) * (c.soLuong || 0)) + '</strong></div>';
+              '<span>' + (duocGiam
+                ? '<s style="color:var(--chu-mo);font-weight:400;">' + Apex.money(goc * c.soLuong) + '</s> '
+                : '') +
+              '<strong>' + Apex.money((c.donGia || 0) * (c.soLuong || 0)) + '</strong></span></div>';
           }).join('') + '</div>'
         : '<div style="color:var(--chu-mo);font-size:13.5px;">' + Apex.esc(o.items || 0) + ' món</div>';
 
@@ -134,10 +139,16 @@
         dong('Số điện thoại', Apex.esc(o.phone || '—')) +
         dong('Thanh toán', Apex.esc(o.payment)) +
         // Đơn có dùng mã thì tách rõ tạm tính / giảm giá, không thì chỉ một dòng tổng tiền
-        (o.tienGiam > 0
-          ? dong('Tạm tính', Apex.money(o.tamTinh)) +
-            dong('Khuyến mãi', '<span class="badge badge-xanh">' + Apex.esc(o.maKhuyenMai) + '</span> ' +
-                 '<span style="color:var(--accent-dam);">&minus; ' + Apex.money(o.tienGiam) + '</span>')
+        ((o.tienGiam > 0 || o.tienGiamSanPham > 0)
+          ? dong('Tiền hàng', Apex.money(o.tienHangGoc)) +
+            (o.tienGiamSanPham > 0
+              ? dong('Giảm giá sản phẩm',
+                     '<span style="color:var(--accent-dam);">&minus; ' + Apex.money(o.tienGiamSanPham) + '</span>')
+              : '') +
+            (o.tienGiam > 0
+              ? dong('Mã khuyến mãi', '<span class="badge badge-xanh">' + Apex.esc(o.maKhuyenMai) + '</span> ' +
+                     '<span style="color:var(--accent-dam);">&minus; ' + Apex.money(o.tienGiam) + '</span>')
+              : '')
           : '') +
         dong('Tổng tiền', '<strong>' + Apex.money(o.total) + '</strong>') +
         '</div>' +

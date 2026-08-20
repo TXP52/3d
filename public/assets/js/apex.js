@@ -99,6 +99,12 @@ window.Apex = (function () {
     tam_dung:    { ten: 'Tạm dừng',    mau: 'badge-xam',  icon: 'fa-circle-pause' }
   };
 
+  /* Hai kiểu khuyến mãi */
+  var KIEU_KHUYEN_MAI = {
+    don_hang: { ten: 'Theo đơn hàng', mau: 'badge-duong', icon: 'fa-receipt' },
+    san_pham: { ten: 'Giá sản phẩm',  mau: 'badge-cam',   icon: 'fa-tag' }
+  };
+
   /* Phạm vi áp dụng — hiện chỉ để chủ shop ghi nhớ, chưa lọc theo giỏ hàng */
   var AP_DUNG_CHO = {
     tat_ca:   { ten: 'Tất cả',   mau: 'badge-xam',   icon: 'fa-layer-group' },
@@ -123,6 +129,7 @@ window.Apex = (function () {
   var badgeLoaiSanPham = function (l) { return badgeTheoMap(LOAI_SAN_PHAM, l || 'ban'); };
   var badgeLoaiKm = function (l) { return badgeTheoMap(LOAI_KHUYEN_MAI, l || 'phan_tram'); };
   var badgeTtKm = function (tt) { return badgeTheoMap(TT_KHUYEN_MAI, tt || 'tam_dung'); };
+  var badgeKieuKm = function (k) { return badgeTheoMap(KIEU_KHUYEN_MAI, k || 'don_hang'); };
 
   /** "Giảm 10% (tối đa 50.000₫)" — mô tả ưu đãi bằng một câu ngắn. */
   var moTaUuDai = function (km) {
@@ -204,9 +211,12 @@ window.Apex = (function () {
           date: ngayVN(d.createdAt), items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
           total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
           maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
+          tienGiamSanPham: d.tienGiamSanPham || 0, tienHangGoc: d.tienHangGoc || d.tongTien || 0,
           payment: tt ? (PT_MAP[tt.phuongThuc] || 'COD') + (tt.trangThai === 'da_thanh_toan' ? ' (đã TT)' : '') : 'COD',
           channel: 'Website',
-          chiTiet: (d.chiTiet || []).map(function (c) { return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia }; })
+          chiTiet: (d.chiTiet || []).map(function (c) {
+            return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia, donGiaGoc: c.donGiaGoc || c.donGia };
+          })
         };
       });
       PRODUCTS = spJava.map(function (s) {
@@ -860,9 +870,11 @@ window.Apex = (function () {
     xoaKhuyenMai: xoaKhuyenMai,
     loaiKhuyenMai: LOAI_KHUYEN_MAI,
     ttKhuyenMai: TT_KHUYEN_MAI,
+    kieuKhuyenMai: KIEU_KHUYEN_MAI,
     apDungCho: AP_DUNG_CHO,
     badgeLoaiKm: badgeLoaiKm,
     badgeTtKm: badgeTtKm,
+    badgeKieuKm: badgeKieuKm,
     moTaUuDai: moTaUuDai,
     themBaiViet: themBaiViet,
     suaBaiViet: suaBaiViet,
