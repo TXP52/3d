@@ -40,15 +40,23 @@ window.Apex = (function () {
     return duongDan;
   };
 
-  var anhSanPham = function (ten) {
-    var t = (ten || '').toLowerCase();
-    if (t.indexOf('resin') >= 0) return 'assets/img/sanpham/p26.jpg';
-    if (t.indexOf('máy in') >= 0 || t.indexOf('bambu') >= 0 || t.indexOf('creality') >= 0 || t.indexOf('prusa') >= 0 || t.indexOf('kobra') >= 0 || t.indexOf('ender') >= 0) return 'assets/img/sanpham/p25.jpg';
-    if (t.indexOf('nhựa') >= 0 || t.indexOf('pla') >= 0 || t.indexOf('petg') >= 0 || t.indexOf('abs') >= 0 || t.indexOf('tpu') >= 0) return 'assets/img/sanpham/p27.jpg';
-    if (t.indexOf('đầu phun') >= 0 || t.indexOf('nozzle') >= 0 || t.indexOf('bàn in') >= 0 || t.indexOf('dụng cụ') >= 0 || t.indexOf('pei') >= 0 || t.indexOf('hotend') >= 0) return 'assets/img/sanpham/p49.webp';
-    if (t.indexOf('scan') >= 0 || t.indexOf('dịch vụ') >= 0 || t.indexOf('thiết kế') >= 0) return 'assets/img/sanpham/p46.jpg';
-    if (t.indexOf('mô hình') >= 0 || t.indexOf('stl') >= 0) return 'assets/img/sanpham/p48.jpg';
-    return 'assets/img/sanpham/p50.jpg';
+  /**
+   * Ảnh dùng tạm cho sản phẩm CHƯA tải ảnh lên.
+   * Trước đây đoán theo tên rồi trả về ảnh trong assets/img/sanpham/ —
+   * toàn ảnh thừa của giao diện mẫu (ảnh game), sản phẩm thật hiện lên
+   * kèm ảnh chẳng liên quan mà chủ shop tưởng đã có ảnh rồi.
+   * Giờ trả ô xám ghi "Chưa có ảnh", nhìn là biết cần tải ảnh lên.
+   */
+  var anhSanPham = function () {
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">' +
+      '<rect width="400" height="300" fill="#eef0f2"/>' +
+      '<g fill="none" stroke="#b3bcc6" stroke-width="6" stroke-linejoin="round">' +
+      '<path d="M200 96 L252 126 L252 186 L200 216 L148 186 L148 126 Z"/>' +
+      '<path d="M148 126 L200 156 L252 126 M200 156 L200 216"/></g>' +
+      '<text x="200" y="250" text-anchor="middle" fill="#9aa4ae" '+
+      'font-family="Inter,Arial,sans-serif" font-size="18">Chưa có ảnh</text></svg>'
+    );
   };
 
   /* ---------------- Trạng thái & badge ---------------- */
@@ -147,18 +155,14 @@ window.Apex = (function () {
     return '<span class="badge badge-xanh">Còn hàng</span>';
   };
 
-  /* ---------------- Dữ liệu mẫu (dự phòng khi không có backend) ---------------- */
+  /* ---------------- Dữ liệu ----------------
+     Trước đây chỗ này có sẵn 4 sản phẩm và 2 đơn hàng giả để trang không trống
+     lúc backend chưa chạy. Bỏ hết: nhìn "Creality Ender-3" hay "Nguyễn Văn A"
+     trong trang quản trị dễ tưởng là hàng thật, mà xoá thì không xoá được.
+     Backend chưa chạy thì bảng để trống kèm dòng nhắc, rõ ràng hơn nhiều. */
 
-  var PRODUCTS = [
-    { dbId: null, sku: 'SP-1', name: 'Creality Ender-3 V3 SE', cat: 'Đang bán', price: 6490000, cost: 4543000, stock: 20, min: 5, img: '' },
-    { dbId: null, sku: 'SP-2', name: 'Máy in resin Photon Mono 4', cat: 'Đang bán', price: 8990000, cost: 6293000, stock: 12, min: 5, img: '' },
-    { dbId: null, sku: 'SP-3', name: 'Nhựa PLA+ 1.75mm (1kg)', cat: 'Đang bán', price: 290000, cost: 203000, stock: 100, min: 20, img: '' },
-    { dbId: null, sku: 'SP-4', name: 'Bộ đầu phun (nozzle) thép 0.4mm', cat: 'Đang bán', price: 150000, cost: 105000, stock: 200, min: 30, img: '' }
-  ];
-  var ORDERS = [
-    { dbId: null, id: 'DH-DEMO-1', customer: 'Nguyễn Văn A', phone: '0901111222', date: '14/8/2026', items: 2, total: 6780000, status: 'Chờ xác nhận', payment: 'COD', channel: 'Website' },
-    { dbId: null, id: 'DH-DEMO-2', customer: 'Trần Thị B', phone: '0903333444', date: '13/8/2026', items: 1, total: 8990000, status: 'Hoàn thành', payment: 'Chuyển khoản', channel: 'Website' }
-  ];
+  var PRODUCTS = [];
+  var ORDERS = [];
   var CUSTOMERS = [];
   var INVENTORY = [];
   var STATS = {
@@ -689,7 +693,6 @@ window.Apex = (function () {
     ]},
     { label: 'Quản lý tài chính', items: [
       { key: 'quan-ly-von', text: 'Quản lý vốn', href: 'quan-ly-von.html', icon: 'fa-coins' },
-      { key: 'quan-ly-xuat-nhap', text: 'Quản lý xuất nhập', href: 'quan-ly-xuat-nhap.html', icon: 'fa-right-left' },
       { key: 'bao-cao', text: 'Báo cáo doanh thu', href: 'bao-cao.html', icon: 'fa-chart-line' }
     ]},
     { label: 'Hệ thống', items: [

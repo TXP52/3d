@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=12" rel="stylesheet">
-  <script src="assets/js/apex.js?v=11"></script>
+  <link href="assets/css/apex.css?v=13" rel="stylesheet">
+  <script src="assets/js/apex.js?v=12"></script>
   <style>
     /* Mã giảm giá: kiểu vé, dễ nhìn ra ngay giữa bảng */
     .ma-km {
@@ -102,6 +102,15 @@
     .dong-sp-giam:last-child { border-bottom: 0; }
     .dong-sp-giam s { color: var(--chu-mo); }
     .dong-sp-giam b { color: var(--accent-dam); }
+
+    /* Danh sách quận trong hộp thoại chi tiết — dài nên cho xuống dòng */
+    .ds-khu-vuc {
+      display: block;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--chu-mo);
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +214,8 @@
         d.push(ids.length ? ids.length + ' sản phẩm được chọn' : 'Mọi sản phẩm');
       } else {
         if (k.donToiThieu > 0) d.push('Đơn từ ' + Apex.money(k.donToiThieu));
+        if (k.chiKhachMoi) d.push('<span class="badge badge-tim">Chỉ khách mới</span>');
+        if (k.dieuKienDiaChi) d.push('<span class="badge badge-duong">Theo khu vực</span>');
         if (k.apDungCho && k.apDungCho !== 'tat_ca') {
           d.push('Chỉ ' + (Apex.apDungCho[k.apDungCho] || {}).ten);
         }
@@ -283,6 +294,12 @@
         (k.kieuApDung === 'san_pham'
           ? dong('Sản phẩm áp dụng', dsSanPhamHtml(k))
           : dong('Đơn tối thiểu', k.donToiThieu > 0 ? Apex.money(k.donToiThieu) : 'Không yêu cầu') +
+            dong('Đối tượng', k.chiKhachMoi
+              ? '<span class="badge badge-tim">Chỉ khách hàng mới</span>'
+              : 'Mọi khách hàng') +
+            dong('Khu vực giao', k.dieuKienDiaChi
+              ? '<span class="ds-khu-vuc">' + Apex.esc(String(k.dieuKienDiaChi).replace(/,/g, ', ')) + '</span>'
+              : 'Giao đâu cũng được') +
             dong('Phạm vi', (Apex.apDungCho[k.apDungCho] || {}).ten || 'Tất cả')) +
         dong('Thời gian', (k.batDau ? Apex.ngayVN(k.batDau) : 'Không giới hạn') + ' → ' +
              (k.ketThuc ? Apex.ngayVN(k.ketThuc) : 'Không giới hạn')) +
@@ -433,6 +450,22 @@
         '<div class="goi-y">Bỏ trống cả hai là chạy vô thời hạn.</div></div>' +
         '</div>' +
 
+        '<div class="luoi-nhap-2" id="o-doi-tuong">' +
+        '<div class="o-nhap"><label for="f-khach-moi">Đối tượng</label>' +
+        '<select id="f-khach-moi">' +
+        '<option value="false"' + (!k || !k.chiKhachMoi ? ' selected' : '') + '>Mọi khách hàng</option>' +
+        '<option value="true"' + (k && k.chiKhachMoi ? ' selected' : '') + '>Chỉ khách hàng mới</option>' +
+        '</select>' +
+        '<div class="goi-y">Khách mới = chưa từng đặt đơn nào. Đối chiếu theo tài khoản, ' +
+        'chưa đăng nhập thì theo số điện thoại.</div></div>' +
+        '<div class="o-nhap"><label for="f-dia-chi">Khu vực giao hàng</label>' +
+        '<input type="text" id="f-dia-chi" placeholder="Bỏ trống = giao đâu cũng được" ' +
+        'value="' + (k ? Apex.esc(k.dieuKienDiaChi || '') : '') + '" />' +
+        '<div class="goi-y">Địa chỉ khách nhập phải chứa một trong các từ này, ngăn bằng dấu phẩy. ' +
+        'So sánh bỏ dấu nên "cau giay" cũng khớp "Cầu Giấy". ' +
+        '<a href="#" onclick="dienNoiThanhHN();return false;">Điền 12 quận nội thành Hà Nội</a></div></div>' +
+        '</div>' +
+
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap" id="o-so-luong"><label for="f-so-luong">Số lượt cho phép</label>' +
         '<input type="number" id="f-so-luong" min="0" step="1" value="' + (k ? k.soLuong : 0) + '" />' +
@@ -475,6 +508,15 @@
       doiKieuApDung();
       doiKieuGiam();
     }
+
+    /** 12 quận nội thành Hà Nội — trùng danh sách backend dùng cho mã freeship. */
+    var NOI_THANH_HN = 'Ba Đình,Hoàn Kiếm,Hai Bà Trưng,Đống Đa,Tây Hồ,Cầu Giấy,' +
+      'Thanh Xuân,Hoàng Mai,Long Biên,Hà Đông,Bắc Từ Liêm,Nam Từ Liêm';
+
+    window.dienNoiThanhHN = function () {
+      var o = document.getElementById('f-dia-chi');
+      if (o) { o.value = NOI_THANH_HN; o.focus(); }
+    };
 
     /** HTML danh sách tích chọn sản phẩm. */
     function htmlChonSp(idsDaChon) {
@@ -520,6 +562,7 @@
       an('o-san-pham', !laSp);
       an('o-ma', laSp);
       an('o-don-toi-thieu', laSp);
+      an('o-doi-tuong', laSp);
       an('o-so-luong', laSp);
       an('o-ap-dung', laSp);
 
@@ -614,6 +657,8 @@
         giaTri: giaTri,
         giamToiDa: loai === 'phan_tram' ? (parseInt(document.getElementById('f-giam-toi-da').value, 10) || 0) : 0,
         donToiThieu: parseInt(document.getElementById('f-don-toi-thieu').value, 10) || 0,
+        chiKhachMoi: !laSp && document.getElementById('f-khach-moi').value === 'true',
+        dieuKienDiaChi: laSp ? '' : document.getElementById('f-dia-chi').value.trim(),
         batDau: batDau || null,
         ketThuc: ketThuc || null,
         soLuong: parseInt(document.getElementById('f-so-luong').value, 10) || 0,

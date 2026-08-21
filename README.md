@@ -25,15 +25,16 @@ public/
 ├── kho.html                   Kho & vật tư — cũng dùng modal, có trạng thái vật tư
 ├── nha-cung-cap.html          Nhà cung cấp (nơi mua vật tư)
 ├── mau-sac.html               Bảng màu (tên + mã màu) cho nhựa và sản phẩm
+├── khuyen-mai.html            Khuyến mãi: giảm theo đơn (có mã) + giảm giá sản phẩm
+├── bai-viet.html              Bài viết hiện ở cuối trang chủ khách
 ├── quan-ly-von.html           Vốn + CHI PHÍ + giá bán theo gram
-├── quan-ly-xuat-nhap.html     Phiếu xuất từ đơn hàng + đề xuất nhập
 ├── bao-cao.html               Báo cáo doanh thu (3 biểu đồ + bảng chi tiết)
 ├── cai-dat.html               Cài đặt cửa hàng + trạng thái hệ thống
 ├── dang-nhap.html             Đăng nhập admin (không có sidebar)
 └── assets/
     ├── css/apex.css           Design system (biến màu, thẻ, bảng, badge, nút, form)
     ├── js/apex.js             Khung dùng chung + nạp dữ liệu + thao tác
-    └── img/                   logo.png + sanpham/*
+    └── img/                   logo.png
 ```
 
 ## Nguồn dữ liệu (tự động chuyển)
