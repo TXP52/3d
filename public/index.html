@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=13" rel="stylesheet">
+  <link href="assets/css/apex.css?v=14" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=12"></script>
+  <script src="assets/js/apex.js?v=13"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -69,7 +69,7 @@
       var sp = Apex.products;
       var doanhThu = don.reduce(function (s, o) { return s + o.total; }, 0);
       var choXacNhan = don.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length;
-      var sapHet = sp.filter(function (p) { return p.stock <= p.min; });
+      var sapHet = sp.filter(function (p) { return p.stock <= Apex.nguongSapHet; });
 
       Apex.fill('#kpi', [
         { nhan: 'Tổng doanh thu (đơn thật)', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
@@ -82,11 +82,17 @@
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
 
-      // Doanh thu theo tháng (số liệu minh hoạ khi DB chưa có lịch sử theo tháng)
-      Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
-        { ten: 'Năm nay', duLieu: Apex.stats.doanhThuNam },
-        { ten: 'Năm trước', duLieu: Apex.stats.doanhThuNamTruoc }
-      ]);
+      // Doanh thu theo tháng — TÍNH TỪ ĐƠN HÀNG THẬT, chưa có đơn thì nói thẳng
+      if (Apex.stats.coDuLieu) {
+        Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
+          { ten: 'Năm ' + Apex.stats.nam, duLieu: Apex.stats.doanhThuNam },
+          { ten: 'Năm ' + (Apex.stats.nam - 1), duLieu: Apex.stats.doanhThuNamTruoc }
+        ], true);
+      } else {
+        Apex.fill('#bd-doanh-thu', '<div class="chua-co-so-lieu">' +
+          'Chưa có đơn hàng nào trong năm ' + Apex.stats.nam + ' để vẽ biểu đồ.<br>' +
+          'Biểu đồ sẽ tự hiện khi shop nhận đơn đầu tiên.</div>');
+      }
 
       // Tỉ trọng trạng thái đơn từ dữ liệu thật
       var dem = {};
@@ -104,7 +110,7 @@
       Apex.fill('#bang-sap-het', (sapHet.length ? sapHet : []).slice(0, 6).map(function (p) {
         return '<tr><td><div class="o-ten"><img class="anh-sp" src="' + (Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name)) + '" alt="" />' +
           '<span class="chinh">' + Apex.esc(p.name) + '</span></div></td>' +
-          '<td class="giua">' + Apex.badgeTon(p.stock, p.min) + ' <strong>' + p.stock + '</strong></td></tr>';
+          '<td class="giua">' + Apex.badgeTon(p.stock) + ' <strong>' + p.stock + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="2" style="text-align:center;color:var(--chu-mo);padding:24px;">Kho đang ổn — không có hàng sắp hết.</td></tr>');
     })();
   </script>

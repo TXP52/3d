@@ -149,9 +149,16 @@ window.Apex = (function () {
     return 'Giảm ' + money(km.giaTri);
   };
 
+  /**
+   * Ngưỡng cảnh báo sắp hết hàng. Đây là QUY ƯỚC HIỂN THỊ dùng chung,
+   * không phải số liệu của từng sản phẩm — bản cũ gắn min = 5 vào mọi
+   * sản phẩm như thể đó là mức tồn tối thiểu chủ shop đã đặt.
+   */
+  var NGUONG_SAP_HET = 5;
+
   var badgeTon = function (ton, toiThieu) {
     if (ton <= 0) return '<span class="badge badge-do">Hết hàng</span>';
-    if (ton <= (toiThieu || 5)) return '<span class="badge badge-vang">Sắp hết</span>';
+    if (ton <= (toiThieu || NGUONG_SAP_HET)) return '<span class="badge badge-vang">Sắp hết</span>';
     return '<span class="badge badge-xanh">Còn hàng</span>';
   };
 
@@ -165,11 +172,22 @@ window.Apex = (function () {
   var ORDERS = [];
   var CUSTOMERS = [];
   var INVENTORY = [];
+  /**
+   * Số liệu vẽ biểu đồ. TÍNH TỪ ĐƠN HÀNG THẬT trong database, không bịa.
+   *
+   * Trước đây chỗ này là 3 dãy số viết cứng (412, 386, 524... triệu) hiện lên
+   * biểu đồ như doanh thu thật. Shop mới mở chưa bán được đồng nào mà trang
+   * Tổng quan vẫn khoe gần một tỉ mỗi tháng.
+   *
+   * Điền bằng tinhThongKe() ngay sau khi nạp xong đơn hàng.
+   */
   var STATS = {
+    nam: new Date().getFullYear(),
     thang: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-    doanhThuNam: [412, 386, 524, 498, 611, 587, 702, 668, 741, 795, 862, 934],
-    doanhThuNamTruoc: [318, 302, 401, 388, 452, 439, 516, 495, 548, 592, 634, 688],
-    donTheoThang: [86, 79, 104, 98, 121, 116, 138, 131, 146, 158, 171, 184]
+    doanhThuNam: [],
+    doanhThuNamTruoc: [],
+    donTheoThang: [],
+    coDuLieu: false
   };
   var MAU_SAC = [];       // bảng màu dùng cho nhựa in và sản phẩm
   var BAI_VIET = [];      // bài viết kiến thức in 3D hiện ở cuối trang chủ khách
@@ -212,7 +230,9 @@ window.Apex = (function () {
         var tt = (d.thanhToan && d.thanhToan[0]) || null;
         return {
           dbId: d.id, id: d.maDon, customer: d.tenKhach, phone: d.soDienThoai || '',
-          date: ngayVN(d.createdAt), items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
+          // date là chuỗi đã định dạng để hiện; ngayGoc giữ nguyên ISO để gom theo tháng
+          date: ngayVN(d.createdAt), ngayGoc: d.createdAt,
+          items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
           total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
           maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
           tienGiamSanPham: d.tienGiamSanPham || 0, tienHangGoc: d.tienHangGoc || d.tongTien || 0,
@@ -226,8 +246,11 @@ window.Apex = (function () {
       PRODUCTS = spJava.map(function (s) {
         return {
           dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
-          price: s.gia || 0, cost: Math.round((s.gia || 0) * 0.7), // giá vốn tạm tính 70%
-          stock: s.tonKho || 0, min: 5, img: s.hinhAnh || '', dangBan: !!s.dangBan,
+          // Không đặt giá vốn ở đây. Bản cũ để cost = 70% giá bán, tức là bịa ra
+          // một con số vốn rồi tính lãi trên đó. Vốn thật nằm ở trang Quản lý vốn,
+          // tính từ tiền mua vật tư và số gram nhựa đã dùng.
+          price: s.gia || 0,
+          stock: s.tonKho || 0, img: s.hinhAnh || '', dangBan: !!s.dangBan,
           moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || '',
           loaiSanPham: s.loaiSanPham || 'ban'
         };
@@ -240,8 +263,8 @@ window.Apex = (function () {
         PRODUCTS = spSb.map(function (s) {
           return {
             dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dang_ban ? 'Đang bán' : 'Đang ẩn',
-            price: Number(s.gia) || 0, cost: Math.round((Number(s.gia) || 0) * 0.7),
-            stock: s.ton_kho || 0, min: 5, img: s.hinh_anh || '', dangBan: !!s.dang_ban,
+            price: Number(s.gia) || 0,
+            stock: s.ton_kho || 0, img: s.hinh_anh || '', dangBan: !!s.dang_ban,
             moTa: s.mo_ta || '', trangThai: s.trang_thai || 'san_hang', ngayTao: s.created_at || '',
             loaiSanPham: s.loai_san_pham || 'ban'
           };
@@ -277,6 +300,8 @@ window.Apex = (function () {
     });
     CUSTOMERS = Object.keys(nhom).map(function (k) { return nhom[k]; });
 
+    tinhThongKe();
+
     var phien = layPhien();
     if (DATA_SOURCE === 'java' && phien && phien.token) {
       var users = taiDongBo(JAVA_API + '/nguoi-dung', { Authorization: 'Bearer ' + phien.token });
@@ -295,6 +320,44 @@ window.Apex = (function () {
       }
     }
   })();
+
+  /**
+   * Gom đơn hàng thật thành số liệu 12 tháng cho biểu đồ.
+   *
+   * Doanh thu KHÔNG tính đơn đã huỷ — đơn huỷ không mang về đồng nào,
+   * cộng vào là báo cáo sai. Số đơn thì đếm hết vì đó là số đơn đã nhận.
+   */
+  function tinhThongKe() {
+    var namNay = new Date().getFullYear();
+    var dtNamNay = [0,0,0,0,0,0,0,0,0,0,0,0];
+    var dtNamTruoc = [0,0,0,0,0,0,0,0,0,0,0,0];
+    var soDon = [0,0,0,0,0,0,0,0,0,0,0,0];
+    var coDon = false;
+
+    ORDERS.forEach(function (o) {
+      if (!o.ngayGoc) return;
+      var d = new Date(o.ngayGoc);
+      if (isNaN(d.getTime())) return;
+      var thang = d.getMonth();
+      var nam = d.getFullYear();
+      var tien = o.total || 0;
+
+      if (nam === namNay) {
+        soDon[thang] += 1;
+        if (o.status !== 'Đã huỷ') dtNamNay[thang] += tien;
+        coDon = true;
+      } else if (nam === namNay - 1) {
+        if (o.status !== 'Đã huỷ') dtNamTruoc[thang] += tien;
+        coDon = true;
+      }
+    });
+
+    STATS.nam = namNay;
+    STATS.doanhThuNam = dtNamNay;
+    STATS.doanhThuNamTruoc = dtNamTruoc;
+    STATS.donTheoThang = soDon;
+    STATS.coDuLieu = coDon;
+  }
 
   /* ---------------- Thao tác gọi backend Java ---------------- */
 
@@ -796,14 +859,29 @@ window.Apex = (function () {
 
   var truc = { axisLine: { lineStyle: { color: '#e4e6e9' } }, axisLabel: { color: '#6b7280' }, axisTick: { show: false } };
 
-  var bieuDoDuong = function (id, nhan, cacDay) {
+  /** 1200000 -> "1,2 tr" | 450000 -> "450 ng" — trục biểu đồ cho gọn. */
+  var tienNgan = function (v) {
+    v = Number(v) || 0;
+    if (v >= 1000000) return (Math.round(v / 100000) / 10).toString().replace('.', ',') + ' tr';
+    if (v >= 1000) return Math.round(v / 1000) + ' ng';
+    return String(v);
+  };
+
+  var bieuDoDuong = function (id, nhan, cacDay, laTien) {
     return veBieuDo(id, {
       color: MAU_BIEU_DO,
-      tooltip: { trigger: 'axis' },
+      tooltip: {
+        trigger: 'axis',
+        valueFormatter: laTien ? function (v) { return money(v); } : undefined
+      },
       legend: { bottom: 0, textStyle: { color: '#6b7280' } },
       grid: { left: 10, right: 16, top: 20, bottom: 40, containLabel: true },
       xAxis: Object.assign({ type: 'category', data: nhan, boundaryGap: false }, truc),
-      yAxis: Object.assign({ type: 'value', splitLine: { lineStyle: { color: '#eef0f2' } } }, truc),
+      yAxis: Object.assign({
+        type: 'value',
+        splitLine: { lineStyle: { color: '#eef0f2' } },
+        axisLabel: laTien ? { formatter: tienNgan } : undefined
+      }, truc),
       series: cacDay.map(function (d, i) {
         return { name: d.ten, type: 'line', smooth: true, symbolSize: 5, data: d.duLieu,
           lineStyle: { width: i === 0 ? 3 : 2, type: i === 0 ? 'solid' : 'dashed' },
@@ -849,6 +927,8 @@ window.Apex = (function () {
     khuyenMai: KHUYEN_MAI,
     loaiVatTu: LOAI_VAT_TU,
     stats: STATS,
+    tienNgan: tienNgan,
+    nguongSapHet: NGUONG_SAP_HET,
     tinhChiPhi: tinhChiPhi,
     giaBanMoiGram: giaBanMoiGram,
     layTiLeLai: layTiLeLai,

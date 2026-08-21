@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=13" rel="stylesheet">
+  <link href="assets/css/apex.css?v=14" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=12"></script>
+  <script src="assets/js/apex.js?v=13"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -91,14 +91,20 @@
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
 
-      // Doanh thu theo tháng
-      Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
-        { ten: 'Năm nay', duLieu: Apex.stats.doanhThuNam },
-        { ten: 'Năm trước', duLieu: Apex.stats.doanhThuNamTruoc }
-      ]);
-
-      // Số đơn theo tháng
-      Apex.bieuDoCot('bd-don', Apex.stats.thang, Apex.stats.donTheoThang, 'Số đơn');
+      // Doanh thu + số đơn theo tháng — TÍNH TỪ ĐƠN HÀNG THẬT.
+      // Doanh thu không cộng đơn đã huỷ; số đơn thì đếm hết vì đó là đơn đã nhận.
+      if (Apex.stats.coDuLieu) {
+        Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
+          { ten: 'Năm ' + Apex.stats.nam, duLieu: Apex.stats.doanhThuNam },
+          { ten: 'Năm ' + (Apex.stats.nam - 1), duLieu: Apex.stats.doanhThuNamTruoc }
+        ], true);
+        Apex.bieuDoCot('bd-don', Apex.stats.thang, Apex.stats.donTheoThang, 'Số đơn');
+      } else {
+        var chuaCo = '<div class="chua-co-so-lieu">Chưa có đơn hàng nào trong năm ' +
+          Apex.stats.nam + ' để lập biểu đồ.</div>';
+        Apex.fill('#bd-doanh-thu', chuaCo);
+        Apex.fill('#bd-don', chuaCo);
+      }
 
       // Tỉ trọng doanh thu theo trạng thái
       var gom = {};
@@ -111,7 +117,7 @@
       Apex.fill('#bang-chi-tiet', don.map(function (o) {
         return '<tr><td><strong>' + Apex.esc(o.id) + '</strong></td>' +
           '<td>' + Apex.esc(o.customer) + '</td>' +
-          '<td>' + Apex.ngayVN(o.date) + '</td>' +
+          '<td>' + Apex.esc(o.date) + '</td>' +
           '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
           '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có đơn hàng nào để lập báo cáo.</td></tr>');

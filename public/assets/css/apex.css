@@ -243,6 +243,14 @@ a { color: inherit; text-decoration: none; }
 .kpi .bt-tim { background: #ede9fe; color: #6d28d9; }
 .kpi .bt-toi { background: #eef0f2; color: var(--chu); }
 
+/* Chỗ đặt biểu đồ khi chưa có số liệu thật — thà để trống còn hơn vẽ số bịa */
+.chua-co-so-lieu {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 200px; padding: 24px;
+  text-align: center; line-height: 1.7;
+  color: var(--chu-mo); font-size: 13.5px;
+}
+
 /* ---------------- Bảng ---------------- */
 
 .bang-cuon { overflow-x: auto; }

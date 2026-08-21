@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=13" rel="stylesheet">
-  <script src="assets/js/apex.js?v=12"></script>
+  <link href="assets/css/apex.css?v=14" rel="stylesheet">
+  <script src="assets/js/apex.js?v=13"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -118,7 +118,7 @@
             '<td class="giua">' + Apex.badgeTtSanPham(p.trangThai) + '</td>' +
             '<td class="giua">' + hienThi + '</td>' +
             '<td class="phai"><strong>' + Apex.money(p.price || 0) + '</strong></td>' +
-            '<td class="giua">' + Apex.badgeTon(p.stock, p.min) + ' <strong>' + Apex.number(p.stock || 0) + '</strong></td>' +
+            '<td class="giua">' + Apex.badgeTon(p.stock) + ' <strong>' + Apex.number(p.stock || 0) + '</strong></td>' +
             '<td class="phai">' + Apex.money((p.price || 0) * (p.stock || 0)) + '</td>' +
             '</tr>';
         }).join('');
@@ -162,7 +162,7 @@
           ? '<span class="badge badge-xanh"><span class="cham"></span> Đang bán</span>'
           : '<span class="badge badge-xam"><span class="cham"></span> Đang ẩn</span>') +
         dong('Giá bán', Apex.money(p.price || 0)) +
-        dong('Tồn kho', Apex.number(p.stock || 0) + ' — ' + Apex.badgeTon(p.stock, p.min)) +
+        dong('Tồn kho', Apex.number(p.stock || 0) + ' — ' + Apex.badgeTon(p.stock)) +
         dong('Giá trị tồn', Apex.money((p.price || 0) * (p.stock || 0))) +
         (p.ngayTao ? dong('Ngày tạo', Apex.ngayVN(p.ngayTao)) : '') +
         '</div>' +
