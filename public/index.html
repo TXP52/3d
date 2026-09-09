@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=13"></script>
+  <script src="assets/js/apex.js?v=15"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -57,14 +57,13 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
   <script>
     Apex.shell('tong-quan', 'Tổng quan');
 
-    (function () {
+    function veLaiTrang() {
       var don = Apex.orders;
       var sp = Apex.products;
       var doanhThu = don.reduce(function (s, o) { return s + o.total; }, 0);
@@ -112,7 +111,8 @@
           '<span class="chinh">' + Apex.esc(p.name) + '</span></div></td>' +
           '<td class="giua">' + Apex.badgeTon(p.stock) + ' <strong>' + p.stock + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="2" style="text-align:center;color:var(--chu-mo);padding:24px;">Kho đang ổn — không có hàng sắp hết.</td></tr>');
-    })();
+    }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
   </script>
 </body>
 </html>

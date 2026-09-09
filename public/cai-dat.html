@@ -8,14 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .dong-tt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--vien); }
     .dong-tt:last-child { border-bottom: none; }
     .dong-tt .nhan-tt { font-size: 13.5px; font-weight: 600; }
-    .lien-ket-nhanh { display: flex; flex-direction: column; gap: 8px; }
-    .lien-ket-nhanh .nut { justify-content: flex-start; }
   </style>
 </head>
 <body>
@@ -33,54 +31,39 @@
             <div class="the-than">
               <div class="o-nhap">
                 <label for="ten-ch">Tên cửa hàng</label>
-                <input id="ten-ch" type="text" placeholder="IN3D Shop">
+                <input id="ten-ch" type="text">
               </div>
               <div class="o-nhap">
                 <label for="email-ch">Email liên hệ</label>
-                <input id="email-ch" type="email" placeholder="lienhe@in3dshop.vn">
+                <input id="email-ch" type="email">
               </div>
               <div class="o-nhap">
                 <label for="dt-ch">Điện thoại</label>
-                <input id="dt-ch" type="text" placeholder="0901 234 567">
+                <input id="dt-ch" type="text">
               </div>
               <div class="o-nhap">
                 <label for="dc-ch">Địa chỉ</label>
-                <textarea id="dc-ch" rows="2" placeholder="123 Nguyễn Văn Cừ, Q.5, TP. Hồ Chí Minh"></textarea>
+                <textarea id="dc-ch" rows="2"></textarea>
               </div>
               <div class="o-nhap">
                 <label for="gio-ch">Giờ mở cửa</label>
-                <input id="gio-ch" type="text" placeholder="8:00 - 21:00">
+                <input id="gio-ch" type="text">
                 <div class="goi-y">Ví dụ: 8:00 - 21:00 (tất cả các ngày trong tuần)</div>
               </div>
               <div class="bao-ok" id="bao-ok" style="display:none;">Đã lưu cài đặt!</div>
-              <button class="nut nut-chinh" id="nut-luu"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+              <button class="nut nut-chinh" id="nut-luu"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
             </div>
           </div>
 
-          <div>
-            <!-- Trạng thái hệ thống -->
-            <div class="the" style="margin-bottom:18px;">
-              <div class="the-dau"><div><h3>Trạng thái hệ thống</h3></div></div>
-              <div class="the-than" id="trang-thai-ht"></div>
-            </div>
-
-            <!-- Liên kết nhanh -->
-            <div class="the">
-              <div class="the-dau"><div><h3>Liên kết nhanh</h3></div></div>
-              <div class="the-than">
-                <div class="lien-ket-nhanh">
-                  <a class="nut nut-vien" href="http://localhost:8123/Home.html" target="_blank" rel="noopener"><i class="fa-solid fa-store"></i> Website bán hàng</a>
-                  <a class="nut nut-vien" href="don-hang.html"><i class="fa-solid fa-receipt"></i> Quản lý đơn hàng</a>
-                  <a class="nut nut-vien" href="kho.html"><i class="fa-solid fa-boxes-stacked"></i> Kho &amp; vật tư</a>
-                </div>
-              </div>
-            </div>
+          <!-- Trạng thái hệ thống -->
+          <div class="the" style="align-self:start;">
+            <div class="the-dau"><div><h3>Trạng thái hệ thống</h3></div></div>
+            <div class="the-than" id="trang-thai-ht"></div>
           </div>
 
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -89,13 +72,6 @@
 
     (function () {
       var KHOA = 'in3d_caidat';
-      var macDinh = {
-        ten: 'IN3D Shop',
-        email: 'lienhe@in3dshop.vn',
-        dienThoai: '0901 234 567',
-        diaChi: '123 Nguyễn Văn Cừ, Q.5, TP. Hồ Chí Minh',
-        gio: '8:00 - 21:00'
-      };
 
       var oTen = document.getElementById('ten-ch');
       var oEmail = document.getElementById('email-ch');
@@ -109,19 +85,20 @@
       try { daLuu = JSON.parse(localStorage.getItem(KHOA)); } catch (e) { daLuu = null; }
       if (!daLuu || typeof daLuu !== 'object') { daLuu = {}; }
 
-      oTen.value = daLuu.ten || macDinh.ten;
-      oEmail.value = daLuu.email || macDinh.email;
-      oDT.value = daLuu.dienThoai || macDinh.dienThoai;
-      oDC.value = daLuu.diaChi || macDinh.diaChi;
-      oGio.value = daLuu.gio || macDinh.gio;
+      // Chỉ hiện những gì chủ shop đã lưu; chưa lưu thì để trống chứ không điền địa chỉ bịa
+      oTen.value = daLuu.ten || '';
+      oEmail.value = daLuu.email || '';
+      oDT.value = daLuu.dienThoai || '';
+      oDC.value = daLuu.diaChi || '';
+      oGio.value = daLuu.gio || '';
 
       document.getElementById('nut-luu').addEventListener('click', function () {
         var duLieu = {
-          ten: oTen.value.trim() || macDinh.ten,
-          email: oEmail.value.trim() || macDinh.email,
-          dienThoai: oDT.value.trim() || macDinh.dienThoai,
-          diaChi: oDC.value.trim() || macDinh.diaChi,
-          gio: oGio.value.trim() || macDinh.gio
+          ten: oTen.value.trim(),
+          email: oEmail.value.trim(),
+          dienThoai: oDT.value.trim(),
+          diaChi: oDC.value.trim(),
+          gio: oGio.value.trim()
         };
         try { localStorage.setItem(KHOA, JSON.stringify(duLieu)); } catch (e) { }
         oTen.value = duLieu.ten;
@@ -134,10 +111,6 @@
       });
 
       // Trạng thái hệ thống
-      var nguon = { lop: 'badge-vang', chu: 'Dữ liệu mẫu' };
-      if (Apex.dataSource === 'java') { nguon = { lop: 'badge-xanh', chu: 'Backend Java' }; }
-      else if (Apex.dataSource === 'supabase') { nguon = { lop: 'badge-duong', chu: 'Supabase' }; }
-
       var phien = Apex.layPhien();
       var taiKhoan = phien && phien.hoTen
         ? { lop: 'badge-xanh', chu: Apex.esc(phien.hoTen) }
@@ -148,12 +121,16 @@
           '<span class="badge ' + lop + '"><span class="cham"></span>' + chu + '</span></div>';
       };
 
-      Apex.fill('#trang-thai-ht',
-        dong('Nguồn dữ liệu', nguon.lop, nguon.chu) +
-        dong('Tài khoản đăng nhập', taiKhoan.lop, taiKhoan.chu) +
-        dong('Số sản phẩm', 'badge-xam', Apex.number(Apex.products.length)) +
-        dong('Số đơn hàng', 'badge-xam', Apex.number(Apex.orders.length))
-      );
+      function veLaiTrang() {
+        Apex.fill('#trang-thai-ht',
+          dong('Tài khoản đăng nhập', taiKhoan.lop, taiKhoan.chu) +
+          dong('Số sản phẩm', 'badge-xam', Apex.number(Apex.products.length)) +
+          dong('Số danh mục sản phẩm', 'badge-xam', Apex.number(Apex.danhMucSanPham().length)) +
+          dong('Số loại vật tư', 'badge-xam', Apex.number(Apex.danhMucVatTu().length)) +
+          dong('Số đơn hàng', 'badge-xam', Apex.number(Apex.orders.length))
+        );
+      }
+      Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
     })();
   </script>
 </body>

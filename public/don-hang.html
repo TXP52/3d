@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -31,7 +31,7 @@
         <!-- Bảng đơn hàng -->
         <div class="the">
           <div class="the-dau">
-            <div><h3>Tất cả đơn hàng</h3><div class="phu">Đổi trạng thái, xác nhận thanh toán hoặc xoá đơn qua nút thao tác.</div></div>
+            <div><h3>Tất cả đơn hàng</h3></div>
             <select id="loc-trang-thai" class="nut nut-vien" style="padding:7px 10px;" onchange="locDon()">
               <option value="">Tất cả trạng thái</option>
               <option>Chờ xác nhận</option>
@@ -55,7 +55,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -102,7 +101,6 @@
     function moChiTiet(i) {
       var o = Apex.orders[i];
       if (!o) return;
-      var laMau = !o.dbId;
 
       var dong = function (nhan, giaTri) {
         return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
@@ -153,20 +151,17 @@
         dong('Tổng tiền', '<strong>' + Apex.money(o.total) + '</strong>') +
         '</div>' +
         '<div style="margin-top:16px;font-weight:600;">Sản phẩm đã đặt</div>' + mon +
-        (laMau
-          ? '<div class="bao-loi" style="margin-top:14px;">Đây là dữ liệu mẫu (backend Java chưa chạy) nên không thao tác được.</div>'
-          : '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
-            '<label for="ct-tt-don">Đổi trạng thái đơn</label>' +
-            '<select id="ct-tt-don" onchange="Apex.doiTrangThai(' + o.dbId + ', this.value)">' + chonTt + '</select></div>') +
+        '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
+        '<label for="ct-tt-don">Đổi trạng thái đơn</label>' +
+        '<select id="ct-tt-don" onchange="Apex.doiTrangThai(' + o.dbId + ', this.value)">' + chonTt + '</select></div>' +
         '</div>' +
 
         '<div class="ht-chan">' +
-        (laMau ? '' :
-          '<button class="nut nut-do" type="button" onclick="Apex.xoaDon(' + o.dbId + ')">' +
-          '<i class="fa-solid fa-trash"></i> Xoá đơn</button>' +
-          '<div class="day-phai">' +
-          '<button class="nut nut-xanh" type="button" onclick="Apex.danhDauDaTT(' + o.dbId + ')">' +
-          '<i class="fa-solid fa-check"></i> Đã thanh toán</button></div>') +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaDon(' + o.dbId + ')">' +
+        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        '<button class="nut nut-xanh" type="button" onclick="Apex.danhDauDaTT(' + o.dbId + ')">' +
+        '<i class="fa-solid fa-check"></i> Đã thanh toán</button></div>' +
         '</div>';
 
       Apex.moHopThoai(html);
@@ -174,8 +169,8 @@
 
     function locDon() { veBang(document.getElementById('loc-trang-thai').value); }
 
-    veKpi();
-    veBang('');
+    function veLaiTrang() { veKpi(); veBang(document.getElementById('loc-trang-thai').value); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>

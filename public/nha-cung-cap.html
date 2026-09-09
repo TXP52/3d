@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .nhom-ncc { padding: 14px 0; border-bottom: 1px solid var(--vien); }
     .nhom-ncc:first-child { padding-top: 0; }
@@ -37,10 +37,9 @@
           <div class="the-dau">
             <div>
               <h3>Danh sách nhà cung cấp</h3>
-              <div class="phu">Bấm vào một nhà cung cấp để xem chi tiết, sửa hoặc xoá.</div>
             </div>
             <button class="nut nut-chinh" type="button" onclick="moForm(null)">
-              <i class="fa-solid fa-plus"></i> Thêm nhà cung cấp
+              <i class="fa-solid fa-plus"></i> Thêm
             </button>
           </div>
 
@@ -68,7 +67,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -98,7 +96,7 @@
 
     /* ---------------- KPI ---------------- */
 
-    (function veKpi() {
+    function veKpi() {
       var coNguon = VT.filter(function (v) { return v.nhaCungCapId; });
       var tongTienNhap = coNguon.reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
       Apex.fill('#kpi-ncc', [
@@ -110,7 +108,7 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
-    })();
+    }
 
     /* ---------------- Bảng ---------------- */
 
@@ -134,7 +132,7 @@
         var ds = vt.length
           ? '<div class="ds-vat-tu">' + vt.map(function (v) {
               return '<div class="dong-vt"><span><strong>' + Apex.esc(v.ten || '') + '</strong>' +
-                (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
+                (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau, v.mau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
                 '<span><strong>' + Apex.money(Number(v.tongTienMua) || 0) + '</strong></span></div>';
             }).join('') + '</div>'
           : '<div class="ds-vat-tu"><div class="trong">Chưa nhập vật tư nào.</div></div>';
@@ -157,7 +155,7 @@
       var dsVt = vt.length
         ? '<div class="ds-vat-tu" style="margin-top:10px;">' + vt.map(function (v) {
             return '<div class="dong-vt"><span><strong>' + Apex.esc(v.ten) + '</strong>' +
-              (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
+              (v.mau ? ' <span class="mau-vt">· ' + Apex.oMau(v.maMau, v.mau) + Apex.esc(v.mau) + '</span>' : '') + '</span>' +
               '<span><strong>' + Apex.money(Number(v.tongTienMua) || 0) + '</strong></span></div>';
           }).join('') + '</div>'
         : '<div style="color:var(--chu-mo);font-size:13.5px;margin-top:8px;">Chưa nhập vật tư nào từ nơi này.</div>';
@@ -206,13 +204,14 @@
 
         '<div class="ht-than">' +
         '<div class="o-nhap"><label for="f-ten">Tên nhà cung cấp *</label>' +
-        '<input type="text" id="f-ten" placeholder="VD: Shopee 3D Thinking" value="' +
+        '<input type="text" id="f-ten" value="' +
         (n ? Apex.esc(n.ten || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-lien-he">Liên hệ</label>' +
-        '<input type="text" id="f-lien-he" placeholder="Link shop / số điện thoại / địa chỉ" value="' +
-        (n ? Apex.esc(n.lienHe || '') : '') + '" /></div>' +
+        '<input type="text" id="f-lien-he" value="' +
+        (n ? Apex.esc(n.lienHe || '') : '') + '" />' +
+        '<div class="goi-y">Link shop, số điện thoại hoặc địa chỉ</div></div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
-        '<textarea id="f-ghi-chu" rows="2" placeholder="VD: giao nhanh, giá tốt cho nhựa PLA">' +
+        '<textarea id="f-ghi-chu" rows="2">' +
         (n ? Apex.esc(n.ghiChu || '') : '') + '</textarea></div>' +
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
@@ -238,12 +237,12 @@
       };
       loi.textContent = '';
       var ok = id ? Apex.suaNhaCungCap(id, duLieu) : Apex.themNhaCungCap(duLieu);
-      if (ok) location.reload();
+      if (ok) Apex.capNhatXong(['nha-cung-cap', 'vat-tu'], id ? 'Đã lưu nhà cung cấp' : 'Đã thêm nhà cung cấp');
       else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
     }
 
-    veBang();
-    veVatTuTheoNcc();
+    function veLaiTrang() { veKpi(); veBang(); veVatTuTheoNcc(); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>

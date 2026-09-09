@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     /* Mã giảm giá: kiểu vé, dễ nhìn ra ngay giữa bảng */
     .ma-km {
@@ -126,10 +126,10 @@
           <div class="the-dau">
             <div>
               <h3>Chương trình khuyến mãi</h3>
-              <div class="phu">Hai kiểu: giảm theo đơn (khách gõ mã) và giảm giá sản phẩm (tự áp). Bấm vào một dòng để xem, sửa, bật/tắt hoặc xoá.</div>
+              <div class="phu">Hai kiểu: giảm theo đơn (khách gõ mã) và giảm giá sản phẩm (tự áp).</div>
             </div>
             <button class="nut nut-chinh" type="button" onclick="moFormKm(null)">
-              <i class="fa-solid fa-plus"></i> Tạo khuyến mãi
+              <i class="fa-solid fa-plus"></i> Thêm
             </button>
           </div>
           <div class="the-than khong-dem bang-cuon">
@@ -151,7 +151,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -161,9 +160,12 @@
     var KM = Apex.khuyenMai || [];
     var DON = Apex.orders || [];
     /* Chỉ hàng BÁN mới giảm giá được: hàng mẫu không bán, dịch vụ tính theo gram */
-    var SP = (Apex.products || []).filter(function (p) {
-      return p.dbId && (p.loaiSanPham || 'ban') === 'ban';
-    });
+    var SP = [];
+    function tinhSp() {   // tính lại mỗi lần vẽ vì sản phẩm nạp bất đồng bộ
+      SP = (Apex.products || []).filter(function (p) {
+        return p.dbId && (p.loaiSanPham || 'ban') === 'ban';
+      });
+    }
 
     /* Đếm số đơn đã dùng mã + tổng tiền đã giảm thật sự */
     function donDaDung(ma) {
@@ -172,7 +174,7 @@
 
     /* ---------------- KPI ---------------- */
 
-    (function veKpi() {
+    function veKpi() {
       var theoDon = KM.filter(function (k) { return (k.kieuApDung || 'don_hang') === 'don_hang'; });
       var theoSp = KM.filter(function (k) { return k.kieuApDung === 'san_pham'; });
       var dangChay = KM.filter(function (k) { return k.trangThai === 'dang_chay'; }).length;
@@ -190,7 +192,7 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
-    })();
+    }
 
     /* ---------------- Bảng ---------------- */
 
@@ -319,7 +321,7 @@
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="batTat(' + k.id + ',' + (k.hoatDong ? 'true' : 'false') + ')">' +
         '<i class="fa-solid fa-' + (k.hoatDong ? 'circle-pause' : 'circle-play') + '"></i> ' +
-        (k.hoatDong ? 'Tạm dừng' : 'Bật mã') + '</button>' +
+        (k.hoatDong ? 'Tắt' : 'Bật') + '</button>' +
         '<button class="nut nut-chinh" type="button" onclick="moFormKm(' + i + ')">' +
         '<i class="fa-solid fa-pen"></i> Sửa</button>' +
         '</div></div>';
@@ -369,7 +371,7 @@
     }
 
     function batTat(id, dangBat) {
-      if (Apex.suaKhuyenMai(id, { hoatDong: !dangBat })) location.reload();
+      if (Apex.suaKhuyenMai(id, { hoatDong: !dangBat })) Apex.capNhatXong(['khuyen-mai'], dangBat ? 'Đã tạm dừng' : 'Đã bật lại');
     }
 
     /* ---------------- Hộp thoại thêm / sửa ---------------- */
@@ -404,11 +406,11 @@
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap" id="o-ma"><label for="f-ma">Mã khuyến mãi *</label>' +
-        '<input type="text" id="f-ma" placeholder="VD: GIAM10" style="text-transform:uppercase;" ' +
+        '<input type="text" id="f-ma" style="text-transform:uppercase;" ' +
         'value="' + (k ? Apex.esc(k.ma || '') : '') + '" />' +
         '<div class="goi-y">Chữ HOA không dấu, số, gạch ngang. Khách sẽ gõ đúng mã này.</div></div>' +
         '<div class="o-nhap"><label for="f-ten">Tên chương trình *</label>' +
-        '<input type="text" id="f-ten" placeholder="VD: Giảm 10% cho khách mới" ' +
+        '<input type="text" id="f-ten" ' +
         'value="' + (k ? Apex.esc(k.ten) : '') + '" /></div>' +
         '</div>' +
 
@@ -459,9 +461,9 @@
         '<div class="goi-y">Khách mới = chưa từng đặt đơn nào. Đối chiếu theo tài khoản, ' +
         'chưa đăng nhập thì theo số điện thoại.</div></div>' +
         '<div class="o-nhap"><label for="f-dia-chi">Khu vực giao hàng</label>' +
-        '<input type="text" id="f-dia-chi" placeholder="Bỏ trống = giao đâu cũng được" ' +
+        '<input type="text" id="f-dia-chi" ' +
         'value="' + (k ? Apex.esc(k.dieuKienDiaChi || '') : '') + '" />' +
-        '<div class="goi-y">Địa chỉ khách nhập phải chứa một trong các từ này, ngăn bằng dấu phẩy. ' +
+        '<div class="goi-y">Bỏ trống là giao đâu cũng được. Địa chỉ khách nhập phải chứa một trong các từ này, ngăn bằng dấu phẩy. ' +
         'So sánh bỏ dấu nên "cau giay" cũng khớp "Cầu Giấy". ' +
         '<a href="#" onclick="dienNoiThanhHN();return false;">Điền 12 quận nội thành Hà Nội</a></div></div>' +
         '</div>' +
@@ -489,8 +491,9 @@
         '</div>' +
 
         '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
-        '<input type="text" id="f-mo-ta" placeholder="Câu ngắn hiện cho khách xem" ' +
-        'value="' + (k ? Apex.esc(k.moTa || '') : '') + '" /></div>' +
+        '<input type="text" id="f-mo-ta" ' +
+        'value="' + (k ? Apex.esc(k.moTa || '') : '') + '" />' +
+        '<div class="goi-y">Câu ngắn hiện cho khách xem</div></div>' +
 
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
@@ -501,7 +504,7 @@
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
         '<button class="nut nut-chinh" type="button" onclick="luuKm(' + (k ? k.id : 'null') + ')">' +
-        '<i class="fa-solid fa-floppy-disk"></i> Lưu mã</button>' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html);
@@ -668,11 +671,12 @@
       };
       loi.textContent = '';
       var ok = id ? Apex.suaKhuyenMai(id, duLieu) : Apex.themKhuyenMai(duLieu);
-      if (ok) location.reload();
+      if (ok) Apex.capNhatXong(['khuyen-mai'], id ? 'Đã lưu khuyến mãi' : 'Đã tạo khuyến mãi');
       else loi.textContent = 'Không lưu được mã. Kiểm tra lại backend Java (cổng 8090).';
     }
 
-    veBang();
+    function veLaiTrang() { tinhSp(); veKpi(); veBang(); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>

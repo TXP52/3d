@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=13"></script>
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .dong-tong td { font-weight: 700; background: #f6f7f8; }
     .hang-gia { margin-top: 18px; }
@@ -19,6 +19,22 @@
     .hang-gia .so-gia.lon { font-size: 28px; color: var(--accent-dam); }
     .hang-ap-dung { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
     .hang-ap-dung .o-nhap { flex: 1; min-width: 160px; margin: 0; }
+
+    .luoi-chia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 16px; }
+    .luoi-chia .o-nhap { margin-bottom: 14px; }
+    @media (max-width: 700px) { .luoi-chia { grid-template-columns: 1fr; } }
+    .the-tong {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 4px;
+    }
+    @media (max-width: 560px) { .the-tong { grid-template-columns: 1fr; } }
+    .the-tong .o-tong {
+      border: 1px solid var(--vien); border-radius: var(--radius-nho); padding: 12px 14px;
+    }
+    .the-tong .o-tong.chinh { border-color: var(--accent); background: var(--accent-nhat); }
+    .the-tong .o-tong .nhan-tong { color: var(--chu-mo); font-size: 12.5px; font-weight: 500; }
+    .the-tong .o-tong .so-tong { font-size: 19px; font-weight: 700; margin-top: 3px; }
+    .the-tong .o-tong.chinh .so-tong { color: var(--accent-dam); font-size: 24px; }
+    .the-tong .o-tong .cong-thuc { color: var(--chu-mo); font-size: 12px; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -31,8 +47,39 @@
         <!-- PHẦN 1: KPI vốn & chi phí -->
         <div class="luoi-kpi" id="kpi-von"></div>
 
+        <!-- PHẦN 2: Chia tiền -->
+        <div class="the">
+          <div class="the-dau">
+            <div><h3>Chia tiền</h3>
+            <div class="phu">Nhập giá vốn, số chia và tiền lãi để ra tổng</div></div>
+            <button class="nut nut-vien nut-nho" type="button" onclick="xoaChiaTien()">
+              <i class="fa-solid fa-eraser"></i> Xoá
+            </button>
+          </div>
+          <div class="the-than">
+            <div class="luoi-chia">
+              <div class="o-nhap">
+                <label for="ct-von">Giá vốn (VNĐ)</label>
+                <input type="number" id="ct-von" min="0" step="1000">
+                <div class="goi-y">Tiền vốn của một phần</div>
+              </div>
+              <div class="o-nhap">
+                <label for="ct-so-chia">Số chia</label>
+                <input type="number" id="ct-so-chia" min="1" step="1">
+                <div class="goi-y">Chia thành bao nhiêu phần</div>
+              </div>
+              <div class="o-nhap">
+                <label for="ct-lai">Lãi (VNĐ)</label>
+                <input type="number" id="ct-lai" min="0" step="1000">
+                <div class="goi-y">Tiền lãi của một phần</div>
+              </div>
+            </div>
+            <div id="kq-chia-tien"></div>
+          </div>
+        </div>
+
         <div class="luoi-2">
-          <!-- PHẦN 2: Chi tiết chi phí -->
+          <!-- PHẦN 3: Chi tiết chi phí -->
           <div class="the">
             <div class="the-dau"><div><h3>Chi tiết chi phí</h3><div class="phu">Bóc tách vốn đã bỏ ra</div></div></div>
             <div class="the-than khong-dem bang-cuon">
@@ -46,7 +93,7 @@
             </div>
           </div>
 
-          <!-- PHẦN 3: Nhựa đã dùng theo cuộn -->
+          <!-- PHẦN 4: Nhựa đã dùng theo cuộn -->
           <div class="the">
             <div class="the-dau"><div><h3>Nhựa đã dùng theo cuộn</h3><div class="phu">Theo dõi hao hụt từng cuộn nhựa</div></div></div>
             <div class="the-than khong-dem bang-cuon">
@@ -66,11 +113,10 @@
           </div>
         </div>
 
-        <!-- PHẦN 4 + 5: Giá bán theo gram (vẽ lại bằng veLai()) -->
+        <!-- PHẦN 5 + 6: Giá bán theo gram (vẽ lại bằng veLai()) -->
         <div id="khu-gia"></div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -78,11 +124,11 @@
     Apex.shell('quan-ly-von', 'Quản lý vốn & chi phí');
 
     (function () {
+      /* ---------- PHẦN 1: KPI (vẽ lại được sau mỗi lần ghi nhận gram) ---------- */
+      function veKpi() {
       var cp = Apex.tinhChiPhi();
       var doanhThu = Apex.orders.reduce(function (s, o) { return s + (o.total || 0); }, 0);
       var laiLo = doanhThu - cp.tongChiPhi;
-
-      /* ---------- PHẦN 1: KPI ---------- */
       var dsKpi = [
         {
           nhan: 'Tổng chi phí', so: Apex.money(cp.tongChiPhi), icon: 'fa-coins', mau: 'bt-do',
@@ -106,8 +152,98 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div>' + k.phu + '</div>';
       }).join(''));
+      }
 
-      /* ---------- PHẦN 2: Chi tiết chi phí ---------- */
+      /* ---------- PHẦN 2: Chia tiền ----------
+         Máy tính nhỏ để tính nhanh khi gộp/tách một khoản: nhập tiền vốn,
+         số chia và tiền lãi rồi xem cả TỔNG (nhân số chia) lẫn MỖI PHẦN
+         (chia số chia) — hai chiều hay dùng nhất khi chia tiền một lô in.
+         Số vừa nhập được nhớ lại để mở trang sau vẫn còn. */
+
+      var KHOA_CHIA = 'in3d_chia_tien';
+      var oVon = document.getElementById('ct-von');
+      var oSoChia = document.getElementById('ct-so-chia');
+      var oLai = document.getElementById('ct-lai');
+
+      function soNhap(o) {
+        var v = parseFloat(o.value);
+        return isNaN(v) || v < 0 ? 0 : v;
+      }
+
+      function veChiaTien() {
+        var von = soNhap(oVon);
+        var lai = soNhap(oLai);
+        var soChia = parseFloat(oSoChia.value);
+        var coChia = !isNaN(soChia) && soChia > 0;
+
+        var tongVon = von * (coChia ? soChia : 1);
+        var tongLai = lai * (coChia ? soChia : 1);
+        var moiPhanVon = coChia ? von / soChia : 0;
+        var moiPhanLai = coChia ? lai / soChia : 0;
+        var lam = function (n) { return Apex.money(Math.round(n)); };
+        var nhanVoi = coChia ? ' × ' + Apex.number(soChia) : '';
+
+        var o = function (nhan, so, congThuc, chinh) {
+          return '<div class="o-tong' + (chinh ? ' chinh' : '') + '">' +
+            '<div class="nhan-tong">' + nhan + '</div>' +
+            '<div class="so-tong">' + so + '</div>' +
+            '<div class="cong-thuc">' + congThuc + '</div></div>';
+        };
+
+        var html =
+          '<div class="the-tong">' +
+          o('TỔNG CỘNG (vốn + lãi)', lam(tongVon + tongLai),
+            coChia ? '(' + Apex.number(von) + ' + ' + Apex.number(lai) + ') × ' + Apex.number(soChia)
+                   : 'Nhập số chia để nhân lên', true) +
+          o('Mỗi phần (vốn + lãi)', coChia ? lam(moiPhanVon + moiPhanLai) : '—',
+            coChia ? '(' + Apex.number(von) + ' + ' + Apex.number(lai) + ') ÷ ' + Apex.number(soChia)
+                   : 'Nhập số chia lớn hơn 0', true) +
+          o('Tổng vốn', lam(tongVon), Apex.number(von) + nhanVoi) +
+          o('Vốn mỗi phần', coChia ? lam(moiPhanVon) : '—',
+            coChia ? Apex.number(von) + ' ÷ ' + Apex.number(soChia) : '—') +
+          o('Tổng lãi', lam(tongLai), Apex.number(lai) + nhanVoi) +
+          o('Lãi mỗi phần', coChia ? lam(moiPhanLai) : '—',
+            coChia ? Apex.number(lai) + ' ÷ ' + Apex.number(soChia) : '—') +
+          '</div>';
+
+        if (tongVon > 0) {
+          var tiLe = tongVon > 0 ? (tongLai / tongVon) * 100 : 0;
+          html += '<div class="phu" style="margin-top:12px;">Lãi bằng <strong>' +
+            Apex.number(Math.round(tiLe)) + '%</strong> giá vốn.</div>';
+        }
+
+        Apex.fill('#kq-chia-tien', html);
+
+        try {
+          localStorage.setItem(KHOA_CHIA, JSON.stringify({
+            von: oVon.value, soChia: oSoChia.value, lai: oLai.value
+          }));
+        } catch (e) { /* trình duyệt chặn localStorage thì thôi, không chặn tính toán */ }
+      }
+
+      window.xoaChiaTien = function () {
+        oVon.value = '';
+        oSoChia.value = '';
+        oLai.value = '';
+        veChiaTien();
+        oVon.focus();
+      };
+
+      (function napChiaTien() {
+        var cu = null;
+        try { cu = JSON.parse(localStorage.getItem(KHOA_CHIA)); } catch (e) { cu = null; }
+        if (cu && typeof cu === 'object') {
+          oVon.value = cu.von || '';
+          oSoChia.value = cu.soChia || '';
+          oLai.value = cu.lai || '';
+        }
+        [oVon, oSoChia, oLai].forEach(function (o) { o.addEventListener('input', veChiaTien); });
+        veChiaTien();
+      })();
+
+      /* ---------- PHẦN 3 + 4: Chi tiết chi phí, nhựa đã dùng theo cuộn ---------- */
+      function veChiPhi() {
+      var cp = Apex.tinhChiPhi();
       Apex.fill('#bang-chi-phi',
         '<tr><td>Tiền mua máy in</td><td class="phai">' + Apex.money(cp.tienMayIn) + '</td></tr>' +
         '<tr><td>Tiền mua nhựa (toàn bộ cuộn)</td><td class="phai">' + Apex.money(cp.tienNhuaTong) + '</td></tr>' +
@@ -115,14 +251,14 @@
         '<td class="phai" style="color:var(--vang);font-weight:700;">' + Apex.money(cp.tienNhuaDaDung) + '</td></tr>' +
         '<tr class="dong-tong"><td>TỔNG CHI PHÍ</td><td class="phai">' + Apex.money(cp.tongChiPhi) + '</td></tr>');
 
-      /* ---------- PHẦN 3: Nhựa đã dùng theo cuộn ---------- */
+      /* ---------- PHẦN 4: Nhựa đã dùng theo cuộn ---------- */
       var cuonNhua = Apex.vatTu.filter(function (v) { return v.loai === 'nhua'; });
       Apex.fill('#bang-nhua', cuonNhua.map(function (v) {
         var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
         return '<tr class="hang-bam" onclick="moFormGram(' + v.id + ')" title="Bấm để nhập số gram đã dùng">' +
           '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.anhSanPham(v.ten) + '" alt="" />' +
           '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
-          (v.mau ? '<div class="phu"><span class="badge badge-xam">' + Apex.esc(v.mau) + '</span></div>' : '') +
+          (v.mau ? '<div class="phu">' + Apex.nhanMau(v, 14) + '</div>' : '') +
           '</div></div></td>' +
           '<td class="phai">' + Apex.money(Math.round(v.donGiaMoiGram || 0)) + '/g</td>' +
           '<td class="giua"><strong>' + Apex.number(v.daDungGram || 0) + 'g</strong></td>' +
@@ -130,8 +266,9 @@
           '<td class="phai">' + Apex.money(v.tienDaDung || 0) + '</td>' +
           '</tr>';
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có cuộn nhựa nào trong kho.</td></tr>');
+      }
 
-      /* ---------- PHẦN 4 + 5: Giá bán theo gram ---------- */
+      /* ---------- PHẦN 5 + 6: Giá bán theo gram ---------- */
       window.veLai = function () {
         var c = Apex.tinhChiPhi();
         var tiLe = Apex.layTiLeLai();
@@ -179,7 +316,7 @@
           '<div class="the" style="margin-top:20px;">' +
             '<div class="the-dau"><div><h3>Giá dự kiến từng sản phẩm in</h3>' +
             '<div class="phu">Ước tính theo khối lượng nhựa mỗi mẫu</div></div>' +
-            '<button class="nut nut-vien nut-nho" onclick="themMauIn()">Thêm mẫu</button></div>' +
+            '<button class="nut nut-vien nut-nho" onclick="themMauIn()">Thêm</button></div>' +
             '<div class="the-than khong-dem bang-cuon">' +
               '<table class="bang"><thead><tr>' +
                 '<th>Sản phẩm</th><th class="giua">Khối lượng</th><th class="phai">Tiền nhựa</th>' +
@@ -210,7 +347,7 @@
 
         Apex.moHopThoai(
           '<div class="ht-dau"><div><h3>' + Apex.esc(v.ten) + '</h3>' +
-          '<div class="phu">' + (v.mau ? Apex.oMau(v.maMau) + Apex.esc(v.mau) + ' \u00b7 ' : '') +
+          '<div class="phu">' + (v.mau ? Apex.oMau(v.maMau, v.mau) + Apex.esc(v.mau) + ' \u00b7 ' : '') +
           'cu\u1ed9n ' + Apex.number(tong) + 'g</div></div>' +
           '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
@@ -220,7 +357,7 @@
           '<div class="goi-y">\u0110ang d\u00f9ng ' + Apex.number(v.daDungGram || 0) + 'g / ' + Apex.number(tong) + 'g' +
           ' \u00b7 \u0111\u01a1n gi\u00e1 ' + Apex.money(Math.round(v.donGiaMoiGram || 0)) + '/g</div></div>' +
           '<div class="o-nhap"><label for="f-them">Ho\u1eb7c c\u1ed9ng th\u00eam v\u1eeba in xong (gram)</label>' +
-          '<input type="number" id="f-them" min="0" step="1" placeholder="VD: 5" /></div>' +
+          '<input type="number" id="f-them" min="0" step="1" /></div>' +
           '<div class="bao-loi" id="loi-gram"></div>' +
           '</div>' +
 
@@ -242,7 +379,7 @@
         if (gram > tong) { loi.textContent = 'Kh\u00f4ng th\u1ec3 d\u00f9ng qu\u00e1 ' + tong + 'g c\u1ee7a cu\u1ed9n n\u00e0y.'; return; }
 
         loi.textContent = '';
-        if (Apex.suaVatTu(id, { daDungGram: gram })) location.reload();
+        if (Apex.suaVatTu(id, { daDungGram: gram })) Apex.capNhatXong(['vat-tu'], 'Đã ghi nhận số gram');
         else loi.textContent = 'Kh\u00f4ng l\u01b0u \u0111\u01b0\u1ee3c. Ki\u1ec3m tra l\u1ea1i backend Java (c\u1ed5ng 8090).';
       };
 
@@ -262,7 +399,7 @@
 
           '<div class="ht-than">' +
           '<div class="o-nhap"><label for="f-ten-mau">T\u00ean m\u1eabu *</label>' +
-          '<input type="text" id="f-ten-mau" placeholder="VD: M\u00f3c kho\u00e1 mini" value="' +
+          '<input type="text" id="f-ten-mau" value="' +
           (m ? Apex.esc(m.ten) : '') + '" /></div>' +
           '<div class="o-nhap"><label for="f-gram-mau">T\u1ed1n bao nhi\u00eau gram nh\u1ef1a? *</label>' +
           '<input type="number" id="f-gram-mau" min="1" step="1" value="' + (m ? (m.gram || 10) : 10) + '" /></div>' +
@@ -301,10 +438,12 @@
         if (!confirm('Xoá mẫu "' + ds[i].ten + '" khỏi danh sách?')) return;
         ds.splice(i, 1);
         Apex.luuSanPhamIn(ds);
-        location.reload();
+        Apex.dongHopThoai();
+        veLai();
       };
 
-      veLai();
+      window.veLaiTrang = function () { veKpi(); veChiPhi(); veLai(); };
+      Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
     })();
   </script>
 </body>

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .o-tieu-de { max-width: 460px; }
     .o-tieu-de .chinh { display: block; line-height: 1.4; }
@@ -49,10 +49,9 @@
           <div class="the-dau">
             <div>
               <h3>Bài viết trên trang chủ</h3>
-              <div class="phu">Bấm vào một bài để xem, sửa, ẩn hoặc xoá.</div>
             </div>
             <button class="nut nut-chinh" type="button" onclick="moFormBai(null)">
-              <i class="fa-solid fa-plus"></i> Viết bài mới
+              <i class="fa-solid fa-plus"></i> Thêm
             </button>
           </div>
           <div class="the-than khong-dem bang-cuon">
@@ -73,7 +72,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -85,7 +83,7 @@
 
     /* ---------------- KPI ---------------- */
 
-    (function veKpi() {
+    function veKpi() {
       var hien = BV.filter(function (b) { return b.hienThi; }).length;
       var luot = BV.reduce(function (t, b) { return t + (b.luotXem || 0); }, 0);
       Apex.fill('#kpi', [
@@ -98,7 +96,7 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
-    })();
+    }
 
     /* ---------------- Bảng ---------------- */
 
@@ -188,10 +186,10 @@
         '<div class="day-phai">' +
         (b.duongDan ? '<a class="nut nut-vien" target="_blank" rel="noopener" ' +
           'href="' + Apex.esc(LINK_KHACH + encodeURIComponent(b.duongDan)) + '">' +
-          '<i class="fa-solid fa-arrow-up-right-from-square"></i> Xem trên web</a>' : '') +
+          '<i class="fa-solid fa-arrow-up-right-from-square"></i> Xem</a>' : '') +
         '<button class="nut nut-vien" type="button" onclick="doiHienThi(' + b.id + ',' + (b.hienThi ? 'true' : 'false') + ')">' +
         '<i class="fa-solid fa-' + (b.hienThi ? 'eye-slash' : 'eye') + '"></i> ' +
-        (b.hienThi ? 'Tắt hiển thị' : 'Bật hiển thị') + '</button>' +
+        (b.hienThi ? 'Tắt' : 'Hiện') + '</button>' +
         '<button class="nut nut-chinh" type="button" onclick="moFormBai(' + i + ')">' +
         '<i class="fa-solid fa-pen"></i> Sửa</button>' +
         '</div></div>';
@@ -200,7 +198,7 @@
     }
 
     function doiHienThi(id, dangHien) {
-      if (Apex.suaBaiViet(id, { hienThi: !dangHien })) location.reload();
+      if (Apex.suaBaiViet(id, { hienThi: !dangHien })) Apex.capNhatXong(['bai-viet'], dangHien ? 'Đã tắt bài viết' : 'Đã hiện bài viết');
     }
 
     /* ---------------- Hộp thoại thêm / sửa ---------------- */
@@ -226,20 +224,21 @@
 
         '<div class="ht-than">' +
         '<div class="o-nhap"><label for="f-tieu-de">Tiêu đề *</label>' +
-        '<input type="text" id="f-tieu-de" placeholder="VD: Chọn nhựa nào cho đồ để ngoài trời?" ' +
+        '<input type="text" id="f-tieu-de" ' +
         'value="' + (b ? Apex.esc(b.tieuDe) : '') + '" /></div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-cm">Chuyên mục</label>' +
         '<select id="f-cm">' + chonCm + '</select></div>' +
         '<div class="o-nhap"><label for="f-tac-gia">Tác giả</label>' +
-        '<input type="text" id="f-tac-gia" placeholder="VD: Bedecraft" ' +
+        '<input type="text" id="f-tac-gia" ' +
         'value="' + (b ? Apex.esc(b.tacGia || '') : 'Bedecraft') + '" /></div>' +
         '</div>' +
 
         '<div class="o-nhap"><label for="f-tom-tat">Tóm tắt</label>' +
-        '<input type="text" id="f-tom-tat" placeholder="1-2 câu hiện ở thẻ ngoài trang chủ" ' +
-        'value="' + (b ? Apex.esc(b.tomTat || '') : '') + '" /></div>' +
+        '<input type="text" id="f-tom-tat" ' +
+        'value="' + (b ? Apex.esc(b.tomTat || '') : '') + '" />' +
+        '<div class="goi-y">1-2 câu hiện ở thẻ ngoài trang chủ</div></div>' +
 
         '<div class="o-nhap"><label for="f-noi-dung">Nội dung</label>' +
         '<textarea class="o-noi-dung" id="f-noi-dung" spellcheck="false">' +
@@ -247,7 +246,7 @@
         '<div class="goi-y">Gõ chữ thường. Dòng bắt đầu bằng <b>## </b> là tiêu đề mục nhỏ, ' +
         'bằng <b>- </b> là gạch đầu dòng, để trống một dòng là sang đoạn mới.</div></div>' +
 
-        Apex.htmlOTaiAnh('bv-anh', anhHienTai, moi ? 'Chọn ảnh bìa' : 'Đổi ảnh bìa') +
+        Apex.htmlOTaiAnh('bv-anh', anhHienTai, 'Chọn ảnh') +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
@@ -262,9 +261,9 @@
         '</div>' +
 
         '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
-        '<input type="text" id="f-duong-dan" placeholder="Bỏ trống để tự sinh từ tiêu đề" ' +
+        '<input type="text" id="f-duong-dan" ' +
         'value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" />' +
-        '<div class="goi-y">Phần sau dấu ? trên địa chỉ bài viết. Đổi đường dẫn là link cũ đã chia sẻ sẽ hỏng.</div></div>' +
+        '<div class="goi-y">Bỏ trống để tự sinh từ tiêu đề. Phần sau dấu ? trên địa chỉ bài viết. Đổi đường dẫn là link cũ đã chia sẻ sẽ hỏng.</div></div>' +
 
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
@@ -275,7 +274,7 @@
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
         '<button class="nut nut-chinh" type="button" onclick="luuBai(' + (b ? b.id : 'null') + ')">' +
-        '<i class="fa-solid fa-floppy-disk"></i> Lưu bài viết</button>' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html);
@@ -300,11 +299,12 @@
       };
       loi.textContent = '';
       var ok = id ? Apex.suaBaiViet(id, duLieu) : Apex.themBaiViet(duLieu);
-      if (ok) location.reload();
+      if (ok) Apex.capNhatXong(['bai-viet'], id ? 'Đã lưu bài viết' : 'Đã đăng bài viết');
       else loi.textContent = 'Không lưu được bài viết. Kiểm tra lại backend Java (cổng 8090).';
     }
 
-    veBang();
+    function veLaiTrang() { veKpi(); veBang(); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>

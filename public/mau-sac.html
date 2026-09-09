@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
   <style>
     .o-mau-lon {
       width: 34px; height: 34px; border-radius: 9px;
@@ -44,7 +44,7 @@
           <div class="the-dau">
             <div><h3>Bảng màu</h3><div class="phu">Dùng chung cho nhựa in và sản phẩm</div></div>
             <button class="nut nut-chinh" type="button" onclick="moFormMau(null)">
-              <i class="fa-solid fa-plus"></i> Thêm màu
+              <i class="fa-solid fa-plus"></i> Thêm
             </button>
           </div>
           <div class="the-than"><div class="luoi-mau" id="luoi-mau"></div></div>
@@ -53,7 +53,7 @@
         <!-- Bảng chi tiết -->
         <div class="the">
           <div class="the-dau">
-            <div><h3>Danh sách màu</h3><div class="phu">Bấm vào một màu để sửa tên, mã màu hoặc xoá.</div></div>
+            <div><h3>Danh sách màu</h3></div>
           </div>
           <div class="the-than khong-dem bang-cuon">
             <table class="bang">
@@ -73,7 +73,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -90,7 +89,7 @@
       }).length;
     }
 
-    (function veKpi() {
+    function veKpi() {
       var dangDung = MS.filter(function (m) { return demDung(m) > 0; }).length;
       Apex.fill('#kpi', [
         { nhan: 'Tổng số màu', so: Apex.number(MS.length) + ' màu', icon: 'fa-palette', mau: 'bt-toi' },
@@ -101,7 +100,7 @@
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
-    })();
+    }
 
     function veLuoi() {
       Apex.fill('#luoi-mau', MS.map(function (m, i) {
@@ -144,7 +143,7 @@
 
         '<div class="ht-than">' +
         '<div class="o-nhap"><label for="f-ten">Tên màu *</label>' +
-        '<input type="text" id="f-ten" placeholder="VD: Xanh ngọc" value="' + (m ? Apex.esc(m.ten) : '') + '" /></div>' +
+        '<input type="text" id="f-ten" value="' + (m ? Apex.esc(m.ten) : '') + '" /></div>' +
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-ma">Mã màu</label>' +
         '<input type="color" id="f-ma" value="' + (m && /^#[0-9a-fA-F]{6}$/.test(m.maMau || '') ? m.maMau : '#10b981') + '" /></div>' +
@@ -153,7 +152,7 @@
         '<div class="goi-y">Số nhỏ hiện lên trước</div></div>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
-        '<input type="text" id="f-ghi-chu" placeholder="VD: chỉ dùng cho PETG" value="' + (m ? Apex.esc(m.ghiChu || '') : '') + '" /></div>' +
+        '<input type="text" id="f-ghi-chu" value="' + (m ? Apex.esc(m.ghiChu || '') : '') + '" /></div>' +
         (dung > 0
           ? '<div class="bao-ok" style="display:block;">Đang có <strong>' + dung + '</strong> vật tư dùng màu này.</div>'
           : '') +
@@ -166,7 +165,7 @@
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
         '<button class="nut nut-chinh" type="button" onclick="luuMau(' + (m ? m.id : 'null') + ')">' +
-        '<i class="fa-solid fa-floppy-disk"></i> Lưu màu</button>' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html);
@@ -185,12 +184,12 @@
       };
       loi.textContent = '';
       var ok = id ? Apex.suaMauSac(id, duLieu) : Apex.themMauSac(duLieu);
-      if (ok) location.reload();
+      if (ok) Apex.capNhatXong(['mau-sac', 'vat-tu'], id ? 'Đã lưu màu' : 'Đã thêm màu');
       else loi.textContent = 'Không lưu được màu. Kiểm tra lại backend Java (cổng 8090).';
     }
 
-    veLuoi();
-    veBang();
+    function veLaiTrang() { veKpi(); veLuoi(); veBang(); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>

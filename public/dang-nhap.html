@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
   <style>
     .o-otp {
       display: flex;
@@ -62,11 +62,11 @@
       <form id="buoc-1">
         <div class="o-nhap">
           <label for="email">Email quản trị</label>
-          <input type="email" id="email" placeholder="admin@example.com" autocomplete="username" required>
+          <input type="email" id="email" autocomplete="username" required>
         </div>
         <div class="o-nhap">
           <label for="mat-khau">Mật khẩu</label>
-          <input type="password" id="mat-khau" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+          <input type="password" id="mat-khau" autocomplete="current-password" required>
         </div>
         <p class="bao-loi" id="loi-1"></p>
         <button class="nut nut-chinh" type="submit" id="nut-1" style="width:100%;justify-content:center;padding:11px;">
@@ -105,8 +105,8 @@
       </div>
 
       <p style="color:var(--chu-mo);font-size:12.5px;text-align:center;margin-top:20px;line-height:1.6;">
-        <i class="fa-solid fa-lock"></i> Chỉ tài khoản có quyền <strong>quản trị</strong> mới đăng nhập được.<br>
-        Hệ thống gửi mã xác thực về email mỗi lần đăng nhập.
+        <i class="fa-solid fa-lock"></i> Chỉ <strong>một tài khoản quản trị duy nhất</strong> đăng nhập được.<br>
+        Mỗi lần đăng nhập, mã xác thực 6 số được gửi về email của tài khoản đó.
       </p>
 
     </div>

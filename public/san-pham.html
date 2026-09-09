@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=14" rel="stylesheet">
-  <script src="assets/js/apex.js?v=13"></script>
+  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <script src="assets/js/apex.js?v=15"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -26,14 +26,16 @@
           <div class="the-dau">
             <div>
               <h3>Tất cả sản phẩm</h3>
-              <div class="phu">Bấm vào một sản phẩm để xem chi tiết, sửa, đổi trạng thái hoặc xoá.</div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <select id="loc-danh-muc" class="nut nut-vien" style="padding:7px 10px;" onchange="veBang()">
+                <option value="">Tất cả danh mục</option>
+              </select>
               <select id="loc-trang-thai" class="nut nut-vien" style="padding:7px 10px;" onchange="veBang()">
                 <option value="">Tất cả trạng thái</option>
               </select>
               <button class="nut nut-chinh" type="button" onclick="moFormSanPham(null)">
-                <i class="fa-solid fa-plus"></i> Thêm sản phẩm
+                <i class="fa-solid fa-plus"></i> Thêm
               </button>
             </div>
           </div>
@@ -42,6 +44,7 @@
               <thead>
                 <tr>
                   <th>Sản phẩm</th>
+                  <th>Danh mục</th>
                   <th class="giua">Loại</th>
                   <th class="giua">Trạng thái</th>
                   <th class="giua">Hiển thị</th>
@@ -56,7 +59,6 @@
         </div>
 
       </main>
-      <div id="apex-chan-cho"></div>
     </div>
   </div>
 
@@ -100,10 +102,29 @@
       el.value = dangChon;
     }
 
+    function veLocDanhMuc() {
+      var el = document.getElementById('loc-danh-muc');
+      var dangChon = el.value;
+      var chuaXep = SP.filter(function (p) { return !p.danhMucId; }).length;
+      el.innerHTML = '<option value="">Tất cả danh mục</option>' +
+        Apex.danhMucSanPham().map(function (d) {
+          return '<option value="' + d.id + '">' + Apex.esc(d.ten) + ' (' +
+            Apex.soSanPhamTheoDanhMuc(d.id) + ')</option>';
+        }).join('') +
+        '<option value="chua">Chưa phân loại (' + chuaXep + ')</option>';
+      el.value = dangChon;
+    }
+
     function veBang() {
       var loc = document.getElementById('loc-trang-thai').value;
+      var locDm = document.getElementById('loc-danh-muc').value;
       var html = SP.map(function (p, i) { return { p: p, i: i }; })
         .filter(function (x) { return !loc || x.p.trangThai === loc; })
+        .filter(function (x) {
+          if (!locDm) return true;
+          if (locDm === 'chua') return !x.p.danhMucId;
+          return String(x.p.danhMucId) === locDm;
+        })
         .map(function (x) {
           var p = x.p;
           var hienThi = (p.cat === 'Đang bán')
@@ -114,6 +135,7 @@
             'onerror="this.src=\'' + Apex.anhSanPham(p.name) + '\'" />' +
             '<div><div class="chinh">' + Apex.esc(p.name) + '</div>' +
             '<div class="phu">Mã: ' + Apex.esc(p.sku) + '</div></div></div></td>' +
+            '<td>' + Apex.badgeDanhMuc(p.danhMucId) + '</td>' +
             '<td class="giua">' + Apex.badgeLoaiSanPham(p.loaiSanPham) + '</td>' +
             '<td class="giua">' + Apex.badgeTtSanPham(p.trangThai) + '</td>' +
             '<td class="giua">' + hienThi + '</td>' +
@@ -124,8 +146,8 @@
         }).join('');
 
       Apex.fill('#bang-san-pham', html ||
-        '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
-        (loc ? 'Không có sản phẩm nào ở trạng thái này.' : 'Chưa có sản phẩm nào. Bấm "Thêm sản phẩm" để tạo mới.') +
+        '<tr><td colspan="8" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        ((loc || locDm) ? 'Không có sản phẩm nào khớp bộ lọc.' : 'Chưa có sản phẩm nào. Bấm "Thêm sản phẩm" để tạo mới.') +
         '</td></tr>');
     }
 
@@ -135,7 +157,6 @@
       var p = SP[i];
       if (!p) return;
       var anh = Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name);
-      var laDuLieuMau = !p.dbId;
 
       var dong = function (nhan, giaTri) {
         return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
@@ -156,6 +177,7 @@
         '<div class="ht-than">' +
         '<img class="anh-chi-tiet" src="' + anh + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(p.name) + '\'" />' +
         '<div style="margin-top:16px;">' +
+        dong('Danh mục', Apex.badgeDanhMuc(p.danhMucId)) +
         dong('Loại sản phẩm', Apex.badgeLoaiSanPham(p.loaiSanPham)) +
         dong('Trạng thái', Apex.badgeTtSanPham(p.trangThai)) +
         dong('Hiển thị trên web', p.cat === 'Đang bán'
@@ -170,25 +192,22 @@
           ? '<div style="margin-top:14px;"><div style="font-weight:600;margin-bottom:5px;">Mô tả</div>' +
             '<div style="color:var(--chu-mo);font-size:13.5px;white-space:pre-wrap;">' + Apex.esc(p.moTa) + '</div></div>'
           : '') +
-        (laDuLieuMau
-          ? '<div class="bao-loi" style="margin-top:14px;">Đây là dữ liệu mẫu (backend Java chưa chạy) nên không sửa được.</div>'
-          : '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
-            '<label for="ct-trang-thai">Đổi nhanh trạng thái</label>' +
-            '<select id="ct-trang-thai" onchange="Apex.doiTrangThaiSanPham(' + p.dbId + ', this.value)">' +
-            chonTt + '</select></div>') +
+        '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
+        '<label for="ct-trang-thai">Đổi nhanh trạng thái</label>' +
+        '<select id="ct-trang-thai" onchange="Apex.doiTrangThaiSanPham(' + p.dbId + ', this.value)">' +
+        chonTt + '</select></div>' +
         '</div>' +
 
         '<div class="ht-chan">' +
-        (laDuLieuMau ? '' :
-          '<button class="nut nut-do" type="button" onclick="Apex.xoaSanPham(' + p.dbId + ', ' +
-          jsStr(p.name) + ')"><i class="fa-solid fa-trash"></i> Xoá</button>' +
-          '<div class="day-phai">' +
-          '<button class="nut nut-vien" type="button" onclick="Apex.anHienSanPham(' + p.dbId + ', ' +
-          (p.dangBan ? 'true' : 'false') + ')">' +
-          '<i class="fa-solid fa-' + (p.dangBan ? 'eye-slash' : 'eye') + '"></i> ' +
-          (p.dangBan ? 'Ẩn sản phẩm' : 'Hiện sản phẩm') + '</button>' +
-          '<button class="nut nut-chinh" type="button" onclick="moFormSanPham(' + i + ')">' +
-          '<i class="fa-solid fa-pen-to-square"></i> Sửa</button></div>') +
+        '<button class="nut nut-do" type="button" onclick="Apex.xoaSanPham(' + p.dbId + ', ' +
+        jsStr(p.name) + ')"><i class="fa-solid fa-trash"></i> Xoá</button>' +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.anHienSanPham(' + p.dbId + ', ' +
+        (p.dangBan ? 'true' : 'false') + ')">' +
+        '<i class="fa-solid fa-' + (p.dangBan ? 'eye-slash' : 'eye') + '"></i> ' +
+        (p.dangBan ? 'Ẩn' : 'Hiện') + '</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="moFormSanPham(' + i + ')">' +
+        '<i class="fa-solid fa-pen-to-square"></i> Sửa</button></div>' +
         '</div>';
 
       Apex.moHopThoai(html);
@@ -215,6 +234,11 @@
           Apex.loaiSanPham[k].ten + '</option>';
       }).join('');
 
+      var chonDm = '<option value="">— Chưa phân loại —</option>' + Apex.danhMucSanPham().map(function (d) {
+        return '<option value="' + d.id + '"' + (p && p.danhMucId === d.id ? ' selected' : '') + '>' +
+          Apex.esc(d.ten) + '</option>';
+      }).join('');
+
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Thêm sản phẩm mới' : 'Sửa sản phẩm') + '</h3>' +
@@ -223,15 +247,18 @@
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
-        Apex.htmlOTaiAnh('sp-anh', anhHienTai, moi ? 'Chọn ảnh sản phẩm' : 'Đổi ảnh') +
+        Apex.htmlOTaiAnh('sp-anh', anhHienTai, 'Chọn ảnh') +
         '<div class="o-nhap"><label for="f-ten">Tên sản phẩm *</label>' +
-        '<input type="text" id="f-ten" placeholder="VD: Móc khoá in 3D hình rồng" value="' +
+        '<input type="text" id="f-ten" value="' +
         (p ? Apex.esc(p.name) : '') + '" /></div>' +
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-gia">Giá bán (VNĐ)</label>' +
         '<input type="number" id="f-gia" min="0" step="1000" value="' + (p ? (p.price || 0) : 0) + '" /></div>' +
         '<div class="o-nhap"><label for="f-ton">Tồn kho</label>' +
         '<input type="number" id="f-ton" min="0" step="1" value="' + (p ? (p.stock || 0) : 0) + '" /></div>' +
+        '<div class="o-nhap"><label for="f-danh-muc">Danh mục</label>' +
+        '<select id="f-danh-muc">' + chonDm + '</select>' +
+        '<div class="goi-y">Thêm danh mục ở trang <a href="danh-muc.html">Danh mục</a></div></div>' +
         '<div class="o-nhap"><label for="f-loai">Loại sản phẩm</label>' +
         '<select id="f-loai">' + chonLoai + '</select>' +
         '<div class="goi-y">Hàng mẫu chỉ trưng bày, không bán</div></div>' +
@@ -244,7 +271,7 @@
         '</select></div>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-mota">Mô tả</label>' +
-        '<textarea id="f-mota" rows="3" placeholder="Chất liệu, kích thước, thời gian in...">' +
+        '<textarea id="f-mota" rows="3">' +
         (p ? Apex.esc(p.moTa || '') : '') + '</textarea></div>' +
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
@@ -252,7 +279,7 @@
         '<div class="ht-chan"><div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
         '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (p && p.dbId ? p.dbId : 'null') + ')">' +
-        '<i class="fa-solid fa-floppy-disk"></i> Lưu sản phẩm</button>' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html);
@@ -276,18 +303,19 @@
         tonKho: ton,
         trangThai: document.getElementById('f-tt').value,
         loaiSanPham: document.getElementById('f-loai').value,
+        danhMucId: document.getElementById('f-danh-muc').value
+          ? parseInt(document.getElementById('f-danh-muc').value, 10) : null,
         dangBan: document.getElementById('f-ban').value === 'true',
         moTa: document.getElementById('f-mota').value.trim(),
         hinhAnh: layAnh ? layAnh() : ''
       };
 
-      if (Apex.luuSanPham(dbId, duLieu)) location.reload();
+      if (Apex.luuSanPham(dbId, duLieu)) Apex.capNhatXong(['san-pham', 'danh-muc'], dbId ? 'Đã lưu sản phẩm' : 'Đã thêm sản phẩm');
       else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
     }
 
-    veKpi();
-    veLocTrangThai();
-    veBang();
+    function veLaiTrang() { veKpi(); veLocDanhMuc(); veLocTrangThai(); veBang(); }
+    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
   </script>
 </body>
 </html>
