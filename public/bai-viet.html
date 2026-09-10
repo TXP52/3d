@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .o-tieu-de { max-width: 460px; }
     .o-tieu-de .chinh { display: block; line-height: 1.4; }
@@ -63,7 +63,6 @@
                   <th class="giua">Hiển thị</th>
                   <th class="giua">Lượt đọc</th>
                   <th class="giua">Thứ tự</th>
-                  <th>Ngày tạo</th>
                 </tr>
               </thead>
               <tbody id="bang-bai"></tbody>
@@ -111,11 +110,10 @@
             : '<span class="badge badge-xam">Đang tắt</span>') + '</td>' +
           '<td class="giua">' + Apex.number(b.luotXem || 0) + '</td>' +
           '<td class="giua">' + Apex.number(b.thuTu || 0) + '</td>' +
-          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(Apex.ngayVN(b.createdAt)) + '</td>' +
           '</tr>';
       }).join('') ||
-        '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
-        'Chưa có bài viết nào. Bấm "Viết bài mới" để tạo.</td></tr>');
+        '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        'Chưa có bài viết nào.</td></tr>');
     }
 
     function catBot(chuoi, n) {
@@ -161,8 +159,7 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + Apex.esc(b.tieuDe) + '</h3>' +
-        '<div class="phu">' + Apex.esc(b.tacGia || 'Không rõ tác giả') + ' · ' +
-        Apex.esc(Apex.ngayVN(b.createdAt)) + '</div></div>' +
+        '<div class="phu">' + Apex.esc(b.tacGia || 'Không rõ tác giả') + '</div></div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
@@ -219,7 +216,7 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Viết bài mới' : 'Sửa bài viết') + '</h3>' +
-        '<div class="phu">' + (moi ? 'Bài sẽ hiện ở cuối trang chủ' : Apex.esc(b.tieuDe)) + '</div></div>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(b.tieuDe) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
@@ -238,13 +235,12 @@
         '<div class="o-nhap"><label for="f-tom-tat">Tóm tắt</label>' +
         '<input type="text" id="f-tom-tat" ' +
         'value="' + (b ? Apex.esc(b.tomTat || '') : '') + '" />' +
-        '<div class="goi-y">1-2 câu hiện ở thẻ ngoài trang chủ</div></div>' +
+        '</div>' +
 
         '<div class="o-nhap"><label for="f-noi-dung">Nội dung</label>' +
         '<textarea class="o-noi-dung" id="f-noi-dung" spellcheck="false">' +
         (b ? Apex.esc(b.noiDung || '') : '') + '</textarea>' +
-        '<div class="goi-y">Gõ chữ thường. Dòng bắt đầu bằng <b>## </b> là tiêu đề mục nhỏ, ' +
-        'bằng <b>- </b> là gạch đầu dòng, để trống một dòng là sang đoạn mới.</div></div>' +
+        '</div>' +
 
         Apex.htmlOTaiAnh('bv-anh', anhHienTai, 'Chọn ảnh') +
 
@@ -252,7 +248,7 @@
         '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
         '<input type="number" id="f-thu-tu" min="0" step="1" value="' +
         (b ? (b.thuTu || 0) : (BV.length + 1)) + '" />' +
-        '<div class="goi-y">Số nhỏ hiện lên trước</div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-hien">Hiển thị trên web</label>' +
         '<select id="f-hien">' +
         '<option value="true"' + (!b || b.hienThi ? ' selected' : '') + '>Có</option>' +
@@ -263,7 +259,7 @@
         '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
         '<input type="text" id="f-duong-dan" ' +
         'value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" />' +
-        '<div class="goi-y">Bỏ trống để tự sinh từ tiêu đề. Phần sau dấu ? trên địa chỉ bài viết. Đổi đường dẫn là link cũ đã chia sẻ sẽ hỏng.</div></div>' +
+        '</div>' +
 
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +

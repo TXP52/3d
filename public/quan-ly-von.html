@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=15"></script>
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .dong-tong td { font-weight: 700; background: #f6f7f8; }
     .hang-gia { margin-top: 18px; }
@@ -50,8 +50,7 @@
         <!-- PHẦN 2: Chia tiền -->
         <div class="the">
           <div class="the-dau">
-            <div><h3>Chia tiền</h3>
-            <div class="phu">Nhập giá vốn, số chia và tiền lãi để ra tổng</div></div>
+            <div><h3>Chia tiền</h3></div>
             <button class="nut nut-vien nut-nho" type="button" onclick="xoaChiaTien()">
               <i class="fa-solid fa-eraser"></i> Xoá
             </button>
@@ -61,17 +60,14 @@
               <div class="o-nhap">
                 <label for="ct-von">Giá vốn (VNĐ)</label>
                 <input type="number" id="ct-von" min="0" step="1000">
-                <div class="goi-y">Tiền vốn của một phần</div>
               </div>
               <div class="o-nhap">
                 <label for="ct-so-chia">Số chia</label>
                 <input type="number" id="ct-so-chia" min="1" step="1">
-                <div class="goi-y">Chia thành bao nhiêu phần</div>
               </div>
               <div class="o-nhap">
                 <label for="ct-lai">Lãi (VNĐ)</label>
                 <input type="number" id="ct-lai" min="0" step="1000">
-                <div class="goi-y">Tiền lãi của một phần</div>
               </div>
             </div>
             <div id="kq-chia-tien"></div>
@@ -81,21 +77,18 @@
         <div class="luoi-2">
           <!-- PHẦN 3: Chi tiết chi phí -->
           <div class="the">
-            <div class="the-dau"><div><h3>Chi tiết chi phí</h3><div class="phu">Bóc tách vốn đã bỏ ra</div></div></div>
+            <div class="the-dau"><div><h3>Chi tiết chi phí</h3></div></div>
             <div class="the-than khong-dem bang-cuon">
               <table class="bang">
                 <thead><tr><th>Khoản mục</th><th class="phai">Số tiền</th></tr></thead>
                 <tbody id="bang-chi-phi"></tbody>
               </table>
             </div>
-            <div class="the-than">
-              <div class="phu">Chi phí = tiền mua toàn bộ vật tư trong kho + tiền nhựa đã tiêu hao khi in.</div>
-            </div>
           </div>
 
           <!-- PHẦN 4: Nhựa đã dùng theo cuộn -->
           <div class="the">
-            <div class="the-dau"><div><h3>Nhựa đã dùng theo cuộn</h3><div class="phu">Theo dõi hao hụt từng cuộn nhựa</div></div></div>
+            <div class="the-dau"><div><h3>Nhựa đã dùng theo cuộn</h3></div></div>
             <div class="the-than khong-dem bang-cuon">
               <table class="bang">
                 <thead>
@@ -194,10 +187,10 @@
           '<div class="the-tong">' +
           o('TỔNG CỘNG (vốn + lãi)', lam(tongVon + tongLai),
             coChia ? '(' + Apex.number(von) + ' + ' + Apex.number(lai) + ') × ' + Apex.number(soChia)
-                   : 'Nhập số chia để nhân lên', true) +
+                   : '—', true) +
           o('Mỗi phần (vốn + lãi)', coChia ? lam(moiPhanVon + moiPhanLai) : '—',
             coChia ? '(' + Apex.number(von) + ' + ' + Apex.number(lai) + ') ÷ ' + Apex.number(soChia)
-                   : 'Nhập số chia lớn hơn 0', true) +
+                   : '—', true) +
           o('Tổng vốn', lam(tongVon), Apex.number(von) + nhanVoi) +
           o('Vốn mỗi phần', coChia ? lam(moiPhanVon) : '—',
             coChia ? Apex.number(von) + ' ÷ ' + Apex.number(soChia) : '—') +
@@ -277,8 +270,7 @@
 
         var html =
           '<div class="the">' +
-            '<div class="the-dau"><div><h3>Giá bán đề xuất theo gram</h3>' +
-            '<div class="phu">Lấy giá vốn nhựa mỗi gram cộng tỉ lệ lãi mong muốn</div></div></div>' +
+            '<div class="the-dau"><div><h3>Giá bán đề xuất theo gram</h3></div></div>' +
             '<div class="the-than"><div class="luoi-2-deu">' +
               '<div>' +
                 '<div class="hang-ap-dung">' +
@@ -290,7 +282,6 @@
                 '<div class="so-gia">' + Apex.number(giaVon) + ' đ/gram</div></div>' +
                 '<div class="hang-gia"><div class="nhan-gia">GIÁ BÁN ĐỀ XUẤT</div>' +
                 '<div class="so-gia lon">' + Apex.number(giaBan) + ' đ/gram</div></div>' +
-                '<div class="phu" style="margin-top:12px;">Tỉ lệ lãi hiện tại: ' + Apex.number(tiLe) + '% trên giá vốn nhựa.</div>' +
               '</div>' +
               '<div><div class="khung-bieu-do" id="bd-gia"></div></div>' +
             '</div></div>' +
@@ -314,8 +305,7 @@
 
         html +=
           '<div class="the" style="margin-top:20px;">' +
-            '<div class="the-dau"><div><h3>Giá dự kiến từng sản phẩm in</h3>' +
-            '<div class="phu">Ước tính theo khối lượng nhựa mỗi mẫu</div></div>' +
+            '<div class="the-dau"><div><h3>Giá dự kiến từng sản phẩm in</h3></div>' +
             '<button class="nut nut-vien nut-nho" onclick="themMauIn()">Thêm</button></div>' +
             '<div class="the-than khong-dem bang-cuon">' +
               '<table class="bang"><thead><tr>' +
@@ -323,7 +313,6 @@
                 '<th class="phai">Giá bán đề xuất</th><th class="phai">Lãi dự kiến</th>' +
               '</tr></thead><tbody>' + hangSp + '</tbody></table>' +
             '</div>' +
-            '<div class="the-than"><div class="phu">Ví dụ: in đồ chơi hết 5g nhựa → giá bán đề xuất ≈ ' + Apex.number(viDu) + ' đ.</div></div>' +
           '</div>';
 
         Apex.fill('#khu-gia', html);
@@ -394,7 +383,7 @@
 
         Apex.moHopThoai(
           '<div class="ht-dau"><div><h3>' + (laMoi ? 'Th\u00eam m\u1eabu s\u1ea3n ph\u1ea9m in' : 'S\u1eeda m\u1eabu') + '</h3>' +
-          '<div class="phu">' + (laMoi ? '\u0110\u1ec3 \u01b0\u1edbc t\u00ednh gi\u00e1 b\u00e1n theo kh\u1ed1i l\u01b0\u1ee3ng nh\u1ef1a' : Apex.esc(m.ten)) + '</div></div>' +
+          (laMoi ? '' : '<div class="phu">' + Apex.esc(m.ten) + '</div>') + '</div>' +
           '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
           '<div class="ht-than">' +

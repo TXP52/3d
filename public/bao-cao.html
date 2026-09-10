@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Báo cáo doanh thu</title>
+  <title>Doanh thu</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=15"></script>
+  <script src="assets/js/apex.js?v=23"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -27,7 +27,6 @@
           <div class="the-dau">
             <div>
               <h3>Doanh thu theo tháng (triệu đồng)</h3>
-              <div class="phu">Tính từ đơn hàng thật, không cộng đơn đã huỷ.</div>
             </div>
           </div>
           <div class="the-than"><div class="khung-bieu-do" id="bd-doanh-thu"></div></div>
@@ -36,18 +35,18 @@
         <!-- Số đơn theo tháng + tỉ trọng trạng thái -->
         <div class="luoi-2-deu">
           <div class="the">
-            <div class="the-dau"><div><h3>Số đơn theo tháng</h3><div class="phu">Đơn vị: đơn hàng</div></div></div>
+            <div class="the-dau"><div><h3>Số đơn theo tháng</h3></div></div>
             <div class="the-than"><div class="khung-bieu-do-nho" id="bd-don"></div></div>
           </div>
           <div class="the">
-            <div class="the-dau"><div><h3>Tỉ trọng doanh thu theo trạng thái</h3><div class="phu">Tính trên đơn hàng thật</div></div></div>
+            <div class="the-dau"><div><h3>Tỉ trọng doanh thu theo trạng thái</h3></div></div>
             <div class="the-than"><div class="khung-bieu-do-nho" id="bd-tron"></div></div>
           </div>
         </div>
 
         <!-- Chi tiết doanh thu theo đơn -->
         <div class="the">
-          <div class="the-dau"><div><h3>Chi tiết doanh thu theo đơn</h3><div class="phu">Toàn bộ đơn hàng trong hệ thống</div></div></div>
+          <div class="the-dau"><div><h3>Chi tiết doanh thu theo đơn</h3></div></div>
           <div class="the-than khong-dem bang-cuon">
             <table class="bang">
               <thead>

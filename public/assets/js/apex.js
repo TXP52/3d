@@ -74,6 +74,7 @@ window.Apex = (function () {
     du_kien:         { ten: 'Dự kiến',          mau: 'badge-xam',   icon: 'fa-lightbulb' },
     da_dat:          { ten: 'Đã đặt',           mau: 'badge-tim',   icon: 'fa-bookmark' },
     dang_in:         { ten: 'Đang in',          mau: 'badge-cam',   icon: 'fa-print' },
+    da_in:           { ten: 'Đã in',            mau: 'badge-duong', icon: 'fa-check-double' },
     san_hang:        { ten: 'Sẵn hàng',         mau: 'badge-xanh',  icon: 'fa-box-open' },
     dang_van_chuyen: { ten: 'Đang vận chuyển',  mau: 'badge-duong', icon: 'fa-truck-fast' },
     thanh_cong:      { ten: 'Thành công',       mau: 'badge-xanh',  icon: 'fa-circle-check' },
@@ -231,7 +232,10 @@ window.Apex = (function () {
   var NHA_CUNG_CAP = [];  // nơi mua vật tư
   var BACKEND_OK = false;  // true khi gọi được backend Java; tắt thì bảng trống + báo đỏ đầu trang
 
-  var LOAI_VAT_TU = { may_in: 'Máy in', nhua: 'Nhựa in', phu_kien: 'Phụ kiện', khac: 'Khác' };
+  /* Tính chất vật tư — CỐ ĐỊNH 3 kiểu, quyết định cách kho tính:
+     nhựa theo dõi gram, máy in tính vào vốn máy, dụng cụ chỉ tính tiền mua.
+     Tên loại thì tự đặt thoải mái ở bảng danh mục. */
+  var LOAI_VAT_TU = { may_in: 'Máy in', nhua: 'Nhựa in', dung_cu: 'Dụng cụ' };
 
   /* ---------------- Nạp dữ liệu thật (bất đồng bộ, song song) ---------------- */
 
@@ -303,7 +307,15 @@ window.Apex = (function () {
           price: s.gia || 0,
           stock: s.tonKho || 0, img: s.hinhAnh || '', dangBan: !!s.dangBan,
           moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || '',
-          loaiSanPham: s.loaiSanPham || 'ban', danhMucId: s.danhMucId || null
+          loaiSanPham: s.loaiSanPham || 'ban', danhMucId: s.danhMucId || null,
+          // Nhựa đã trừ khỏi kho — một sản phẩm in được bằng nhiều cuộn (xem SanPhamVatTu.java).
+          // mauSac là MÀU CỦA CHÍNH MẤY CUỘN ĐÓ, backend suy ra chứ không lưu riêng.
+          vatTus: s.vatTus || [], mauSac: s.mauSac || [],
+          // Mỗi dòng trong vatTus là một lần in: soLuong cái × (gram + thừa) mỗi cái.
+          // soLuong ở đây là TỔNG số cái, tongGramNhua là phần kho thật sự mất.
+          soLuong: s.soLuong || 0,
+          gramMoiCaiMin: s.gramMoiCaiMin || 0, gramMoiCaiMax: s.gramMoiCaiMax || 0,
+          tongGramNhua: s.tongGramNhua || 0, tienNhua: s.tienNhua || 0
         };
       }));
       thayMang(INVENTORY, PRODUCTS.map(function (p) {
@@ -764,9 +776,7 @@ window.Apex = (function () {
       esc(linkCu) + '" />' +
       '<button type="button" class="nut nut-vien nut-nho" id="' + idGoc + '-dung-link">Dùng link</button></div>' +
       '<div class="trang-thai-anh" id="' + idGoc + '-bao">' +
-      (linkCu
-        ? 'Đang dùng ảnh từ link ngoài.'
-        : 'Chọn ảnh từ máy (nén còn ≤1200px, lưu trên máy chủ) hoặc dán link ảnh có sẵn trên web.') +
+      (linkCu ? 'Đang dùng ảnh từ link ngoài.' : '') +
       '</div></div></div>';
   };
 
@@ -874,6 +884,18 @@ window.Apex = (function () {
     return '<span class="badge badge-xam">' + oMau(v.maMau, v.mau, co) + esc(v.mau) + '</span>';
   };
 
+  /**
+   * Dãy màu của một SẢN PHẨM. Không có ô "chọn màu" cho sản phẩm: màu ở đây
+   * là màu của những cuộn nhựa đã dùng để in nó, nên không bao giờ lệch với kho.
+   */
+  var mauSanPham = function (p, co) {
+    var ds = (p && p.mauSac) || [];
+    if (!ds.length) return '<span style="color:var(--chu-mo)">—</span>';
+    return ds.map(function (m) {
+      return '<span class="badge badge-xam">' + oMau(m.maMau, m.ten, co) + esc(m.ten) + '</span>';
+    }).join(' ');
+  };
+
   /** Tìm màu theo id trong bảng màu đã nạp. */
   var timMau = function (id) {
     for (var i = 0; i < MAU_SAC.length; i++) if (MAU_SAC[i].id === id) return MAU_SAC[i];
@@ -933,6 +955,17 @@ window.Apex = (function () {
   /** Đếm số vật tư đang thuộc một loại. */
   var soVatTuTheoDanhMuc = function (id) {
     return VAT_TU.filter(function (v) { return v.danhMucId === id; }).length;
+  };
+
+  /** Các cuộn nhựa trong kho — dùng cho ô chọn nhựa ở trang Sản phẩm. */
+  var cuonNhua = function () {
+    return VAT_TU.filter(function (v) { return v.loai === 'nhua'; });
+  };
+
+  /** Tra một vật tư theo id. */
+  var timVatTu = function (id) {
+    for (var i = 0; i < VAT_TU.length; i++) if (VAT_TU[i].id === id) return VAT_TU[i];
+    return null;
   };
 
   var themDanhMuc = function (duLieu) { return goiJava('POST', '/danh-muc', duLieu); };
@@ -1044,7 +1077,7 @@ window.Apex = (function () {
       { key: 'khuyen-mai', text: 'Khuyến mãi', href: 'khuyen-mai.html', icon: 'fa-tags' }
     ]},
     { label: 'Quản lý sản phẩm', items: [
-      { key: 'san-pham', text: 'Danh sách sản phẩm', href: 'san-pham.html', icon: 'fa-cube' },
+      { key: 'san-pham', text: 'Sản phẩm', href: 'san-pham.html', icon: 'fa-cube' },
       { key: 'danh-muc', text: 'Danh mục', href: 'danh-muc.html', icon: 'fa-folder-tree' },
       { key: 'kho', text: 'Kho & vật tư', href: 'kho.html', icon: 'fa-warehouse' },
       { key: 'nha-cung-cap', text: 'Nhà cung cấp', href: 'nha-cung-cap.html', icon: 'fa-truck-field' },
@@ -1055,7 +1088,7 @@ window.Apex = (function () {
     ]},
     { label: 'Quản lý tài chính', items: [
       { key: 'quan-ly-von', text: 'Quản lý vốn', href: 'quan-ly-von.html', icon: 'fa-coins' },
-      { key: 'bao-cao', text: 'Báo cáo doanh thu', href: 'bao-cao.html', icon: 'fa-chart-line' }
+      { key: 'bao-cao', text: 'Doanh thu', href: 'bao-cao.html', icon: 'fa-chart-line' }
     ]},
     { label: 'Hệ thống', items: [
       { key: 'cai-dat', text: 'Cài đặt cửa hàng', href: 'cai-dat.html', icon: 'fa-gear' }
@@ -1252,6 +1285,7 @@ window.Apex = (function () {
     xoaVatTu: xoaVatTu,
     oMau: oMau,
     nhanMau: nhanMau,
+    mauSanPham: mauSanPham,
     maMauCua: maMauCua,
     timMau: timMau,
     timDanhMuc: timDanhMuc,
@@ -1263,6 +1297,8 @@ window.Apex = (function () {
     tinhChatVatTu: LOAI_VAT_TU,
     tenLoaiVatTu: tenLoaiVatTu,
     soVatTuTheoDanhMuc: soVatTuTheoDanhMuc,
+    cuonNhua: cuonNhua,
+    timVatTu: timVatTu,
     themDanhMuc: themDanhMuc,
     suaDanhMuc: suaDanhMuc,
     xoaDanhMuc: xoaDanhMuc,

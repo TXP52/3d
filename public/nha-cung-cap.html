@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .nhom-ncc { padding: 14px 0; border-bottom: 1px solid var(--vien); }
     .nhom-ncc:first-child { padding-top: 0; }
@@ -61,7 +61,7 @@
 
         <div class="the">
           <div class="the-dau">
-            <div><h3>Vật tư theo nhà cung cấp</h3><div class="phu">Danh sách vật tư đã nhập từ từng nơi</div></div>
+            <div><h3>Vật tư theo nhà cung cấp</h3></div>
           </div>
           <div class="the-than" id="vat-tu-theo-ncc"></div>
         </div>
@@ -123,7 +123,7 @@
           '<td class="phai"><strong>' + Apex.money(tienCua(n.id)) + '</strong></td>' +
           '</tr>';
       }).join('') ||
-        '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào. Bấm "Thêm nhà cung cấp" để tạo.</td></tr>');
+        '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào.</td></tr>');
     }
 
     function veVatTuTheoNcc() {
@@ -162,7 +162,7 @@
 
       var html =
         '<div class="ht-dau">' +
-        '<div><h3>' + Apex.esc(n.ten) + '</h3><div class="phu">Nhà cung cấp</div></div>' +
+        '<div><h3>' + Apex.esc(n.ten) + '</h3></div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
@@ -170,7 +170,6 @@
         dong('Liên hệ', oLienHe(n.lienHe)) +
         dong('Số vật tư đã nhập', Apex.number(vt.length)) +
         dong('Tổng tiền đã nhập', '<strong>' + Apex.money(tienCua(n.id)) + '</strong>') +
-        (n.createdAt ? dong('Ngày tạo', Apex.ngayVN(n.createdAt)) : '') +
         '</div>' +
         (n.ghiChu
           ? '<div style="margin-top:14px;"><div style="font-weight:600;margin-bottom:5px;">Ghi chú</div>' +
@@ -199,7 +198,7 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Thêm nhà cung cấp' : 'Sửa nhà cung cấp') + '</h3>' +
-        '<div class="phu">' + (moi ? 'Nơi mua máy in, nhựa in và phụ kiện' : Apex.esc(n.ten)) + '</div></div>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(n.ten) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
@@ -209,7 +208,7 @@
         '<div class="o-nhap"><label for="f-lien-he">Liên hệ</label>' +
         '<input type="text" id="f-lien-he" value="' +
         (n ? Apex.esc(n.lienHe || '') : '') + '" />' +
-        '<div class="goi-y">Link shop, số điện thoại hoặc địa chỉ</div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
         '<textarea id="f-ghi-chu" rows="2">' +
         (n ? Apex.esc(n.ghiChu || '') : '') + '</textarea></div>' +

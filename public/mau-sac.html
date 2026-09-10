@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .o-mau-lon {
       width: 34px; height: 34px; border-radius: 9px;
@@ -23,10 +23,13 @@
     }
     .the-mau .ten-mau { font-weight: 600; font-size: 13.5px; }
     .the-mau .ma-mau { color: var(--chu-mo); font-size: 12px; font-family: ui-monospace, monospace; }
-    input[type=color] {
-      width: 100%; height: 42px; padding: 3px;
-      border: 1px solid var(--vien); border-radius: var(--radius-nho);
-      background: #fff; cursor: pointer;
+    /* Ô nhập mã hex: ô vuông xem trước đứng cạnh ô gõ #RRGGBB */
+    .hang-hex { display: flex; align-items: center; gap: 8px; }
+    .hang-hex input { flex: 1; min-width: 0; font-family: ui-monospace, monospace; }
+    /* align-self: stretch để ô vuông cao đúng bằng ô nhập bên cạnh */
+    .o-xem-hex {
+      width: 38px; align-self: stretch; border-radius: var(--radius-nho);
+      border: 1px solid var(--vien); flex-shrink: 0; background: #e4e6e9;
     }
   </style>
 </head>
@@ -42,7 +45,7 @@
         <!-- Xem nhanh bảng màu -->
         <div class="the">
           <div class="the-dau">
-            <div><h3>Bảng màu</h3><div class="phu">Dùng chung cho nhựa in và sản phẩm</div></div>
+            <div><h3>Bảng màu</h3></div>
             <button class="nut nut-chinh" type="button" onclick="moFormMau(null)">
               <i class="fa-solid fa-plus"></i> Thêm
             </button>
@@ -64,7 +67,6 @@
                   <th class="giua">Thứ tự</th>
                   <th class="giua">Đang dùng</th>
                   <th>Ghi chú</th>
-                  <th>Ngày tạo</th>
                 </tr>
               </thead>
               <tbody id="bang-mau"></tbody>
@@ -84,9 +86,7 @@
 
     /* Đếm xem mỗi màu đang được bao nhiêu vật tư dùng */
     function demDung(m) {
-      return VT.filter(function (v) {
-        return v.mauSacId === m.id || (!v.mauSacId && (v.mau || '') === m.ten);
-      }).length;
+      return VT.filter(function (v) { return v.mauSacId === m.id; }).length;
     }
 
     function veKpi() {
@@ -108,7 +108,7 @@
           '<span class="o-mau-lon" style="background:' + Apex.esc(m.maMau || '#e4e6e9') + '"></span>' +
           '<div><div class="ten-mau">' + Apex.esc(m.ten) + '</div>' +
           '<div class="ma-mau">' + Apex.esc(m.maMau || '—') + '</div></div></div>';
-      }).join('') || '<div style="color:var(--chu-mo);padding:20px;">Chưa có màu nào. Bấm "Thêm màu" để tạo.</div>');
+      }).join('') || '<div style="color:var(--chu-mo);padding:20px;">Chưa có màu nào.</div>');
     }
 
     function veBang() {
@@ -123,9 +123,8 @@
             ? '<span class="badge badge-xanh">' + dung + ' vật tư</span>'
             : '<span class="badge badge-xam">Chưa dùng</span>') + '</td>' +
           '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(m.ghiChu || '—') + '</td>' +
-          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(Apex.ngayVN(m.createdAt)) + '</td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có màu nào.</td></tr>');
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có màu nào.</td></tr>');
     }
 
     /* ---------------- Hộp thoại thêm / sửa ---------------- */
@@ -134,22 +133,26 @@
       var m = (i === null || i === undefined) ? null : MS[i];
       var moi = !m;
       var dung = m ? demDung(m) : 0;
+      var hex = chuanHex(m ? m.maMau : '') || '#10b981';
 
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Thêm màu mới' : 'Sửa màu') + '</h3>' +
-        '<div class="phu">' + (moi ? 'Đặt tên và chọn mã màu' : Apex.esc(m.ten)) + '</div></div>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(m.ten) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
         '<div class="o-nhap"><label for="f-ten">Tên màu *</label>' +
         '<input type="text" id="f-ten" value="' + (m ? Apex.esc(m.ten) : '') + '" /></div>' +
         '<div class="luoi-nhap-2">' +
-        '<div class="o-nhap"><label for="f-ma">Mã màu</label>' +
-        '<input type="color" id="f-ma" value="' + (m && /^#[0-9a-fA-F]{6}$/.test(m.maMau || '') ? m.maMau : '#10b981') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-ma">Mã màu (hex)</label>' +
+        '<div class="hang-hex">' +
+        '<span class="o-xem-hex" id="f-ma-xem" style="background:' + hex + '"></span>' +
+        '<input type="text" id="f-ma" maxlength="7" placeholder="#RRGGBB" spellcheck="false" ' +
+        'autocomplete="off" oninput="xemTruocHex()" value="' + hex + '" /></div></div>' +
         '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
         '<input type="number" id="f-thu-tu" min="0" step="1" value="' + (m ? (m.thuTu || 0) : (MS.length + 1)) + '" />' +
-        '<div class="goi-y">Số nhỏ hiện lên trước</div></div>' +
+        '</div>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
         '<input type="text" id="f-ghi-chu" value="' + (m ? Apex.esc(m.ghiChu || '') : '') + '" /></div>' +
@@ -171,14 +174,32 @@
       Apex.moHopThoai(html);
     }
 
+    /* '10b981', '#10b981', '#abc' -> '#10b981' / '#aabbcc'. Sai định dạng trả ''. */
+    function chuanHex(chu) {
+      var v = String(chu || '').trim().replace(/^#/, '');
+      if (/^[0-9a-fA-F]{3}$/.test(v)) v = v[0] + v[0] + v[1] + v[1] + v[2] + v[2];
+      return /^[0-9a-fA-F]{6}$/.test(v) ? '#' + v : '';
+    }
+
+    /* Ô vuông cạnh ô nhập đổi theo mã đang gõ, gõ sai thì để trống */
+    function xemTruocHex() {
+      var o = document.getElementById('f-ma');
+      var xem = document.getElementById('f-ma-xem');
+      if (!o || !xem) return;
+      xem.style.background = chuanHex(o.value) || 'transparent';
+    }
+
     function luuMau(id) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên màu.'; return; }
 
+      var hex = chuanHex(document.getElementById('f-ma').value);
+      if (!hex) { loi.textContent = 'Mã màu phải là hex, ví dụ #10b981.'; return; }
+
       var duLieu = {
         ten: ten,
-        maMau: document.getElementById('f-ma').value,
+        maMau: hex,
         thuTu: parseInt(document.getElementById('f-thu-tu').value, 10) || 0,
         ghiChu: document.getElementById('f-ghi-chu').value.trim()
       };

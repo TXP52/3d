@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .chu-cai {
       width: 36px; height: 36px; flex: 0 0 36px;
@@ -36,7 +36,6 @@
           <div class="the-dau">
             <div>
               <h3>Danh sách khách hàng</h3>
-              <div class="phu">Tài khoản đăng ký chỉ hiện khi đăng nhập bằng tài khoản admin.</div>
             </div>
           </div>
           <div class="the-than khong-dem bang-cuon">
@@ -49,7 +48,6 @@
                   <th>Nhóm</th>
                   <th class="giua">Số đơn</th>
                   <th class="phai">Tổng chi tiêu</th>
-                  <th>Ngày tham gia</th>
                 </tr>
               </thead>
               <tbody id="bang-khach"></tbody>
@@ -103,9 +101,8 @@
           '<td>' + badgeNhom(c.group) + '</td>' +
           '<td class="giua">' + Apex.number(c.orders || 0) + '</td>' +
           '<td class="phai"><strong>' + Apex.money(c.spent || 0) + '</strong></td>' +
-          '<td>' + (c.since ? Apex.ngayVN(c.since) : '—') + '</td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
+      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
     }
     Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
   </script>

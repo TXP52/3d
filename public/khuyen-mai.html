@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     /* Mã giảm giá: kiểu vé, dễ nhìn ra ngay giữa bảng */
     .ma-km {
@@ -126,7 +126,6 @@
           <div class="the-dau">
             <div>
               <h3>Chương trình khuyến mãi</h3>
-              <div class="phu">Hai kiểu: giảm theo đơn (khách gõ mã) và giảm giá sản phẩm (tự áp).</div>
             </div>
             <button class="nut nut-chinh" type="button" onclick="moFormKm(null)">
               <i class="fa-solid fa-plus"></i> Thêm
@@ -257,7 +256,7 @@
           '</tr>';
       }).join('') ||
         '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
-        'Chưa có mã khuyến mãi nào. Bấm "Tạo mã mới" để thêm.</td></tr>');
+        'Chưa có mã khuyến mãi nào.</td></tr>');
     }
 
     /* ---------------- Hộp thoại chi tiết ---------------- */
@@ -275,7 +274,7 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + Apex.esc(k.ten) + '</h3>' +
-        '<div class="phu">Tạo ngày ' + Apex.esc(Apex.ngayVN(k.createdAt)) + '</div></div>' +
+        '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
@@ -393,22 +392,20 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Tạo khuyến mãi' : 'Sửa khuyến mãi') + '</h3>' +
-        '<div class="phu">' + (moi ? 'Chọn kiểu ở ngay ô đầu tiên'
-                                   : Apex.esc(k.ma || k.ten)) + '</div></div>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(k.ma || k.ten) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
 
         '<div class="o-nhap"><label for="f-kieu">Kiểu khuyến mãi</label>' +
         '<select id="f-kieu" onchange="doiKieuApDung()">' +
-        chon(Apex.kieuKhuyenMai, k && k.kieuApDung, 'don_hang') + '</select>' +
-        '<div class="goi-y" id="goi-y-kieu"></div></div>' +
+        chon(Apex.kieuKhuyenMai, k && k.kieuApDung, 'don_hang') + '</select></div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap" id="o-ma"><label for="f-ma">Mã khuyến mãi *</label>' +
         '<input type="text" id="f-ma" style="text-transform:uppercase;" ' +
         'value="' + (k ? Apex.esc(k.ma || '') : '') + '" />' +
-        '<div class="goi-y">Chữ HOA không dấu, số, gạch ngang. Khách sẽ gõ đúng mã này.</div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-ten">Tên chương trình *</label>' +
         '<input type="text" id="f-ten" ' +
         'value="' + (k ? Apex.esc(k.ten) : '') + '" /></div>' +
@@ -421,7 +418,7 @@
         '<span class="dem-sp" id="dem-sp"></span>' +
         '</div>' +
         '<div class="luoi-chon-sp" id="luoi-chon-sp">' + htmlChonSp(idsDaChon) + '</div>' +
-        '<div class="goi-y">Không tích ô nào = giảm cho <b>mọi sản phẩm đang bán</b>.</div></div>' +
+        '</div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-loai">Kiểu giảm</label>' +
@@ -430,18 +427,18 @@
         '<div class="o-nhap"><label for="f-gia-tri" id="nhan-gia-tri">Mức giảm *</label>' +
         '<input type="number" id="f-gia-tri" min="1" step="1" ' +
         'value="' + (k ? k.giaTri : 10) + '" />' +
-        '<div class="goi-y" id="goi-y-gia-tri"></div></div>' +
+        '</div>' +
         '</div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap" id="o-giam-toi-da"><label for="f-giam-toi-da">Giảm tối đa</label>' +
         '<input type="number" id="f-giam-toi-da" min="0" step="1000" ' +
         'value="' + (k ? k.giamToiDa : 0) + '" />' +
-        '<div class="goi-y">Trần tiền giảm. Để 0 là không chặn.</div></div>' +
+        '</div>' +
         '<div class="o-nhap" id="o-don-toi-thieu"><label for="f-don-toi-thieu">Đơn tối thiểu</label>' +
         '<input type="number" id="f-don-toi-thieu" min="0" step="1000" ' +
         'value="' + (k ? k.donToiThieu : 0) + '" />' +
-        '<div class="goi-y">Đơn chưa đạt mức này thì mã không dùng được. Để 0 là không yêu cầu.</div></div>' +
+        '</div>' +
         '</div>' +
 
         '<div class="luoi-nhap-2">' +
@@ -449,7 +446,7 @@
         '<input type="date" id="f-bat-dau" value="' + (k && k.batDau ? k.batDau : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-ket-thuc">Kết thúc</label>' +
         '<input type="date" id="f-ket-thuc" value="' + (k && k.ketThuc ? k.ketThuc : '') + '" />' +
-        '<div class="goi-y">Bỏ trống cả hai là chạy vô thời hạn.</div></div>' +
+        '</div>' +
         '</div>' +
 
         '<div class="luoi-nhap-2" id="o-doi-tuong">' +
@@ -458,21 +455,17 @@
         '<option value="false"' + (!k || !k.chiKhachMoi ? ' selected' : '') + '>Mọi khách hàng</option>' +
         '<option value="true"' + (k && k.chiKhachMoi ? ' selected' : '') + '>Chỉ khách hàng mới</option>' +
         '</select>' +
-        '<div class="goi-y">Khách mới = chưa từng đặt đơn nào. Đối chiếu theo tài khoản, ' +
-        'chưa đăng nhập thì theo số điện thoại.</div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-dia-chi">Khu vực giao hàng</label>' +
         '<input type="text" id="f-dia-chi" ' +
         'value="' + (k ? Apex.esc(k.dieuKienDiaChi || '') : '') + '" />' +
-        '<div class="goi-y">Bỏ trống là giao đâu cũng được. Địa chỉ khách nhập phải chứa một trong các từ này, ngăn bằng dấu phẩy. ' +
-        'So sánh bỏ dấu nên "cau giay" cũng khớp "Cầu Giấy". ' +
-        '<a href="#" onclick="dienNoiThanhHN();return false;">Điền 12 quận nội thành Hà Nội</a></div></div>' +
+        '<div class="goi-y"><a href="#" onclick="dienNoiThanhHN();return false;">Điền 12 quận nội thành Hà Nội</a></div></div>' +
         '</div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap" id="o-so-luong"><label for="f-so-luong">Số lượt cho phép</label>' +
         '<input type="number" id="f-so-luong" min="0" step="1" value="' + (k ? k.soLuong : 0) + '" />' +
-        '<div class="goi-y">' + (k ? 'Đã dùng ' + Apex.number(k.daDung || 0) + ' lượt. ' : '') +
-        'Để 0 là không giới hạn.</div></div>' +
+        '</div>' +
         '<div class="o-nhap" id="o-ap-dung"><label for="f-ap-dung">Áp dụng cho</label>' +
         '<select id="f-ap-dung">' + chon(Apex.apDungCho, k && k.apDungCho, 'tat_ca') + '</select></div>' +
         '</div>' +
@@ -493,7 +486,7 @@
         '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
         '<input type="text" id="f-mo-ta" ' +
         'value="' + (k ? Apex.esc(k.moTa || '') : '') + '" />' +
-        '<div class="goi-y">Câu ngắn hiện cho khách xem</div></div>' +
+        '</div>' +
 
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
@@ -525,8 +518,7 @@
     function htmlChonSp(idsDaChon) {
       if (!SP.length) {
         return '<div style="color:var(--chu-mo);font-size:13px;padding:10px;">' +
-          'Chưa có sản phẩm nào đang bán. Thêm sản phẩm trước, hoặc để trống ' +
-          'thì chương trình tự áp cho mọi sản phẩm thêm sau này.</div>';
+          'Chưa có sản phẩm nào đang bán.</div>';
       }
       return SP.map(function (p) {
         var tich = idsDaChon.indexOf(p.dbId) >= 0 ? ' checked' : '';
@@ -569,10 +561,6 @@
       an('o-so-luong', laSp);
       an('o-ap-dung', laSp);
 
-      document.getElementById('goi-y-kieu').innerHTML = laSp
-        ? 'Trừ thẳng vào giá món, khách <b>không phải nhập mã</b>. Trang bán hàng hiện giá gạch ngang.'
-        : 'Khách gõ mã ở giỏ hàng, giảm trên <b>tổng đơn</b> sau khi đã trừ giảm giá sản phẩm.';
-
       // Miễn phí ship là ưu đãi của cả đơn, không trừ vào giá món được
       var oLoai = document.getElementById('f-loai');
       var optShip = oLoai.querySelector('option[value="mien_ship"]');
@@ -587,25 +575,21 @@
     function doiKieuGiam() {
       var loai = document.getElementById('f-loai').value;
       var nhan = document.getElementById('nhan-gia-tri');
-      var goiY = document.getElementById('goi-y-gia-tri');
       var oToiDa = document.getElementById('o-giam-toi-da');
       var oGiaTri = document.getElementById('f-gia-tri');
 
       if (loai === 'phan_tram') {
         nhan.textContent = 'Giảm bao nhiêu phần trăm? *';
-        goiY.textContent = 'Nhập 10 nghĩa là giảm 10% tổng đơn.';
         oGiaTri.max = 100;
         oGiaTri.step = 1;
         oToiDa.style.display = '';
       } else if (loai === 'mien_ship') {
         nhan.textContent = 'Miễn phí ship bao nhiêu? *';
-        goiY.textContent = 'Số tiền ship được trừ khỏi đơn, VD: 25000.';
         oGiaTri.removeAttribute('max');
         oGiaTri.step = 1000;
         oToiDa.style.display = 'none';
       } else {
         nhan.textContent = 'Giảm bao nhiêu tiền? *';
-        goiY.textContent = 'Số tiền trừ thẳng vào đơn, VD: 50000.';
         oGiaTri.removeAttribute('max');
         oGiaTri.step = 1000;
         oToiDa.style.display = 'none';

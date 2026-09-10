@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=16" rel="stylesheet">
-  <script src="assets/js/apex.js?v=15"></script>
+  <link href="assets/css/apex.css?v=24" rel="stylesheet">
+  <script src="assets/js/apex.js?v=23"></script>
   <style>
     .dong-het { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--vien); }
     .dong-het:last-child { border-bottom: none; }
@@ -51,10 +51,10 @@
                   <th>Màu</th>
                   <th class="phai">Giá mua</th>
                   <th class="giua">SL</th>
+                  <th class="phai">Tổng tiền</th>
                   <th class="giua">Đã dùng</th>
                   <th class="phai">Tiền đã dùng</th>
                   <th class="giua">Còn lại</th>
-                  <th>Nhà cung cấp</th>
                 </tr>
               </thead>
               <tbody id="bang-vat-tu"></tbody>
@@ -64,7 +64,7 @@
 
         <!-- Nhựa sắp hết -->
         <div class="the">
-          <div class="the-dau"><div><h3>Nhựa sắp hết</h3><div class="phu">Cuộn còn từ 200g trở xuống</div></div></div>
+          <div class="the-dau"><div><h3>Nhựa sắp hết</h3></div></div>
           <div class="the-than" id="nhua-sap-het"></div>
         </div>
 
@@ -133,16 +133,12 @@
         .filter(function (x) { return !loc || Apex.ttVatTuThucTe(x.v) === loc; })
         .map(function (x) {
           var v = x.v;
-          var laNhua = v.loai === 'nhua';
-          var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
-
-          var oDaDung = '<span style="color:var(--chu-mo)">—</span>';
-          if (laNhua) {
-            var pt = tongGram > 0 ? Math.min(100, (v.daDungGram || 0) / tongGram * 100) : 0;
-            var mau = pt > 70 ? 'var(--vang)' : 'var(--accent)';
-            oDaDung = '<div><strong>' + Apex.number(v.daDungGram || 0) + '</strong>g</div>' +
-              '<div class="tien-trinh" style="margin-top:6px;"><div style="width:' + pt.toFixed(1) + '%;background:' + mau + '"></div></div>';
-          }
+          // Nhựa đếm bằng gram, máy in và dụng cụ đếm bằng cái — backend gửi sẵn donVi
+          var dv = v.donVi || 'cái';
+          var tong = v.tongCoThe || 0;
+          var daDung = v.daDungGram || 0;
+          var pt = tong > 0 ? Math.min(100, daDung / tong * 100) : 0;
+          var mau = pt > 70 ? 'var(--vang)' : 'var(--accent)';
 
           return '<tr class="hang-bam" onclick="moChiTiet(' + x.i + ')" title="Bấm để xem chi tiết">' +
             '<td><div class="o-ten"><img class="anh-sp" src="' + anhVatTu(v) + '" alt="" ' +
@@ -153,16 +149,18 @@
             '<td>' + Apex.nhanMau(v, 15) + '</td>' +
             '<td class="phai">' + Apex.money(v.gia) + '</td>' +
             '<td class="giua"><strong>' + Apex.number(v.soLuong || 0) + '</strong></td>' +
-            '<td class="giua">' + oDaDung + '</td>' +
-            '<td class="phai">' + (laNhua ? Apex.money(v.tienDaDung || 0) : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
-            '<td class="giua">' + (laNhua ? '<strong>' + Apex.number(v.conLaiGram || 0) + 'g</strong>' : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
-            '<td>' + (v.nhaCungCap ? Apex.esc(v.nhaCungCap) : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td class="phai">' + Apex.money(v.tongTienMua || 0) + '</td>' +
+            '<td class="giua"><div><strong>' + Apex.number(daDung) + '</strong> ' + dv + '</div>' +
+            '<div class="tien-trinh" style="margin-top:6px;"><div style="width:' + pt.toFixed(1) +
+            '%;background:' + mau + '"></div></div></td>' +
+            '<td class="phai">' + (daDung ? Apex.money(v.tienDaDung || 0) : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
+            '<td class="giua"><strong>' + Apex.number(v.conLai || 0) + '</strong> ' + dv + '</td>' +
             '</tr>';
         }).join('');
 
       Apex.fill('#bang-vat-tu', html ||
-        '<tr><td colspan="9" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
-        (loc ? 'Không có vật tư nào ở trạng thái này.' : 'Kho chưa có vật tư nào. Hãy bấm Thêm vật tư.') +
+        '<tr><td colspan="8" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        (loc ? 'Không có vật tư nào ở trạng thái này.' : 'Kho chưa có vật tư nào.') +
         '</td></tr>');
     }
 
@@ -172,7 +170,7 @@
       var v = VT[i];
       if (!v) return;
       var laNhua = v.loai === 'nhua';
-      var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+      var dv = v.donVi || 'cái';   // nhựa: g · máy in, dụng cụ: cái
       var tt = v.trangThai || 'con_hang';
       var ttThuc = Apex.ttVatTuThucTe(v);
 
@@ -193,30 +191,26 @@
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
-        '<div class="ht-than">' +
+        '<div class="ht-than"><div class="ct-2cot">' +
         '<img class="anh-chi-tiet" src="' + anhVatTu(v) + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(v.ten) + '\'" />' +
-        '<div style="margin-top:16px;">' +
+        '<div>' +
         dong('Trạng thái', Apex.badgeTtVatTu(ttThuc)) +
         dong('Giá mua 1 đơn vị', Apex.money(v.gia || 0)) +
         dong('Số lượng', Apex.number(v.soLuong || 0)) +
         dong('Tổng tiền đã mua', '<strong>' + Apex.money(v.tongTienMua || 0) + '</strong>') +
         (laNhua ? dong('Khối lượng mỗi cuộn', Apex.number(v.khoiLuongGram || 0) + 'g') : '') +
         (laNhua ? dong('Đơn giá theo gram', Math.round(v.donGiaMoiGram || 0).toLocaleString('vi-VN') + '₫/g') : '') +
-        (laNhua ? dong('Đã dùng', '<strong>' + Apex.number(v.daDungGram || 0) + 'g</strong> / ' + Apex.number(tongGram) + 'g') : '') +
-        (laNhua ? dong('Tiền nhựa đã tiêu hao', Apex.money(v.tienDaDung || 0)) : '') +
-        (laNhua ? dong('Còn lại', '<strong>' + Apex.number(v.conLaiGram || 0) + 'g</strong>') : '') +
+        dong('Đã dùng', '<strong>' + Apex.number(v.daDungGram || 0) + ' ' + dv + '</strong> / ' +
+             Apex.number(v.tongCoThe || 0) + ' ' + dv) +
+        dong(laNhua ? 'Tiền nhựa đã tiêu hao' : 'Tiền đã dùng', Apex.money(v.tienDaDung || 0)) +
+        dong('Còn lại', '<strong>' + Apex.number(v.conLai || 0) + ' ' + dv + '</strong>') +
         dong('Nhà cung cấp', v.nhaCungCap ? Apex.esc(v.nhaCungCap) : '—') +
         (v.ghiChu ? dong('Ghi chú', Apex.esc(v.ghiChu)) : '') +
-        '</div>' +
         '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
         '<label for="ct-tt-vt">Đổi nhanh trạng thái</label>' +
         '<select id="ct-tt-vt" onchange="Apex.doiTrangThaiVatTu(' + v.id + ', this.value)">' + chonTt + '</select>' +
-        (laNhua
-          ? '<div class="goi-y">Cuộn nhựa tự chuyển sang <strong>Sắp hết</strong> khi còn ' +
-            Apex.number(Apex.nguongNhuaSapHet) + 'g trở xuống và <strong>Hết hàng</strong> khi dùng hết.</div>'
-          : '') +
         '</div>' +
-        '</div>' +
+        '</div></div></div>' +
 
         '<div class="ht-chan">' +
         '<button class="nut nut-do" type="button" onclick="Apex.xoaVatTu(' + v.id + ')">' +
@@ -247,13 +241,13 @@
       var dsLoai = Apex.danhMucVatTu();
       var loaiMacDinh = v ? v.danhMucId : null;
       if (!loaiMacDinh) {
-        var tcMacDinh = v ? (v.loai || 'khac') : 'nhua';
-        var trung = dsLoai.filter(function (d) { return (d.tinhChat || 'khac') === tcMacDinh; })[0] || dsLoai[0];
+        var tcMacDinh = v ? (v.loai || 'dung_cu') : 'nhua';
+        var trung = dsLoai.filter(function (d) { return (d.tinhChat || 'dung_cu') === tcMacDinh; })[0] || dsLoai[0];
         if (trung) loaiMacDinh = trung.id;
       }
       var chonLoai = dsLoai.length
         ? dsLoai.map(function (d) {
-            return '<option value="' + d.id + '" data-tinh-chat="' + Apex.esc(d.tinhChat || 'khac') + '"' +
+            return '<option value="' + d.id + '" data-tinh-chat="' + Apex.esc(d.tinhChat || 'dung_cu') + '"' +
               (d.id === loaiMacDinh ? ' selected' : '') + '>' + Apex.esc(d.ten) + '</option>';
           }).join('')
         : '<option value="">— Chưa có loại vật tư —</option>';
@@ -276,7 +270,7 @@
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Thêm vật tư mới' : 'Sửa vật tư') + '</h3>' +
-        '<div class="phu">' + (moi ? 'Máy in, cuộn nhựa, phụ kiện...' : Apex.esc(v.ten)) + '</div></div>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(v.ten) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
@@ -287,28 +281,29 @@
         (v ? Apex.esc(v.ten) : '') + '" /></div>' +
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-loai">Loại</label>' +
-        '<select id="f-loai" onchange="doiLoaiVatTu()"' + (dsLoai.length ? '' : ' disabled') + '>' + chonLoai + '</select>' +
-        '<div class="goi-y" id="f-loai-goi-y"></div></div>' +
+        '<select id="f-loai" onchange="doiDonViTheoLoai()"' + (dsLoai.length ? '' : ' disabled') + '>' +
+        chonLoai + '</select></div>' +
         '<div class="o-nhap"><label for="f-mau">Màu</label>' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
         '<span id="f-mau-o" title="Màu đang chọn" style="width:26px;height:26px;border-radius:7px;' +
         'border:1px solid rgba(0,0,0,.18);flex-shrink:0;background:#e4e6e9;"></span>' +
         '<select id="f-mau" style="flex:1;min-width:0;" onchange="doiMauVatTu()">' + chonMau + '</select></div>' +
-        '<div class="goi-y">Lấy từ bảng màu — thêm màu mới ở trang <a href="mau-sac.html">Màu sắc</a></div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-gia">Giá mua 1 đơn vị (VNĐ)</label>' +
         '<input type="number" id="f-gia" min="0" step="1000" value="' + (v ? (v.gia || 0) : 0) + '" /></div>' +
         '<div class="o-nhap"><label for="f-sl">Số lượng</label>' +
         '<input type="number" id="f-sl" min="1" step="1" value="' + (v ? (v.soLuong || 1) : 1) + '" /></div>' +
-        '<div class="o-nhap"><label for="f-gram">Khối lượng 1 đơn vị (gram)</label>' +
+        // Ô khối lượng chỉ có nghĩa với nhựa; loại khác thì doiDonViTheoLoai() giấu đi
+        '<div class="o-nhap" id="o-gram"><label for="f-gram">Khối lượng 1 đơn vị (gram)</label>' +
         '<input type="number" id="f-gram" min="0" step="50" value="' + (v ? (v.khoiLuongGram || 0) : 1000) + '" />' +
-        '<div class="goi-y">Cuộn nhựa thường 1000g; máy in để 0</div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-tt">Trạng thái</label><select id="f-tt">' + chonTt + '</select></div>' +
         '</div>' +
         (moi ? '' :
-          '<div class="o-nhap"><label for="f-dung">Đã dùng (gram)</label>' +
+          '<div class="o-nhap"><label for="f-dung" id="nhan-da-dung">Đã dùng</label>' +
           '<input type="number" id="f-dung" min="0" step="1" value="' + (v.daDungGram || 0) + '" /></div>') +
         '<div class="o-nhap"><label for="f-ncc">Nhà cung cấp</label><select id="f-ncc">' + chonNcc + '</select>' +
-        '<div class="goi-y">Lấy từ bảng nhà cung cấp — thêm nơi mua mới ở trang <a href="nha-cung-cap.html">Nhà cung cấp</a></div></div>' +
+        '</div>' +
         '<div class="o-nhap"><label for="f-ghichu">Ghi chú</label>' +
         '<textarea id="f-ghichu" rows="2">' +
         (v ? Apex.esc(v.ghiChu || '') : '') + '</textarea></div>' +
@@ -323,25 +318,27 @@
 
       Apex.moHopThoai(html);
       layAnh = Apex.ganOTaiAnh('vt-anh', anhHienTai);
-      doiLoaiVatTu();
       doiMauVatTu();
+      doiDonViTheoLoai();
     }
 
-    /* Dòng giải thích dưới ô Loại: chọn loại có tính chất gì thì kho tính kiểu đó */
-    function doiLoaiVatTu() {
+    /**
+     * Loại quyết định đơn vị đếm:
+     *   nhựa   -> gram, cần ô "Khối lượng 1 cuộn", đã dùng tính bằng gram
+     *   còn lại -> cái, giấu ô khối lượng, đã dùng là số cái
+     * Móc khoá mà bắt khai "khối lượng 1 đơn vị 1000g" rồi "đã dùng 0 gram"
+     * thì chẳng ai hiểu còn mấy cái.
+     */
+    function doiDonViTheoLoai() {
       var o = document.getElementById('f-loai');
-      var goiY = document.getElementById('f-loai-goi-y');
-      if (!o || !goiY) return;
+      var oGram = document.getElementById('o-gram');
+      var nhan = document.getElementById('nhan-da-dung');
+      if (!o) return;
       var chon = o.options[o.selectedIndex];
-      var tc = chon ? (chon.getAttribute('data-tinh-chat') || '') : '';
-      var giaiThich = {
-        nhua: 'Nhựa: theo dõi số gram đã dùng, tự báo sắp hết.',
-        may_in: 'Máy in: tính vào vốn máy, không theo dõi gram.',
-        phu_kien: 'Phụ kiện: chỉ tính tiền mua.',
-        khac: 'Khác: chỉ tính tiền mua.'
-      };
-      goiY.innerHTML = (o.value ? (giaiThich[tc] || '') + ' ' : 'Chưa có loại nào. ') +
-        'Thêm / sửa loại ở trang <a href="danh-muc.html">Danh mục</a>.';
+      var laNhua = chon && chon.getAttribute('data-tinh-chat') === 'nhua';
+
+      if (oGram) oGram.style.display = laNhua ? '' : 'none';
+      if (nhan) nhan.textContent = laNhua ? 'Đã dùng (gram)' : 'Đã dùng (cái)';
     }
 
     /* Ô vuông cạnh ô Màu đổi theo màu đang chọn */
@@ -363,9 +360,13 @@
         return;
       }
 
+      var tinhChat = oLoai.options[oLoai.selectedIndex].getAttribute('data-tinh-chat') || 'dung_cu';
+      var laNhua = tinhChat === 'nhua';
+
       var gia = parseInt(document.getElementById('f-gia').value, 10);
       var soLuong = parseInt(document.getElementById('f-sl').value, 10);
-      var gram = parseInt(document.getElementById('f-gram').value, 10);
+      // Không phải nhựa thì không có khái niệm khối lượng mỗi đơn vị
+      var gram = laNhua ? parseInt(document.getElementById('f-gram').value, 10) : 0;
       if (isNaN(gia) || gia < 0) { loi.textContent = 'Giá mua không hợp lệ, vui lòng nhập số không âm.'; return; }
       if (isNaN(soLuong) || soLuong < 1) { loi.textContent = 'Số lượng phải là số nguyên từ 1 trở lên.'; return; }
       if (isNaN(gram) || gram < 0) { loi.textContent = 'Khối lượng không hợp lệ, vui lòng nhập số không âm.'; return; }
@@ -374,7 +375,7 @@
         ten: ten,
         danhMucId: parseInt(oLoai.value, 10),
         // loai gửi kèm để tương thích; backend tự chép tính chất của loại sang loai
-        loai: oLoai.options[oLoai.selectedIndex].getAttribute('data-tinh-chat') || 'khac',
+        loai: tinhChat,
         mauSacId: document.getElementById('f-mau').value
           ? parseInt(document.getElementById('f-mau').value, 10) : null,
         gia: gia,
@@ -389,10 +390,12 @@
 
       var oDung = document.getElementById('f-dung');
       if (oDung) {
+        var dv = laNhua ? 'gram' : 'cái';
+        var toiDa = laNhua ? gram * soLuong : soLuong;
         var daDung = parseInt(oDung.value, 10);
-        if (isNaN(daDung) || daDung < 0) { loi.textContent = 'Số gram đã dùng không hợp lệ.'; return; }
-        if (daDung > gram * soLuong) {
-          loi.textContent = 'Số gram đã dùng không thể lớn hơn tổng khối lượng (' + (gram * soLuong) + 'g).';
+        if (isNaN(daDung) || daDung < 0) { loi.textContent = 'Số ' + dv + ' đã dùng không hợp lệ.'; return; }
+        if (daDung > toiDa) {
+          loi.textContent = 'Đã dùng không thể lớn hơn số đang có (' + toiDa + ' ' + dv + ').';
           return;
         }
         duLieu.daDungGram = daDung;

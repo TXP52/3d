@@ -536,6 +536,19 @@ html.dang-tai::before {
   display: block;
 }
 
+/* Hộp thoại chi tiết: ảnh bên trái, thông tin bên phải */
+.ct-2cot {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.ct-2cot > .anh-chi-tiet { height: 240px; position: sticky; top: 0; }
+@media (max-width: 620px) {
+  .ct-2cot { grid-template-columns: 1fr; gap: 14px; }
+  .ct-2cot > .anh-chi-tiet { height: 180px; position: static; }
+}
+
 .luoi-nhap-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 @media (max-width: 560px) { .luoi-nhap-2 { grid-template-columns: 1fr; } }
 
