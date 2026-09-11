@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=24" rel="stylesheet">
-  <script src="assets/js/apex.js?v=23"></script>
+  <link href="assets/css/apex.css?v=27" rel="stylesheet">
+  <script src="assets/js/apex.js?v=25"></script>
   <style>
     /* Một sản phẩm in được bằng nhiều cuộn nhựa -> danh sách dòng thêm/bớt được */
     .dau-nhua, .dong-nhua {
@@ -17,6 +17,30 @@
       grid-template-columns: minmax(0, 1fr) 74px 84px 84px 34px;
       gap: 8px;
       align-items: center;
+    }
+    /* Nhiều màu: số lượng chung ở trên, từng dòng không có cột số cái */
+    .khung-nhua.nhieu-mau .dau-nhua,
+    .khung-nhua.nhieu-mau .dong-nhua { grid-template-columns: minmax(0, 1fr) 84px 84px 34px; }
+    .khung-nhua.nhieu-mau .cot-sl { display: none; }
+
+    .hang-kieu-mau { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+    .o-nhap .o-tick {
+      display: inline-flex; align-items: center; gap: 8px; margin: 0;
+      font-weight: 600; font-size: 13.5px; cursor: pointer;
+    }
+    .o-nhap .o-tick input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); }
+    .o-sl-chung { display: flex; align-items: center; gap: 8px; }
+    .o-nhap .o-sl-chung label { display: inline; margin: 0; font-weight: 600; font-size: 13.5px; }
+    .o-nhap .o-sl-chung input { width: 100px; margin: 0; }
+
+    /* Điện thoại: ô chọn cuộn nằm một hàng riêng, các ô số xếp hàng dưới */
+    @media (max-width: 560px) {
+      .dau-nhua, .dong-nhua { grid-template-columns: 1fr 1fr 1fr 34px; }
+      .khung-nhua.nhieu-mau .dau-nhua,
+      .khung-nhua.nhieu-mau .dong-nhua { grid-template-columns: 1fr 1fr 34px; }
+      .dong-nhua .nhua-cuon { grid-column: 1 / -1; }
+      .dau-nhua .cot-cuon { display: none; }
+      .dong-nhua { padding-bottom: 8px; border-bottom: 1px dashed var(--vien); }
     }
     .dau-nhua {
       font-size: 12px; font-weight: 600; color: var(--chu-mo);
@@ -199,6 +223,7 @@
       if (!p) return;
       var anh = Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name);
       var dsNhua = p.vatTus || [];
+      var dsAnh = p.dsAnh || [];
 
       var dong = function (nhan, giaTri) {
         return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
@@ -217,7 +242,15 @@
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than"><div class="ct-2cot">' +
-        '<img class="anh-chi-tiet" src="' + anh + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(p.name) + '\'" />' +
+        '<div class="cot-anh">' +
+        '<img class="anh-chi-tiet" id="ct-anh-lon" src="' + anh + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(p.name) + '\'" />' +
+        (dsAnh.length > 1
+          ? '<div class="dai-anh-nho">' + dsAnh.map(function (u, k) {
+              return '<img src="' + Apex.esc(Apex.anhDayDu(u)) + '" alt=""' + (k === 0 ? ' class="dang-xem"' : '') +
+                ' onclick="xemAnhChiTiet(this)" />';
+            }).join('') + '</div>'
+          : '') +
+        '</div>' +
         '<div>' +
         dong('Danh mục', Apex.badgeDanhMuc(p.danhMucId)) +
         dong('Loại sản phẩm', Apex.badgeLoaiSanPham(p.loaiSanPham)) +
@@ -228,15 +261,19 @@
         dong('Giá bán', Apex.money(p.price || 0)) +
         dong('Tồn kho', Apex.number(p.stock || 0) + ' — ' + Apex.badgeTon(p.stock)) +
         dong('Giá trị tồn', Apex.money((p.price || 0) * (p.stock || 0))) +
-        dong('Màu', Apex.mauSanPham(p, 14)) +
-        (p.soLuong ? dong('Đã in', '<strong>' + Apex.number(p.soLuong) + '</strong> cái') : '') +
+        // Dòng màu có nhiều thẻ nên được xếp xuống hàng, các dòng khác thì không
+        '<div class="dong-tt cho-xuong-dong"><span class="nhan-tt">Màu</span>' +
+        '<span class="gia-tri">' + Apex.mauSanPham(p, 14) + '</span></div>' +
+        (p.soLuong ? dong('Đã in', '<strong>' + Apex.number(p.soLuong) + '</strong> cái' +
+          (p.nhieuMau ? ' · nhiều màu' : '')) : '') +
         dsNhua.map(function (v) {
-          return dong(Apex.oMau(v.maMau, v.mau, 13) + Apex.esc(v.ten),
-            '<strong>' + Apex.number(v.soLuong || 1) + ' cái</strong>' +
-            '<span style="color:var(--chu-mo);font-weight:400;"> × ' +
-            Apex.number(v.gramNhua || 0) + 'g' +
-            (v.gramThua ? ' + ' + Apex.number(v.gramThua) + 'g thừa' : '') +
-            ' = ' + Apex.number(v.tongGram || 0) + 'g</span>');
+          // Tên cuộn dài thì cắt "…", để title cho rê chuột thấy đủ
+          return '<div class="dong-tt"><span class="nhan-tt" title="' + Apex.esc(v.ten) + '">' +
+            Apex.oMau(v.maMau, v.mau, 13) + Apex.esc(v.ten) + '</span>' +
+            '<span class="gia-tri"><strong>' + Apex.number(v.tongGram || 0) + 'g</strong>' +
+            '<span style="color:var(--chu-mo);font-weight:400;"> = ' + Apex.number(v.soLuong || 1) + ' × (' +
+            Apex.number(v.gramNhua || 0) + (v.gramThua ? '+' + Apex.number(v.gramThua) : '') + 'g)</span>' +
+            '</span></div>';
         }).join('') +
         (p.tongGramNhua
           ? dong('Nhựa đã trừ kho', '<strong>' + Apex.number(p.tongGramNhua) + 'g</strong>')
@@ -264,7 +301,16 @@
         '<i class="fa-solid fa-pen-to-square"></i> Sửa</button></div>' +
         '</div>';
 
-      Apex.moHopThoai(html);
+      Apex.moHopThoai(html, 'rong-lon');
+    }
+
+    /** Bấm ảnh nhỏ trong hộp chi tiết thì ảnh lớn đổi theo. */
+    function xemAnhChiTiet(el) {
+      var lon = document.getElementById('ct-anh-lon');
+      if (lon) lon.src = el.src;
+      Array.prototype.forEach.call(el.parentNode.children, function (c) {
+        c.classList.toggle('dang-xem', c === el);
+      });
     }
 
     /* ---------------- Hộp thoại THÊM / SỬA ---------------- */
@@ -276,7 +322,8 @@
     function moFormSanPham(i) {
       var p = (i === null || i === undefined) ? null : SP[i];
       var moi = !p;
-      var anhHienTai = p ? (p.img || '') : '';
+      var tongSl = p ? (p.soLuong || 1) : 1;
+      var nhieuMau = p ? !!p.nhieuMau : false;
 
       var chonTt = Object.keys(Apex.ttSanPham).map(function (k) {
         var macDinh = p ? p.trangThai : 'san_hang';
@@ -312,7 +359,7 @@
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
-        Apex.htmlOTaiAnh('sp-anh', anhHienTai, 'Chọn ảnh') +
+        Apex.htmlBoAnh('sp-anh') +
         '<div class="o-nhap"><label for="f-ten">Tên sản phẩm *</label>' +
         '<input type="text" id="f-ten" value="' +
         (p ? Apex.esc(p.name) : '') + '" /></div>' +
@@ -335,10 +382,20 @@
         '<option value="false"' + (p && !p.dangBan ? ' selected' : '') + '>Đang ẩn</option>' +
         '</select></div>' +
         '</div>' +
-        '<div class="o-nhap"><label>Đã in bằng nhựa nào</label>' +
-        '<div class="dau-nhua"><span>Cuộn nhựa</span><span>Số cái</span>' +
+        '<div class="o-nhap"><label>Nhựa đã dùng</label>' +
+        // Nhiều màu: một ô số lượng chung. Một màu: số cái nhập ở từng dòng cuộn.
+        '<div class="hang-kieu-mau">' +
+        '<label class="o-tick"><input type="checkbox" id="f-nhieu-mau"' + (nhieuMau ? ' checked' : '') +
+        ' onchange="doiKieuMau()" /> Nhiều màu</label>' +
+        '<div class="o-sl-chung" id="o-sl-chung"' + (nhieuMau ? '' : ' style="display:none"') + '>' +
+        '<label for="f-so-luong">Số lượng</label>' +
+        '<input type="number" id="f-so-luong" min="1" step="1" value="' + tongSl + '" oninput="doiTongSoCai()" />' +
+        '</div></div>' +
+        '<div class="khung-nhua' + (nhieuMau ? ' nhieu-mau' : '') + '" id="khung-nhua">' +
+        '<div class="dau-nhua"><span class="cot-cuon">Cuộn nhựa</span><span class="cot-sl">Số cái</span>' +
         '<span>Gram/cái</span><span>Thừa/cái</span><span></span></div>' +
         '<div id="ds-nhua"></div>' +
+        '</div>' +
         '<button type="button" class="nut nut-vien nut-nho" onclick="themDongNhua()">' +
         '<i class="fa-solid fa-plus"></i> Thêm cuộn nhựa</button>' +
         '<div class="mau-suy-ra" id="mau-suy-ra"></div>' +
@@ -357,7 +414,7 @@
         '</div></div>';
 
       Apex.moHopThoai(html);
-      layAnh = Apex.ganOTaiAnh('sp-anh', anhHienTai);
+      layAnh = Apex.ganBoAnh('sp-anh', p ? p.dsAnh : []);
 
       var dsCu = p ? (p.vatTus || []) : [];
       if (dsCu.length) dsCu.forEach(function (v) { themDongNhua(v); });
@@ -371,20 +428,68 @@
       return (v.conLaiGram || 0) + (GRAM_DA_TRU[v.id] || 0);
     }
 
-    /** Dòng tổng dưới danh sách nhựa: cộng (gram+thừa) × số cái của từng dòng. */
+    function laNhieuMau() {
+      var o = document.getElementById('f-nhieu-mau');
+      return !!(o && o.checked);
+    }
+
+    /** Tổng số cái: nhiều màu = ô số lượng chung; một màu = cộng số cái từng cuộn. */
+    function tongSoCaiTrenForm() {
+      if (laNhieuMau()) {
+        var o = document.getElementById('f-so-luong');
+        return Math.max(1, parseInt(o ? o.value : 1, 10) || 1);
+      }
+      var ds = docDongNhua();
+      return ds.length ? ds.reduce(function (s, d) { return s + d.soLuong; }, 0) : 1;
+    }
+
+    /** Nhiều màu: mọi dòng lấy đúng số lượng chung (ô số cái từng dòng đang giấu). */
+    function doiTongSoCai() {
+      if (laNhieuMau()) {
+        var sl = tongSoCaiTrenForm();
+        Array.prototype.forEach.call(document.querySelectorAll('#ds-nhua .nhua-sl'), function (i) {
+          i.value = sl;
+        });
+      }
+      veTongNhua();
+    }
+
+    /** Bật/tắt "Nhiều màu". Sang nhiều màu thì lấy số cái lớn nhất đang có làm số lượng chung. */
+    function doiKieuMau() {
+      var nhieu = laNhieuMau();
+      document.getElementById('khung-nhua').classList.toggle('nhieu-mau', nhieu);
+      document.getElementById('o-sl-chung').style.display = nhieu ? '' : 'none';
+      if (nhieu) {
+        var lonNhat = 1;
+        Array.prototype.forEach.call(document.querySelectorAll('#ds-nhua .nhua-sl'), function (i) {
+          lonNhat = Math.max(lonNhat, parseInt(i.value, 10) || 1);
+        });
+        document.getElementById('f-so-luong').value = lonNhat;
+      }
+      doiTongSoCai();
+    }
+
+    /** Dòng tổng dưới danh sách nhựa. */
     function veTongNhua() {
       var o = document.getElementById('tong-nhua');
       if (!o) return;
       var ds = docDongNhua();
       if (!ds.length) { o.innerHTML = ''; return; }
-      var soCai = 0, tong = 0;
-      var phep = ds.map(function (d) {
-        var moiCai = d.gramNhua + d.gramThua;
-        soCai += d.soLuong;
-        tong += moiCai * d.soLuong;
-        return Apex.number(moiCai) + 'g × ' + Apex.number(d.soLuong);
-      }).join(' + ');
-      o.innerHTML = 'Tất cả <strong>' + Apex.number(soCai) + ' cái</strong> · trừ vào kho: ' +
+      var tong = 0, phep;
+      if (laNhieuMau()) {
+        // Mỗi cái ăn tất cả các cuộn: cộng gram mọi cuộn rồi nhân số lượng chung
+        var sl = tongSoCaiTrenForm();
+        var moiCai = ds.reduce(function (s, d) { return s + d.gramNhua + d.gramThua; }, 0);
+        tong = moiCai * sl;
+        phep = Apex.number(moiCai) + 'g/cái × ' + Apex.number(sl);
+      } else {
+        phep = ds.map(function (d) {
+          var mc = d.gramNhua + d.gramThua;
+          tong += mc * d.soLuong;
+          return Apex.number(mc) + 'g × ' + Apex.number(d.soLuong);
+        }).join(' + ');
+      }
+      o.innerHTML = 'Tổng <strong>' + Apex.number(tongSoCaiTrenForm()) + ' cái</strong> · trừ vào kho: ' +
         Apex.esc(phep) + ' = <strong>' + Apex.number(tong) + 'g</strong>';
     }
 
@@ -401,8 +506,9 @@
       o.className = 'dong-nhua';
       o.innerHTML =
         '<select class="nhua-cuon" onchange="veMauSuyRa()">' + optionCuonNhua(v ? v.vatTuId : null) + '</select>' +
-        '<input type="number" class="nhua-sl" min="1" step="1" oninput="veTongNhua()" ' +
-        'value="' + (v ? (v.soLuong || 1) : 1) + '" />' +
+        '<input type="number" class="nhua-sl cot-sl" min="1" step="1" oninput="veTongNhua()" ' +
+        // Nhiều màu: dòng mới theo số lượng chung (ô này đang giấu); một màu: mặc định 1 cái
+        'value="' + (v ? (v.soLuong || 1) : (laNhieuMau() ? tongSoCaiTrenForm() : 1)) + '" />' +
         '<input type="number" class="nhua-gram" min="0" step="1" oninput="veTongNhua()" ' +
         'value="' + (v ? (v.gramNhua || 0) : 0) + '" />' +
         '<input type="number" class="nhua-thua" min="0" step="1" oninput="veTongNhua()" ' +
@@ -465,8 +571,15 @@
       });
       if (boSot) { loi.textContent = 'Có dòng đã nhập gram nhưng chưa chọn cuộn nhựa.'; return; }
 
+      var nhieuMau = laNhieuMau();
+      var tongSl = tongSoCaiTrenForm();
+      // Nhiều màu: mọi dòng đúng bằng số lượng chung (backend cũng tự chuẩn hoá lại)
+      if (nhieuMau) dsNhua.forEach(function (d) { d.soLuong = tongSl; });
+
       loi.textContent = '';
       var duLieu = {
+        soLuong: tongSl,
+        nhieuMau: nhieuMau,
         vatTus: dsNhua,
         ten: ten,
         gia: gia,
@@ -477,7 +590,8 @@
           ? parseInt(document.getElementById('f-danh-muc').value, 10) : null,
         dangBan: document.getElementById('f-ban').value === 'true',
         moTa: document.getElementById('f-mota').value.trim(),
-        hinhAnh: layAnh ? layAnh() : ''
+        // Tất cả ảnh theo thứ tự; backend lấy ảnh đầu làm ảnh bìa
+        danhSachAnh: layAnh ? layAnh() : []
       };
 
       // nạp lại cả vat-tu vì số gram vừa bị trừ khỏi cuộn nhựa

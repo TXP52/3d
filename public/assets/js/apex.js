@@ -311,9 +311,13 @@ window.Apex = (function () {
           // Nhựa đã trừ khỏi kho — một sản phẩm in được bằng nhiều cuộn (xem SanPhamVatTu.java).
           // mauSac là MÀU CỦA CHÍNH MẤY CUỘN ĐÓ, backend suy ra chứ không lưu riêng.
           vatTus: s.vatTus || [], mauSac: s.mauSac || [],
-          // Mỗi dòng trong vatTus là một lần in: soLuong cái × (gram + thừa) mỗi cái.
-          // soLuong ở đây là TỔNG số cái, tongGramNhua là phần kho thật sự mất.
-          soLuong: s.soLuong || 0,
+          // soLuong = TỔNG số cái đã in (nhập tay, không cộng từ các dòng nhựa: một cái
+          // nhiều màu ăn nhiều cuộn). Mỗi dòng vatTus ghi cuộn đó dùng cho mấy cái.
+          soLuong: s.soLuong || 1,
+          // Nhiều màu: mỗi cái dùng mọi cuộn, một số lượng chung. Một màu: mỗi dòng một lô.
+          nhieuMau: !!s.nhieuMau,
+          // Tất cả ảnh, ảnh đầu = ảnh bìa (img ở trên luôn bằng ảnh đầu)
+          dsAnh: s.danhSachAnh || (s.hinhAnh ? [s.hinhAnh] : []),
           gramMoiCaiMin: s.gramMoiCaiMin || 0, gramMoiCaiMax: s.gramMoiCaiMax || 0,
           tongGramNhua: s.tongGramNhua || 0, tienNhua: s.tienNhua || 0
         };
@@ -618,7 +622,9 @@ window.Apex = (function () {
       lop.addEventListener('click', function (e) { if (e.target === lop) dongHopThoai(); });
       document.body.appendChild(lop);
     }
-    lop.innerHTML = '<div class="hop-thoai' + (rong ? ' rong' : '') + '">' + html + '</div>';
+    // rong = true -> lớp "rong"; truyền chuỗi (vd "rong-lon") thì dùng đúng lớp đó
+    lop.innerHTML = '<div class="hop-thoai' + (rong ? ' ' + (typeof rong === 'string' ? rong : 'rong') : '') + '">' +
+      html + '</div>';
     lop.classList.add('hien');
     document.body.style.overflow = 'hidden';
     var oDau = lop.querySelector('input, select, textarea');
@@ -758,6 +764,112 @@ window.Apex = (function () {
     });
 
     return function () { return url; };
+  };
+
+  /**
+   * BỘ NHIỀU ẢNH — cho sản phẩm, web khách dùng làm slide ở trang chi tiết.
+   * Ảnh đầu tiên là ảnh bìa (hiện ở thẻ sản phẩm, giỏ hàng). Thêm bằng file
+   * (chọn nhiều file một lúc) hoặc dán link; mỗi ảnh đổi được thứ tự và bỏ đi.
+   * htmlBoAnh vẽ khung, ganBoAnh gắn sự kiện rồi trả về hàm lấy danh sách.
+   */
+  var htmlBoAnh = function (idGoc) {
+    return '<div class="bo-anh">' +
+      '<div class="luoi-bo-anh" id="' + idGoc + '-luoi"></div>' +
+      '<div class="thanh-bo-anh">' +
+      '<label class="nut-tai-anh" for="' + idGoc + '-file"><i class="fa-solid fa-images"></i> Thêm ảnh</label>' +
+      '<input type="file" id="' + idGoc + '-file" accept="image/*" multiple />' +
+      '<div class="dan-link-anh">' +
+      '<input type="url" id="' + idGoc + '-link" aria-label="Link ảnh từ web khác" placeholder="https://..." />' +
+      '<button type="button" class="nut nut-vien nut-nho" id="' + idGoc + '-them-link">Thêm link</button>' +
+      '</div></div>' +
+      '<div class="trang-thai-anh" id="' + idGoc + '-bao"></div>' +
+      '</div>';
+  };
+
+  var ganBoAnh = function (idGoc, dsBanDau) {
+    var ds = (dsBanDau || []).filter(Boolean).slice();
+    var luoi = document.getElementById(idGoc + '-luoi');
+    var oFile = document.getElementById(idGoc + '-file');
+    var oLink = document.getElementById(idGoc + '-link');
+    var nutLink = document.getElementById(idGoc + '-them-link');
+    var bao = document.getElementById(idGoc + '-bao');
+    if (!luoi) return function () { return ds.slice(); };
+
+    var baoLoi = function (chu) { bao.className = 'trang-thai-anh loi'; bao.textContent = chu; };
+    var baoOk = function (chu) { bao.className = 'trang-thai-anh'; bao.textContent = chu; };
+
+    var ve = function () {
+      luoi.innerHTML = ds.map(function (u, i) {
+        return '<div class="o-bo-anh' + (i === 0 ? ' bia' : '') + '">' +
+          '<img src="' + esc(anhDayDu(u)) + '" alt="" onerror="this.style.opacity=\'.25\'" />' +
+          (i === 0 ? '<span class="nhan-bia">Ảnh bìa</span>' : '') +
+          '<div class="nut-bo-anh">' +
+          (i > 0 ? '<button type="button" data-lam="trai" data-i="' + i + '" title="Lên trước">' +
+                   '<i class="fa-solid fa-arrow-left"></i></button>' : '') +
+          (i < ds.length - 1 ? '<button type="button" data-lam="phai" data-i="' + i + '" title="Ra sau">' +
+                               '<i class="fa-solid fa-arrow-right"></i></button>' : '') +
+          '<button type="button" data-lam="xoa" data-i="' + i + '" title="Bỏ ảnh">' +
+          '<i class="fa-solid fa-xmark"></i></button>' +
+          '</div></div>';
+      }).join('') || '<div class="bo-anh-trong">Chưa có ảnh</div>';
+    };
+
+    luoi.addEventListener('click', function (e) {
+      var nut = e.target.closest('button[data-lam]');
+      if (!nut) return;
+      var i = parseInt(nut.getAttribute('data-i'), 10);
+      var lam = nut.getAttribute('data-lam');
+      if (lam === 'xoa') ds.splice(i, 1);
+      if (lam === 'trai' && i > 0) ds.splice(i - 1, 0, ds.splice(i, 1)[0]);
+      if (lam === 'phai' && i < ds.length - 1) ds.splice(i + 1, 0, ds.splice(i, 1)[0]);
+      ve();
+    });
+
+    // Chọn nhiều file: nén và tải lên LẦN LƯỢT, xong cái nào hiện cái đó
+    oFile.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(oFile.files || []);
+      oFile.value = '';
+      if (!files.length) return;
+      var xong = 0, loi = 0;
+      var tiep = function () {
+        if (!files.length) {
+          if (loi) baoLoi('Thêm được ' + xong + ' ảnh, ' + loi + ' ảnh lỗi.');
+          else baoOk('Đã thêm ' + xong + ' ảnh ✓');
+          return;
+        }
+        baoOk('Đang tải ảnh ' + (xong + loi + 1) + '...');
+        taiAnhLen(files.shift(), function (u) {
+          ds.push(u); xong++; ve(); tiep();
+        }, function () { loi++; tiep(); });
+      };
+      tiep();
+    });
+
+    // Dán link: thử nạp bằng <img> trước khi nhận, link hỏng thì báo ngay
+    var themLink = function () {
+      var u = (oLink.value || '').trim();
+      if (!u) { baoLoi('Dán link ảnh vào ô trước đã.'); return; }
+      if (!laLinkNgoai(u)) { baoLoi('Link phải bắt đầu bằng http:// hoặc https://'); return; }
+      baoOk('Đang kiểm tra link...');
+      var thu = new Image();
+      thu.onload = function () {
+        if (ds.indexOf(u) < 0) ds.push(u);
+        oLink.value = '';
+        ve();
+        baoOk('Đã thêm ảnh từ link ✓');
+      };
+      thu.onerror = function () {
+        baoLoi('Không tải được ảnh từ link này. Link phải trỏ thẳng tới file ảnh (.jpg/.png/.webp)');
+      };
+      thu.src = u;
+    };
+    nutLink.addEventListener('click', themLink);
+    oLink.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); themLink(); }
+    });
+
+    ve();
+    return function () { return ds.slice(); };
   };
 
   /** HTML của ô ảnh dùng chung (sản phẩm, vật tư, bài viết): chọn file HOẶC dán link ngoài. */
@@ -1346,6 +1458,8 @@ window.Apex = (function () {
     taiAnhLen: taiAnhLen,
     ganOTaiAnh: ganOTaiAnh,
     htmlOTaiAnh: htmlOTaiAnh,
+    htmlBoAnh: htmlBoAnh,
+    ganBoAnh: ganBoAnh,
     luuSanPham: luuSanPham,
     xoaSanPham: xoaSanPham,
     doiTrangThaiSanPham: doiTrangThaiSanPham,

@@ -473,6 +473,8 @@ html.dang-tai::before {
   animation: hopThoaiHien 0.16s ease-out;
 }
 .hop-thoai.rong { max-width: 760px; }
+/* Hộp chi tiết (sản phẩm, vật tư): rộng để ảnh to và chữ không phải xuống dòng */
+.hop-thoai.rong-lon { max-width: 980px; }
 
 @keyframes hopThoaiHien {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
@@ -536,17 +538,36 @@ html.dang-tai::before {
   display: block;
 }
 
-/* Hộp thoại chi tiết: ảnh bên trái, thông tin bên phải */
+/* Hộp thoại chi tiết: ảnh bên trái, thông tin bên phải — CHIA ĐỀU hai cột.
+   Ảnh cao theo tỉ lệ 4:3 của bề ngang cột nên hộp rộng thì ảnh to theo. */
 .ct-2cot {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
 }
-.ct-2cot > .anh-chi-tiet { height: 240px; position: sticky; top: 0; }
-@media (max-width: 620px) {
-  .ct-2cot { grid-template-columns: 1fr; gap: 14px; }
-  .ct-2cot > .anh-chi-tiet { height: 180px; position: static; }
+/* Sản phẩm nhiều ảnh: ảnh lớn + dải ảnh nhỏ bọc chung một cột (.cot-anh) */
+.ct-2cot > .anh-chi-tiet,
+.ct-2cot > .cot-anh { position: sticky; top: 0; min-width: 0; }
+.ct-2cot > .anh-chi-tiet,
+.ct-2cot > .cot-anh .anh-chi-tiet { height: auto; aspect-ratio: 4 / 3; }
+/* Bảng thông số KHÔNG xuống dòng: chữ dài (tên cuộn nhựa...) cắt "…", rê chuột xem đủ */
+.ct-2cot .dong-tt { white-space: nowrap; }
+.ct-2cot .dong-tt .nhan-tt,
+.ct-2cot .dong-tt .gia-tri { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ct-2cot .dong-tt .nhan-tt { flex: 1 1 auto; }
+.ct-2cot .dong-tt .gia-tri { flex: 0 1 auto; }
+/* Riêng dòng nhiều thẻ (màu) được xếp xuống hàng, cắt đi thì mất màu */
+.ct-2cot .dong-tt.cho-xuong-dong { white-space: normal; }
+.ct-2cot .dong-tt.cho-xuong-dong .gia-tri {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; overflow: visible;
+}
+/* minmax(0, ...) chứ không phải 1fr trơn: 1fr lấy bề ngang TỐI THIỂU theo nội dung,
+   mà các dòng đã cấm xuống dòng nên cột bị đẩy rộng hơn cả hộp (tràn ngang trên điện thoại) */
+.ct-2cot > * { min-width: 0; }
+@media (max-width: 760px) {
+  .ct-2cot { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .ct-2cot > .anh-chi-tiet, .ct-2cot > .cot-anh { position: static; }
 }
 
 .luoi-nhap-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
@@ -579,6 +600,49 @@ html.dang-tai::before {
 .dan-link-anh input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-nhat); }
 .trang-thai-anh { font-size: 12.5px; color: var(--chu-mo); margin-top: 6px; word-break: break-all; }
 .trang-thai-anh.loi { color: var(--do); }
+
+/* ---------------- Bộ nhiều ảnh (sản phẩm) ---------------- */
+.bo-anh { margin-bottom: 14px; }
+.luoi-bo-anh { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.o-bo-anh {
+  position: relative; width: 96px; height: 96px; flex-shrink: 0;
+  border: 1px solid var(--vien); border-radius: var(--radius-nho);
+  overflow: hidden; background: #f4f5f6;
+}
+.o-bo-anh.bia { border: 2px solid var(--accent); }
+.o-bo-anh img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.o-bo-anh .nhan-bia {
+  position: absolute; left: 4px; top: 4px;
+  background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 700;
+  border-radius: 5px; padding: 1px 6px;
+}
+.o-bo-anh .nut-bo-anh {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: center; gap: 4px; padding: 4px;
+  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  opacity: 0; transition: opacity .15s;
+}
+.o-bo-anh:hover .nut-bo-anh, .o-bo-anh:focus-within .nut-bo-anh { opacity: 1; }
+.o-bo-anh .nut-bo-anh button {
+  width: 24px; height: 24px; border: 0; border-radius: 6px; cursor: pointer;
+  background: rgba(255,255,255,.92); color: var(--chu); font-size: 11px;
+}
+.o-bo-anh .nut-bo-anh button[data-lam="xoa"] { color: var(--do); }
+.bo-anh-trong {
+  width: 96px; height: 96px; border: 1px dashed var(--vien); border-radius: var(--radius-nho);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--chu-mo); font-size: 12px; text-align: center;
+}
+.thanh-bo-anh { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.thanh-bo-anh .dan-link-anh { flex: 1; min-width: 220px; margin-top: 0; }
+.bo-anh input[type=file] { display: none; }
+/* Dải ảnh nhỏ dưới ảnh lớn trong hộp chi tiết sản phẩm */
+.dai-anh-nho { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.dai-anh-nho img {
+  width: 44px; height: 44px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--vien); cursor: pointer;
+}
+.dai-anh-nho img.dang-xem { border: 2px solid var(--accent); }
 
 /* ---------------- Responsive ---------------- */
 
