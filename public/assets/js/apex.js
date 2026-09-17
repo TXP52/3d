@@ -129,45 +129,19 @@ window.Apex = (function () {
     dang_van_chuyen: { ten: 'Đang vận chuyển',  mau: 'badge-duong', icon: 'fa-truck-fast' }
   };
 
-  /** Cuộn nhựa còn từ 200g trở xuống là SẮP HẾT — mốc dùng chung cả trang Kho lẫn Tổng quan. */
-  var NGUONG_NHUA_SAP_HET = 200;
-
-  /** Số gram còn lại của một cuộn nhựa (backend tính sẵn, tính lại phòng khi thiếu). */
-  var gramConLai = function (v) {
-    if (v.conLaiGram != null) return v.conLaiGram;
-    var tong = (v.khoiLuongGram || 0) * (v.soLuong || 0);
-    return Math.max(0, tong - (v.daDungGram || 0));
-  };
-
-  /**
-   * Trạng thái THỰC TẾ của vật tư.
-   *
-   * Với nhựa, "còn hàng / sắp hết / hết hàng" suy từ số gram còn lại chứ không
-   * bắt chủ shop tự sửa tay mỗi lần in xong — in hết cuộn mà bảng vẫn ghi
-   * "Còn hàng" thì trạng thái chẳng có ý nghĩa gì.
-   *
-   * Hàng chưa về kho (đã đặt / đang vận chuyển) và hàng bị đánh dấu hết bằng tay
-   * thì giữ nguyên, không suy diễn đè lên.
-   */
-  var ttVatTuThucTe = function (v) {
-    if (!v) return 'con_hang';
-    if (v.trangThaiTinh) return v.trangThaiTinh;
-    var tt = v.trangThai || 'con_hang';
-    if (tt === 'da_dat' || tt === 'dang_van_chuyen' || tt === 'het_hang') return tt;
-    if (v.loai !== 'nhua') return tt;
-    var con = gramConLai(v);
-    if (con <= 0) return 'het_hang';
-    if (con <= NGUONG_NHUA_SAP_HET) return 'sap_het';
-    return 'con_hang';
-  };
-
   var badgeTheoMap = function (map, khoa) {
     var t = map[khoa] || { ten: khoa || '—', mau: 'badge-xam', icon: 'fa-circle' };
     return '<span class="badge ' + t.mau + '"><i class="fa-solid ' + t.icon + '"></i>' + esc(t.ten) + '</span>';
   };
   var badgeTtSanPham = function (tt) { return badgeTheoMap(TT_SAN_PHAM, tt); };
+  /**
+   * Nhận khoá trạng thái hoặc cả bản ghi vật tư. Với bản ghi thì dùng trangThaiTinh
+   * backend đã suy sẵn từ số còn lại (VatTu.getTrangThaiTinh). Trước đây JS giữ một bản
+   * sao quy tắc đó và lệch với Java (nhựa hết gram / đồ khác hết cái) — giờ chỉ một nơi tính.
+   */
   var badgeTtVatTu = function (tt) {
-    return badgeTheoMap(TT_VAT_TU, typeof tt === 'object' ? ttVatTuThucTe(tt) : tt);
+    if (typeof tt === 'object') tt = tt ? (tt.trangThaiTinh || tt.trangThai || 'con_hang') : 'con_hang';
+    return badgeTheoMap(TT_VAT_TU, tt);
   };
   var badgeLoaiSanPham = function (l) { return badgeTheoMap(LOAI_SAN_PHAM, l || 'ban'); };
   var badgeLoaiKm = function (l) { return badgeTheoMap(LOAI_KHUYEN_MAI, l || 'phan_tram'); };
@@ -205,31 +179,22 @@ window.Apex = (function () {
 
   var PRODUCTS = [];
   var ORDERS = [];
-  var CUSTOMERS = [];
-  var INVENTORY = [];
-  /**
-   * Số liệu vẽ biểu đồ. TÍNH TỪ ĐƠN HÀNG THẬT trong database, không bịa.
-   *
-   * Trước đây chỗ này là 3 dãy số viết cứng (412, 386, 524... triệu) hiện lên
-   * biểu đồ như doanh thu thật. Shop mới mở chưa bán được đồng nào mà trang
-   * Tổng quan vẫn khoe gần một tỉ mỗi tháng.
-   *
-   * Điền bằng tinhThongKe() ngay sau khi nạp xong đơn hàng.
-   */
-  var STATS = {
-    nam: new Date().getFullYear(),
-    thang: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-    doanhThuNam: [],
-    doanhThuNamTruoc: [],
-    donTheoThang: [],
-    coDuLieu: false
-  };
   var MAU_SAC = [];       // bảng màu dùng cho nhựa in và sản phẩm
   var DANH_MUC = [];      // danh mục sắp xếp sản phẩm (móc khoá, mô hình, đồ trang trí...)
   var BAI_VIET = [];      // bài viết kiến thức in 3D hiện ở cuối trang chủ khách
   var KHUYEN_MAI = [];    // mã giảm giá khách nhập ở giỏ hàng
   var VAT_TU = [];        // kho vật tư: máy in, cuộn nhựa...
   var NHA_CUNG_CAP = [];  // nơi mua vật tư
+  var NGUOI_DUNG = [];    // tài khoản đăng ký — chỉ lấy được khi đang đăng nhập admin
+  /**
+   * Kết quả THÔ của lần khởi tạo gần nhất, theo khoá: cả bộ dữ liệu lẫn số liệu TỔNG HỢP
+   * (tong-quan, bao-cao, khach-hang, von, tk-*...). Số tổng hợp do backend tính từ cache —
+   * trước đây doanh thu theo tháng, khách hàng, chi phí vốn... đều tính bằng JS trên toàn bộ
+   * đơn hàng / vật tư tải về, mỗi trang một kiểu nên số chỗ này lệch chỗ kia.
+   * Trang đọc bằng Apex.tk('tong-quan').
+   */
+  var DU_LIEU = {};
+  var DEM = null;          // { donChoXacNhan } — số đỏ cạnh mục Đơn hàng trên menu
   var BACKEND_OK = false;  // true khi gọi được backend Java; tắt thì bảng trống + báo đỏ đầu trang
 
   /* Tính chất vật tư — CỐ ĐỊNH 3 kiểu, quyết định cách kho tính:
@@ -237,7 +202,7 @@ window.Apex = (function () {
      Tên loại thì tự đặt thoải mái ở bảng danh mục. */
   var LOAI_VAT_TU = { may_in: 'Máy in', nhua: 'Nhựa in', dung_cu: 'Dụng cụ' };
 
-  /* ---------------- Nạp dữ liệu thật (bất đồng bộ, song song) ---------------- */
+  /* ---------------- Phiên đăng nhập ---------------- */
 
   var layPhien = function () {
     try { return JSON.parse(localStorage.getItem('in3d_phien')); } catch (e) { return null; }
@@ -248,6 +213,13 @@ window.Apex = (function () {
     window.location.href = 'dang-nhap.html';
   };
 
+  /** Gắn token admin vào header khi đang đăng nhập — nguoi-dung, khach-hang và các lệnh ghi cần. */
+  var themToken = function (headers) {
+    var phien = layPhien();
+    if (phien && phien.token) headers.Authorization = 'Bearer ' + phien.token;
+    return headers;
+  };
+
   /* Đổi nội dung mảng nhưng GIỮ tham chiếu: các trang đã cầm Apex.vatTu, Apex.products...
      từ lúc mở trang vẫn nhìn thấy dữ liệu mới sau khi nạp lại — nhờ vậy thêm/sửa/xoá
      chỉ cần vẽ lại bảng, không phải tải lại cả trang. */
@@ -256,130 +228,64 @@ window.Apex = (function () {
     Array.prototype.push.apply(mang, moi || []);
   };
 
-  /**
-   * Gọi API bất đồng bộ. Bản cũ dùng XMLHttpRequest ĐỒNG BỘ, 8 API nối đuôi nhau và
-   * treo cứng giao diện tới khi xong: database ở xa nên mỗi API vài trăm ms, cộng lại
-   * người dùng nhìn trang trắng vài giây. Giờ gọi song song, khung trang hiện ngay,
-   * bảng đổ dữ liệu khi về, thanh tải mảnh ở mép trên báo là đang chờ.
-   */
-  var taiJson = function (duongDan, headers) {
-    return fetch(JAVA_API + duongDan, { headers: headers || {} })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+  /* ---------------- Đổi dữ liệu API sang dạng các bảng đang dùng ---------------- */
+
+  var chuyenDonHang = function (d) {
+    var tt = (d.thanhToan && d.thanhToan[0]) || null;
+    return {
+      dbId: d.id, id: d.maDon, customer: d.tenKhach, phone: d.soDienThoai || '',
+      // Địa chỉ giao và ghi chú của khách — bản cũ bỏ mất nên hộp chi tiết đơn không xem được
+      diaChi: d.diaChi || '', ghiChu: d.ghiChu || '', nguoiDungId: d.nguoiDungId || null,
+      // date là chuỗi đã định dạng để hiện; ngayGoc giữ nguyên ISO
+      date: ngayVN(d.createdAt), ngayGoc: d.createdAt,
+      items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
+      total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
+      maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
+      tienGiamSanPham: d.tienGiamSanPham || 0, tienHangGoc: d.tienHangGoc || d.tongTien || 0,
+      payment: tt ? (PT_MAP[tt.phuongThuc] || 'COD') + (tt.trangThai === 'da_thanh_toan' ? ' (đã TT)' : '') : 'COD',
+      channel: 'Website',
+      chiTiet: (d.chiTiet || []).map(function (c) {
+        return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia, donGiaGoc: c.donGiaGoc || c.donGia };
+      })
+    };
   };
 
-  var NGUOI_DUNG = [];   // tài khoản đăng ký — chỉ lấy được khi đang đăng nhập admin
-
-  var napDonHang = function () {
-    return taiJson('/don-hang').then(function (donJava) {
-      if (!donJava) return false;
-      thayMang(ORDERS, donJava.map(function (d) {
-        var tt = (d.thanhToan && d.thanhToan[0]) || null;
-        return {
-          dbId: d.id, id: d.maDon, customer: d.tenKhach, phone: d.soDienThoai || '',
-          // date là chuỗi đã định dạng để hiện; ngayGoc giữ nguyên ISO để gom theo tháng
-          date: ngayVN(d.createdAt), ngayGoc: d.createdAt,
-          items: (d.chiTiet || []).reduce(function (s, c) { return s + (c.soLuong || 0); }, 0),
-          total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
-          maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
-          tienGiamSanPham: d.tienGiamSanPham || 0, tienHangGoc: d.tienHangGoc || d.tongTien || 0,
-          payment: tt ? (PT_MAP[tt.phuongThuc] || 'COD') + (tt.trangThai === 'da_thanh_toan' ? ' (đã TT)' : '') : 'COD',
-          channel: 'Website',
-          chiTiet: (d.chiTiet || []).map(function (c) {
-            return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia, donGiaGoc: c.donGiaGoc || c.donGia };
-          })
-        };
-      }));
-      tinhThongKe();
-      return true;
-    });
+  var chuyenSanPham = function (s) {
+    return {
+      dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
+      // Không đặt giá vốn ở đây. Bản cũ để cost = 70% giá bán, tức là bịa ra
+      // một con số vốn rồi tính lãi trên đó. Vốn thật nằm ở trang Quản lý vốn,
+      // tính từ tiền mua vật tư và số gram nhựa đã dùng.
+      price: s.gia || 0,
+      stock: s.tonKho || 0, img: s.hinhAnh || '', dangBan: !!s.dangBan,
+      moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || '',
+      loaiSanPham: s.loaiSanPham || 'ban', danhMucId: s.danhMucId || null,
+      // Nhựa đã trừ khỏi kho — một sản phẩm in được bằng nhiều cuộn (xem SanPhamVatTu.java).
+      // mauSac là MÀU CỦA CHÍNH MẤY CUỘN ĐÓ, backend suy ra chứ không lưu riêng.
+      vatTus: s.vatTus || [], mauSac: s.mauSac || [],
+      // soLuong = TỔNG số cái đã in (nhập tay, không cộng từ các dòng nhựa: một cái
+      // nhiều màu ăn nhiều cuộn). Mỗi dòng vatTus ghi cuộn đó dùng cho mấy cái.
+      soLuong: s.soLuong || 1,
+      // Nhiều màu: mỗi cái dùng mọi cuộn, một số lượng chung. Một màu: mỗi dòng một lô.
+      nhieuMau: !!s.nhieuMau,
+      // Tất cả ảnh, ảnh đầu = ảnh bìa (img ở trên luôn bằng ảnh đầu)
+      dsAnh: s.danhSachAnh || (s.hinhAnh ? [s.hinhAnh] : []),
+      gramMoiCaiMin: s.gramMoiCaiMin || 0, gramMoiCaiMax: s.gramMoiCaiMax || 0,
+      tongGramNhua: s.tongGramNhua || 0, tienNhua: s.tienNhua || 0
+    };
   };
 
-  var napSanPham = function () {
-    return taiJson('/san-pham?tatCa=true').then(function (spJava) {
-      if (!spJava) return false;
-      thayMang(PRODUCTS, spJava.map(function (s) {
-        return {
-          dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
-          // Không đặt giá vốn ở đây. Bản cũ để cost = 70% giá bán, tức là bịa ra
-          // một con số vốn rồi tính lãi trên đó. Vốn thật nằm ở trang Quản lý vốn,
-          // tính từ tiền mua vật tư và số gram nhựa đã dùng.
-          price: s.gia || 0,
-          stock: s.tonKho || 0, img: s.hinhAnh || '', dangBan: !!s.dangBan,
-          moTa: s.moTa || '', trangThai: s.trangThai || 'san_hang', ngayTao: s.createdAt || '',
-          loaiSanPham: s.loaiSanPham || 'ban', danhMucId: s.danhMucId || null,
-          // Nhựa đã trừ khỏi kho — một sản phẩm in được bằng nhiều cuộn (xem SanPhamVatTu.java).
-          // mauSac là MÀU CỦA CHÍNH MẤY CUỘN ĐÓ, backend suy ra chứ không lưu riêng.
-          vatTus: s.vatTus || [], mauSac: s.mauSac || [],
-          // soLuong = TỔNG số cái đã in (nhập tay, không cộng từ các dòng nhựa: một cái
-          // nhiều màu ăn nhiều cuộn). Mỗi dòng vatTus ghi cuộn đó dùng cho mấy cái.
-          soLuong: s.soLuong || 1,
-          // Nhiều màu: mỗi cái dùng mọi cuộn, một số lượng chung. Một màu: mỗi dòng một lô.
-          nhieuMau: !!s.nhieuMau,
-          // Tất cả ảnh, ảnh đầu = ảnh bìa (img ở trên luôn bằng ảnh đầu)
-          dsAnh: s.danhSachAnh || (s.hinhAnh ? [s.hinhAnh] : []),
-          gramMoiCaiMin: s.gramMoiCaiMin || 0, gramMoiCaiMax: s.gramMoiCaiMax || 0,
-          tongGramNhua: s.tongGramNhua || 0, tienNhua: s.tienNhua || 0
-        };
-      }));
-      thayMang(INVENTORY, PRODUCTS.map(function (p) {
-        return { sku: p.sku, name: p.name, type: p.cat, stock: p.stock, min: p.min, location: 'Kho chính', updated: ngayVN(new Date().toISOString()) };
-      }));
-      return true;
-    });
-  };
-
-  /** Các bộ dữ liệu nhỏ: backend trả về đúng dạng cần dùng, chỉ việc thay mảng. */
-  var napBo = function (mang, duongDan) {
-    return taiJson(duongDan).then(function (ds) {
-      if (!ds) return false;
-      thayMang(mang, ds);
-      return true;
-    });
-  };
-  var napVatTu = function () { return napBo(VAT_TU, '/vat-tu'); };
-  var napNhaCungCap = function () { return napBo(NHA_CUNG_CAP, '/nha-cung-cap'); };
-  var napMauSac = function () { return napBo(MAU_SAC, '/mau-sac'); };
-  var napDanhMuc = function () { return napBo(DANH_MUC, '/danh-muc'); };
-  // tatCa=true: trang quản trị thấy cả bài đang tắt hiển thị / mã tạm dừng, hết hạn
-  var napBaiViet = function () { return napBo(BAI_VIET, '/bai-viet?tatCa=true'); };
-  var napKhuyenMai = function () { return napBo(KHUYEN_MAI, '/khuyen-mai?tatCa=true'); };
-
-  /** Tài khoản đăng ký — cần token admin; chưa đăng nhập thì danh sách trống. */
-  var napNguoiDung = function () {
-    var phien = layPhien();
-    if (!phien || !phien.token) { thayMang(NGUOI_DUNG, []); return Promise.resolve(false); }
-    return taiJson('/nguoi-dung', { Authorization: 'Bearer ' + phien.token }).then(function (ds) {
-      thayMang(NGUOI_DUNG, ds || []);
-      return !!ds;
-    });
-  };
-
-  /** Khách hàng: tài khoản đăng ký + khách vãng lai gom từ đơn. Tính thuần từ dữ liệu đã nạp. */
-  var tinhKhachHang = function () {
-    var nhom = {};
-    ORDERS.forEach(function (o) {
-      var k = o.customer + '|' + o.phone;
-      if (!nhom[k]) nhom[k] = { id: 'KH-' + (Object.keys(nhom).length + 1), name: o.customer, email: '—', phone: o.phone || '—', group: 'Khách lẻ', orders: 0, spent: 0, since: o.date };
-      nhom[k].orders += 1;
-      nhom[k].spent += o.total;
-    });
-    var ds = Object.keys(nhom).map(function (k) { return nhom[k]; });
-
-    if (NGUOI_DUNG.length) {
-      var coTK = {};
-      NGUOI_DUNG.forEach(function (u) { coTK[u.hoTen] = true; });
-      ds = NGUOI_DUNG.map(function (u) {
-        var don = ORDERS.filter(function (o) { return o.customer === u.hoTen; });
-        return {
-          id: 'KH-' + u.id, name: u.hoTen, email: u.email, phone: u.soDienThoai || '—',
-          group: u.vaiTro === 'admin' ? 'Quản trị' : 'Khách hàng',
-          orders: don.length, spent: don.reduce(function (s, o) { return s + o.total; }, 0),
-          since: ngayVN(u.createdAt)
-        };
-      }).concat(ds.filter(function (c) { return !coTK[c.name]; }));
-    }
-    thayMang(CUSTOMERS, ds);
+  /** Khoá bộ dữ liệu -> cách đổ vào mảng toàn cục. Khoá khác (tong-quan, tk-*, dem...) giữ thô. */
+  var BO_DU_LIEU = {
+    'san-pham':     function (ds) { thayMang(PRODUCTS, ds.map(chuyenSanPham)); },
+    'don-hang':     function (ds) { thayMang(ORDERS, ds.map(chuyenDonHang)); },
+    'vat-tu':       function (ds) { thayMang(VAT_TU, ds); },
+    'nha-cung-cap': function (ds) { thayMang(NHA_CUNG_CAP, ds); },
+    'mau-sac':      function (ds) { thayMang(MAU_SAC, ds); },
+    'danh-muc':     function (ds) { thayMang(DANH_MUC, ds); },
+    'bai-viet':     function (ds) { thayMang(BAI_VIET, ds); },
+    'khuyen-mai':   function (ds) { thayMang(KHUYEN_MAI, ds); },
+    'nguoi-dung':   function (ds) { thayMang(NGUOI_DUNG, ds); }
   };
 
   /* ---------------- Thanh tải mảnh ở mép trên ---------------- */
@@ -390,85 +296,165 @@ window.Apex = (function () {
     if (!DANG_TAI) document.documentElement.classList.remove('dang-tai');
   };
 
-  /* ---------------- Vẽ lại trang ----------------
-     Trang đăng ký hàm vẽ lại bằng Apex.datVeLai(); Apex gọi nó khi dữ liệu về lần đầu
-     và sau mỗi lần ghi. Trang KHÔNG tự gọi lúc mở — lúc đó mảng còn trống, vẽ ra toàn
-     "Chưa có..." rồi nháy sang dữ liệu thật, nhìn như lỗi. */
-  var DA_NAP = false;
-  var _veLaiTrang = null;
-  var datVeLai = function (fn) {
-    _veLaiTrang = fn;
-    if (DA_NAP) { fn(); capNhatBadgeMenu(); }
+  /* ---------------- Khởi tạo trang: MỘT request cho cả trang ----------------
+     Trước đây mọi trang tự nạp đủ 9 bộ dữ liệu (9 request song song) và không vẽ gì cho
+     tới khi cái chậm nhất về — /san-pham mất ~2,4 s, kể cả trang Màu sắc chẳng dùng tới
+     sản phẩm. Giờ mỗi trang khai đúng các khoá nó cần:
+
+       Apex.trang({ bo: ['mau-sac', 'tk-mau-sac'], ve: veLaiTrang });
+
+     Apex gửi MỘT request GET /api/quan-tri/khoi-tao?bo=...,dem (server trả từ cache trong
+     bộ nhớ), đổ các bộ dữ liệu vào Apex.products, Apex.vatTu... như cũ, cất số liệu tổng hợp
+     cho Apex.tk(khoa), rồi gọi ve(). Sau mỗi lần ghi, nạp lại đúng các khoá đó. */
+
+  var TRANG = null;       // { bo, thamSo, ve } — trang đã khai bằng Apex.trang()
+  var VE_CHO = null;      // hàm vẽ đăng ký bằng datVeLai() trước khi trang khai
+  var DA_NAP = false;     // đã nạp được ít nhất một lần
+  var DA_THU = false;     // đã có kết quả (được hoặc lỗi) — lúc đó mới biết có báo đỏ hay không
+  var LUOT_NAP = 0;       // lượt nạp mới nhất; kết quả của lượt cũ về muộn thì bỏ qua
+
+  /** Đường dẫn khởi tạo: luôn kèm 'dem' cho số trên menu, cộng các tham số trang cần (vd tiLeLai). */
+  var duongDanKhoiTao = function (lamMoi) {
+    var bo = [];
+    TRANG.bo.concat(['dem']).forEach(function (k) {
+      if (k && bo.indexOf(k) < 0) bo.push(k);
+    });
+    var url = '/quan-tri/khoi-tao?bo=' + bo.map(encodeURIComponent).join(',');
+    var ts = null;
+    try { ts = typeof TRANG.thamSo === 'function' ? TRANG.thamSo() : TRANG.thamSo; } catch (e) { ts = null; }
+    Object.keys(ts || {}).forEach(function (k) {
+      var v = ts[k];
+      if (v === null || v === undefined || v === '') return;
+      url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+    });
+    if (lamMoi) url += '&lamMoi=1';
+    return url;
   };
-  var veLaiNeuCo = function () {
-    if (_veLaiTrang) _veLaiTrang();
+
+  var apDungKetQua = function (kq) {
+    DU_LIEU = kq || {};
+    Object.keys(BO_DU_LIEU).forEach(function (khoa) {
+      if (!(khoa in DU_LIEU)) return;
+      var ds = DU_LIEU[khoa];
+      if (Array.isArray(ds)) BO_DU_LIEU[khoa](ds);
+      // nguoi-dung = null khi không có token admin hợp lệ -> danh sách trống
+      else if (khoa === 'nguoi-dung') thayMang(NGUOI_DUNG, []);
+    });
+    if (DU_LIEU.dem) DEM = DU_LIEU.dem;
+  };
+
+  /** Gọi hàm vẽ của trang. Trang vẽ lỗi thì chỉ ghi console — không phải lỗi backend. */
+  var veLaiNeuCo = function (lanDau) {
     capNhatBadgeMenu();
+    if (!TRANG || typeof TRANG.ve !== 'function') return;
+    try { TRANG.ve(DU_LIEU, !!lanDau); }
+    catch (e) { if (window.console) console.error('Apex: lỗi khi vẽ trang', e); }
   };
 
-  (function napDuLieuThat() {
+  var napTrang = function (lamMoi) {
+    if (!TRANG) return Promise.resolve(false);
+    var luot = ++LUOT_NAP;
     batTai();
-    Promise.all([
-      napDonHang(), napSanPham(),
-      napVatTu(), napNhaCungCap(), napMauSac(), napDanhMuc(), napBaiViet(), napKhuyenMai(),
-      napNguoiDung()
-    ]).then(function (kq) {
-      BACKEND_OK = !!(kq[0] && kq[1]);
-      // Backend tắt thì mọi bảng để TRỐNG và có thông báo đỏ ở đầu trang (capNhatBanner).
-      // Trước đây chỗ này còn gọi thẳng Supabase REST rồi hiện dữ liệu chỉ-đọc kèm
-      // dòng "dữ liệu mẫu" — trang trông như vẫn chạy, chủ shop sửa gì cũng không ăn.
-      tinhKhachHang();
-      DA_NAP = true;
-      tatTai();
-      capNhatBanner();
-      veLaiNeuCo();
-    });
-  })();
-
-  /* ---------------- Cập nhật tại chỗ sau khi ghi ----------------
-     Trước đây mọi thao tác lưu/xoá đều tải lại cả trang: mất vị trí cuộn, mất bộ lọc
-     đang chọn, trang nháy trắng. Giờ: nạp lại đúng bộ dữ liệu vừa đổi (song song,
-     không chặn), đóng hộp thoại, gọi hàm vẽ lại của trang, rồi hiện toast. */
-
-  var BO_NAP = {
-    'don-hang': napDonHang, 'san-pham': napSanPham, 'vat-tu': napVatTu,
-    'nha-cung-cap': napNhaCungCap, 'mau-sac': napMauSac, 'danh-muc': napDanhMuc,
-    'bai-viet': napBaiViet, 'khuyen-mai': napKhuyenMai
+    return fetch(JAVA_API + duongDanKhoiTao(lamMoi), { headers: themToken({}), cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (kq) {
+        tatTai();
+        if (luot !== LUOT_NAP) return true;   // đã có lượt nạp mới hơn, để lượt đó vẽ
+        var lanDau = !DA_NAP;
+        try { apDungKetQua(kq); } catch (e) { if (window.console) console.error('Apex: dữ liệu khởi tạo lạ', e); }
+        BACKEND_OK = true;
+        DA_NAP = true;
+        DA_THU = true;
+        capNhatBanner();
+        veLaiNeuCo(lanDau);
+        return true;
+      }, function () {
+        tatTai();
+        // Backend tắt thì bảng để TRỐNG và có thông báo đỏ ở đầu trang (capNhatBanner),
+        // không gọi hàm vẽ với số liệu rỗng — nhìn "0 đơn, 0 ₫" dễ tưởng là thật.
+        if (luot === LUOT_NAP) {
+          BACKEND_OK = false;
+          DA_THU = true;
+          capNhatBanner();
+        }
+        return false;
+      });
   };
 
-  /** Nạp lại một hay nhiều bộ dữ liệu (song song). Trả Promise. */
-  var taiLai = function (cacBo) {
-    cacBo = cacBo || [];
-    batTai();
-    var viec = cacBo.map(function (b) { return BO_NAP[b] ? BO_NAP[b]() : Promise.resolve(false); });
-    if (cacBo.indexOf('don-hang') >= 0) viec.push(napNguoiDung());
-    return Promise.all(viec).then(function (kq) {
-      if (cacBo.indexOf('don-hang') >= 0) tinhKhachHang();
-      tatTai();
-      return kq;
-    });
+  /**
+   * Khai báo trang và nạp ngay:
+   *   bo     : các khoá cần (bộ dữ liệu + số liệu tổng hợp); 'dem' tự thêm
+   *   thamSo : object hoặc hàm trả object — tham số thêm cho khởi tạo (vd { tiLeLai: 120 });
+   *            là hàm thì đọc lại mỗi lần nạp
+   *   ve     : hàm vẽ lại cả trang, gọi ve(duLieu, lanDau) khi dữ liệu về và sau mỗi lần ghi
+   * Trả Promise<boolean> của lần nạp đầu.
+   */
+  var trang = function (khai) {
+    khai = khai || {};
+    TRANG = {
+      bo: (khai.bo || []).slice(),
+      thamSo: khai.thamSo || null,
+      ve: khai.ve || (TRANG && TRANG.ve) || VE_CHO
+    };
+    return napTrang(false);
   };
 
-  /** Toast nhỏ góc dưới phải, tự ẩn sau 2,2 giây. */
-  var baoNhanh = function (chu, icon) {
+  /* Trang KHÔNG tự vẽ lúc mở — lúc đó mảng còn trống, vẽ ra toàn "Chưa có..." rồi nháy
+     sang dữ liệu thật, nhìn như lỗi. Apex gọi hàm vẽ khi dữ liệu về. */
+  var datVeLai = function (fn) {
+    if (TRANG) TRANG.ve = fn;
+    else VE_CHO = fn;
+    if (DA_NAP) veLaiNeuCo(false);
+  };
+
+  /* Lưới an toàn: trang cũ chỉ gọi datVeLai mà chưa khai Apex.trang() thì nạp đủ các bộ
+     dữ liệu như trước, để khỏi trắng trang. Trang mới luôn khai bo. */
+  var napMacDinh = function () {
+    if (TRANG || !VE_CHO) return;
+    if (window.console) console.warn('Apex: trang chưa khai Apex.trang({ bo: [...] }), tạm nạp đủ các bộ dữ liệu.');
+    trang({ bo: Object.keys(BO_DU_LIEU), ve: VE_CHO });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', napMacDinh);
+  else setTimeout(napMacDinh, 0);
+
+  /** Nạp lại các khoá của trang (server trả từ cache, rất nhanh) rồi vẽ lại. Trả Promise<boolean>. */
+  var taiLai = function () { return napTrang(false); };
+
+  /** Bắt server đọc lại mọi thứ từ database (sau khi sửa tay trên Supabase Dashboard) rồi vẽ lại. */
+  var lamMoi = function () { return napTrang(true); };
+
+  /** Giá trị thô của một khoá trong lần khởi tạo gần nhất (vd 'tong-quan', 'tk-kho'); chưa có thì null. */
+  var tk = function (khoa) {
+    return DU_LIEU[khoa] === undefined ? null : DU_LIEU[khoa];
+  };
+
+  /** Toast nhỏ góc dưới phải, tự ẩn sau 2,2 giây (báo lỗi thì đỏ và ở lại 5 giây). */
+  var baoNhanh = function (chu, icon, laLoi) {
     var cu = document.getElementById('bao-nhanh');
     if (cu) cu.parentNode.removeChild(cu);
     var o = document.createElement('div');
     o.id = 'bao-nhanh';
-    o.className = 'bao-nhanh';
+    o.className = 'bao-nhanh' + (laLoi ? ' loi' : '');
     o.innerHTML = '<i class="fa-solid ' + (icon || 'fa-circle-check') + '"></i>' + esc(chu);
     document.body.appendChild(o);
     requestAnimationFrame(function () { o.classList.add('hien'); });
     setTimeout(function () {
       o.classList.remove('hien');
       setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 300);
-    }, 2200);
+    }, laLoi ? 5000 : 2200);
   };
 
-  /** Số đơn chờ xác nhận trên menu cũng phải đổi theo, không thì lệch với bảng. */
+  /** Toast đỏ — cho lỗi không có ô .bao-loi nào để hiện (vd nút xoá ở hộp chi tiết). */
+  var baoLoi = function (chu) { baoNhanh(chu, 'fa-circle-exclamation', true); };
+
+  /** Số đơn chờ xác nhận trên menu — backend đếm sẵn (khoá 'dem'), không đếm lại bằng JS. */
   var capNhatBadgeMenu = function () {
     var muc = document.querySelector('.apex-muc[href="don-hang.html"]');
-    if (!muc) return;
-    var so = ORDERS.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length;
+    if (!muc || !DEM) return;
+    var so = DEM.donChoXacNhan || 0;
     var badge = muc.querySelector('.badge-muc');
     if (so) {
       if (!badge) { badge = document.createElement('span'); badge.className = 'badge-muc'; muc.appendChild(badge); }
@@ -482,133 +468,166 @@ window.Apex = (function () {
   var capNhatBanner = function () {
     var cu = document.getElementById('bao-backend');
     if (cu) cu.parentNode.removeChild(cu);
-    if (BACKEND_OK) return;
-    var trang = document.querySelector('.apex-trang');
-    if (trang) {
-      trang.insertAdjacentHTML('afterbegin',
+    if (!DA_THU || BACKEND_OK) return;
+    var trangEl = document.querySelector('.apex-trang');
+    if (trangEl) {
+      trangEl.insertAdjacentHTML('afterbegin',
         '<div class="bao-backend" id="bao-backend"><i class="fa-solid fa-plug-circle-xmark"></i> ' +
-        'Không kết nối được backend Java (cổng 8090) nên chưa nạp được dữ liệu. ' +
+        (DA_NAP
+          ? 'Mất kết nối backend Java (cổng 8090), số liệu đang hiện có thể đã cũ. '
+          : 'Không kết nối được backend Java (cổng 8090) nên chưa nạp được dữ liệu. ') +
         'Chạy backend rồi tải lại trang.</div>');
     }
   };
 
-  /** Gọi sau khi backend ghi xong: đóng hộp thoại, nạp lại bộ liên quan, vẽ lại, báo. */
-  var capNhatXong = function (cacBo, thongBao) {
-    dongHopThoai();
-    if (!_veLaiTrang) { location.reload(); return; }
-    taiLai(cacBo).then(function () {
-      veLaiNeuCo();
-      if (thongBao) baoNhanh(thongBao);
+  /* ---------------- Thao tác gọi backend Java ----------------
+     Bản cũ dùng XMLHttpRequest ĐỒNG BỘ: cả tab đứng hình tới khi database ghi xong (có lúc
+     vài giây), không hiện được "Đang lưu…", lỗi thì bật alert() rồi form lại báo thêm một câu
+     "kiểm tra backend" dù backend chỉ từ chối dữ liệu. Giờ gọi bất đồng bộ, trả Promise;
+     lỗi thì reject Error mang đúng câu backend báo ({loi}) để hiện ngay trong form. */
+
+  /** Gọi ghi (POST/PUT/DELETE). Resolve JSON trả về (204 -> null); lỗi reject Error(thông báo). */
+  var ghi = function (method, duongDan, body) {
+    var tuyChon = { method: method, headers: themToken({ 'Content-Type': 'application/json' }) };
+    if (body !== undefined && body !== null) tuyChon.body = JSON.stringify(body);
+    batTai();
+    return fetch(JAVA_API + duongDan, tuyChon).then(function (r) {
+      return r.text().then(function (chu) {
+        tatTai();
+        var j = null;
+        try { j = chu ? JSON.parse(chu) : null; } catch (e) { j = null; }
+        if (r.ok) return j;
+        var loi = new Error((j && j.loi) ||
+          (r.status === 401 || r.status === 403
+            ? 'Phiên đăng nhập đã hết hạn hoặc không đủ quyền. Hãy đăng nhập lại.'
+            : 'Lỗi backend: HTTP ' + r.status));
+        loi.status = r.status;
+        loi.duLieu = j;
+        throw loi;
+      }, function () {
+        tatTai();
+        var loi = new Error('Lỗi backend: HTTP ' + r.status);
+        loi.status = r.status;
+        throw loi;
+      });
+    }, function () {
+      tatTai();
+      var loi = new Error('Không kết nối được backend Java (cổng 8090). Kiểm tra backend đã chạy chưa rồi thử lại.');
+      loi.status = 0;
+      throw loi;
     });
   };
 
   /**
-   * Gom đơn hàng thật thành số liệu 12 tháng cho biểu đồ.
-   *
-   * Doanh thu KHÔNG tính đơn đã huỷ — đơn huỷ không mang về đồng nào,
-   * cộng vào là báo cáo sai. Số đơn thì đếm hết vì đó là số đơn đã nhận.
+   * Gọi sau khi backend ghi xong: đóng hộp thoại, nạp lại các khoá của trang (cache ấm,
+   * số mới), vẽ lại, rồi hiện toast. Trả Promise.
+   * Giữ cách gọi cũ capNhatXong(['vat-tu'], 'Đã lưu') — mảng bộ dữ liệu giờ bỏ qua vì trang
+   * luôn nạp lại đúng các khoá đã khai; gọi gọn capNhatXong('Đã lưu') cũng được.
    */
-  function tinhThongKe() {
-    var namNay = new Date().getFullYear();
-    var dtNamNay = [0,0,0,0,0,0,0,0,0,0,0,0];
-    var dtNamTruoc = [0,0,0,0,0,0,0,0,0,0,0,0];
-    var soDon = [0,0,0,0,0,0,0,0,0,0,0,0];
-    var coDon = false;
-
-    ORDERS.forEach(function (o) {
-      if (!o.ngayGoc) return;
-      var d = new Date(o.ngayGoc);
-      if (isNaN(d.getTime())) return;
-      var thang = d.getMonth();
-      var nam = d.getFullYear();
-      var tien = o.total || 0;
-
-      if (nam === namNay) {
-        soDon[thang] += 1;
-        if (o.status !== 'Đã huỷ') dtNamNay[thang] += tien;
-        coDon = true;
-      } else if (nam === namNay - 1) {
-        if (o.status !== 'Đã huỷ') dtNamTruoc[thang] += tien;
-        coDon = true;
-      }
+  var capNhatXong = function (cacBo, thongBao) {
+    if (typeof cacBo === 'string' && thongBao === undefined) thongBao = cacBo;
+    dongHopThoai();
+    return taiLai().then(function () {
+      if (thongBao) baoNhanh(thongBao);
     });
-
-    STATS.nam = namNay;
-    STATS.doanhThuNam = dtNamNay;
-    STATS.doanhThuNamTruoc = dtNamTruoc;
-    STATS.donTheoThang = soDon;
-    STATS.coDuLieu = coDon;
-  }
-
-  /* ---------------- Thao tác gọi backend Java ---------------- */
-
-  var goiJava = function (method, duongDan, body) {
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, JAVA_API + duongDan, false);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    try { xhr.send(body ? JSON.stringify(body) : null); } catch (e) { alert('Không gọi được backend Java (đã chạy chưa?)'); return false; }
-    if (xhr.status >= 200 && xhr.status < 300) return true;
-    try { alert('Lỗi backend: ' + (JSON.parse(xhr.responseText).loi || ('HTTP ' + xhr.status))); }
-    catch (e2) { alert('Lỗi backend: HTTP ' + xhr.status); }
-    return false;
   };
 
-  var doiTrangThai = function (dbId, tt) {
-    if (goiJava('PUT', '/don-hang/' + dbId + '/trang-thai', { trangThai: tt })) capNhatXong(['don-hang'], 'Đã đổi trạng thái đơn');
+  /** Ghi rồi cập nhật trang; Promise resolve đúng JSON backend trả sau khi trang đã vẽ lại. */
+  var ghiRoiCapNhat = function (method, duongDan, body, thongBao) {
+    return ghi(method, duongDan, body).then(function (kq) {
+      return capNhatXong(null, thongBao).then(function () { return kq; });
+    });
   };
-  var danhDauDaTT = function (dbId) {
-    if (goiJava('PUT', '/don-hang/' + dbId + '/da-thanh-toan', null)) capNhatXong(['don-hang'], 'Đã ghi nhận thanh toán');
+
+  /** Hỏi lại trước khi xoá. Bấm Huỷ -> Promise(false), không gọi backend; xoá xong -> Promise(true). */
+  var xoaSauKhiHoi = function (cauHoi, duongDan, thongBao) {
+    if (!confirm(cauHoi)) return Promise.resolve(false);
+    return ghiRoiCapNhat('DELETE', duongDan, null, thongBao).then(function () { return true; });
+  };
+
+  /* Nút đang chờ backend: khoá lại, đổi chữ thành "Đang lưu…" kèm vòng quay; xong trả như cũ.
+     select/input thì chỉ khoá, không đụng nội dung. */
+  var batNutBan = function (nut, chu) {
+    if (!nut || nut._apexBan) return;
+    nut._apexBan = true;
+    nut._apexKhoaSan = !!nut.disabled;
+    nut.disabled = true;
+    nut.classList.add('dang-ban');
+    if (nut.tagName === 'BUTTON' || nut.tagName === 'A') {
+      nut._apexHtml = nut.innerHTML;
+      nut.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' +
+        esc(chu || (nut.classList.contains('nut-do') ? 'Đang xoá…' : 'Đang lưu…'));
+    }
+  };
+  var tatNutBan = function (nut) {
+    if (!nut || !nut._apexBan) return;
+    nut._apexBan = false;
+    nut.disabled = nut._apexKhoaSan;
+    nut.classList.remove('dang-ban');
+    if (nut._apexHtml !== undefined) { nut.innerHTML = nut._apexHtml; nut._apexHtml = undefined; }
+  };
+
+  /**
+   * Chạy một thao tác ghi gắn với nút bấm, thay cho alert():
+   *   nut  : nút vừa bấm (truyền this), selector, hoặc null — khoá + "Đang lưu…" trong lúc chờ
+   *   viec : Promise hoặc hàm trả Promise, vd Apex.suaMauSac(id, duLieu)
+   *   oLoi : ô báo lỗi (phần tử / selector); bỏ trống thì tự tìm .bao-loi trong hộp thoại
+   *          chứa nút, không có thì hiện toast đỏ
+   *   chu  : chữ trên nút lúc chờ; mặc định "Đang xoá…" cho nút đỏ, "Đang lưu…" cho nút khác
+   * Promise trả về KHÔNG BAO GIỜ reject: thành công -> kết quả của viec; lỗi -> undefined
+   * (lỗi đã hiện rồi), nên gọi thẳng trong onclick="..." được.
+   */
+  var dangLuu = function (nut, viec, oLoi, chu) {
+    if (nut && nut.currentTarget) nut = nut.currentTarget;   // lỡ truyền event thay vì this
+    if (typeof nut === 'string') nut = document.querySelector(nut);
+    if (typeof oLoi === 'string') oLoi = document.querySelector(oLoi);
+    if (!oLoi) {
+      var hop = (nut && nut.closest && nut.closest('.hop-thoai')) ||
+        document.querySelector('#lop-phu-chung.hien .hop-thoai');
+      oLoi = hop ? hop.querySelector('.bao-loi') : null;
+    }
+    if (oLoi) oLoi.textContent = '';
+    batNutBan(nut, chu);
+
+    var hua;
+    try { hua = Promise.resolve(typeof viec === 'function' ? viec() : viec); }
+    catch (e) { hua = Promise.reject(e); }
+
+    return hua.then(function (kq) {
+      tatNutBan(nut);
+      return kq;
+    }, function (e) {
+      tatNutBan(nut);
+      var thongBao = (e && e.message) || 'Không lưu được, thử lại sau.';
+      if (oLoi && document.body.contains(oLoi)) oLoi.textContent = thongBao;
+      else baoLoi(thongBao);
+      return undefined;
+    });
+  };
+
+  /* Mọi hàm ghi bên dưới trả Promise: thành công thì đóng hộp thoại, nạp lại trang, vẽ lại,
+     hiện toast rồi mới resolve; lỗi thì reject Error(câu backend báo) — dùng kèm Apex.dangLuu.
+     thongBao (tham số cuối, tuỳ chọn) thay câu toast mặc định. */
+
+  var doiTrangThai = function (dbId, tt, thongBao) {
+    return ghiRoiCapNhat('PUT', '/don-hang/' + dbId + '/trang-thai', { trangThai: tt }, thongBao || 'Đã đổi trạng thái đơn');
+  };
+  var danhDauDaTT = function (dbId, thongBao) {
+    return ghiRoiCapNhat('PUT', '/don-hang/' + dbId + '/da-thanh-toan', null, thongBao || 'Đã ghi nhận thanh toán');
   };
   var xoaDon = function (dbId) {
-    if (!confirm('Xoá đơn hàng này? Hành động không hoàn tác được.')) return;
-    if (goiJava('DELETE', '/don-hang/' + dbId, null)) capNhatXong(['don-hang'], 'Đã xoá đơn hàng');
-  };
-  var anHienSanPham = function (dbId, dangBan) {
-    if (goiJava('PUT', '/san-pham/' + dbId, { dangBan: !dangBan })) capNhatXong(['san-pham'], dangBan ? 'Đã ẩn sản phẩm' : 'Đã hiện sản phẩm');
-  };
-  /** Nhập thêm hàng vào kho — mở hộp thoại thay cho prompt của trình duyệt. */
-  var nhapKho = function (dbId, tenHienTai, tonHienTai) {
-    var ton = parseInt(tonHienTai, 10) || 0;
-    moHopThoai(
-      '<div class="ht-dau"><div><h3>Nhập thêm kho</h3>' +
-      '<div class="phu">' + esc(tenHienTai) + ' — đang có ' + number(ton) + '</div></div>' +
-      '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
-      '<div class="ht-than">' +
-      '<div class="o-nhap"><label for="ht-them-kho">Nhập thêm bao nhiêu?</label>' +
-      '<input type="number" id="ht-them-kho" min="1" step="1" value="10" /></div>' +
-      '<div class="bao-loi" id="ht-loi-kho"></div></div>' +
-      '<div class="ht-chan"><div class="day-phai">' +
-      '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-      '<button class="nut nut-chinh" type="button" onclick="Apex.luuNhapKho(' + dbId + ',' + ton + ')">' +
-      '<i class="fa-solid fa-floppy-disk"></i> Lưu</button></div></div>'
-    );
-  };
-
-  var luuNhapKho = function (dbId, ton) {
-    var loi = document.getElementById('ht-loi-kho');
-    var them = parseInt(document.getElementById('ht-them-kho').value, 10);
-    if (isNaN(them) || them <= 0) { loi.textContent = 'Số lượng phải lớn hơn 0.'; return; }
-    if (goiJava('PUT', '/san-pham/' + dbId, { tonKho: ton + them })) capNhatXong(['san-pham'], 'Đã nhập thêm ' + number(them));
-    else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090).';
-  };
-  var themSanPhamMoi = function (duLieu) {
-    return goiJava('POST', '/san-pham', duLieu);
+    return xoaSauKhiHoi('Xoá đơn hàng này? Hành động không hoàn tác được.', '/don-hang/' + dbId, 'Đã xoá đơn hàng');
   };
 
   /** Lưu sản phẩm: có dbId thì sửa, không có thì thêm mới. */
-  var luuSanPham = function (dbId, duLieu) {
-    return dbId ? goiJava('PUT', '/san-pham/' + dbId, duLieu) : goiJava('POST', '/san-pham', duLieu);
+  var luuSanPham = function (dbId, duLieu, thongBao) {
+    return dbId
+      ? ghiRoiCapNhat('PUT', '/san-pham/' + dbId, duLieu, thongBao || 'Đã lưu sản phẩm')
+      : ghiRoiCapNhat('POST', '/san-pham', duLieu, thongBao || 'Đã thêm sản phẩm');
   };
   var xoaSanPham = function (dbId, ten) {
-    if (!confirm('Xoá hẳn sản phẩm "' + (ten || '') + '"? Hành động không hoàn tác được.')) return false;
-    if (goiJava('DELETE', '/san-pham/' + dbId, null)) { capNhatXong(['san-pham', 'danh-muc'], 'Đã xoá sản phẩm'); return true; }
-    return false;
-  };
-  var doiTrangThaiSanPham = function (dbId, tt) {
-    if (goiJava('PUT', '/san-pham/' + dbId, { trangThai: tt })) capNhatXong(['san-pham'], 'Đã đổi trạng thái');
-  };
-  var doiTrangThaiVatTu = function (id, tt) {
-    if (goiJava('PUT', '/vat-tu/' + id, { trangThai: tt })) capNhatXong(['vat-tu'], 'Đã đổi trạng thái vật tư');
+    return xoaSauKhiHoi('Xoá hẳn sản phẩm "' + (ten || '') + '"? Hành động không hoàn tác được.',
+      '/san-pham/' + dbId, 'Đã xoá sản phẩm');
   };
 
   /* ---------------- Hộp thoại (modal) dùng chung ---------------- */
@@ -619,7 +638,8 @@ window.Apex = (function () {
       lop = document.createElement('div');
       lop.className = 'lop-phu';
       lop.id = 'lop-phu-chung';
-      lop.addEventListener('click', function (e) { if (e.target === lop) dongHopThoai(); });
+      // KHÔNG đóng khi bấm ra ngoài hộp: đang sửa dở mà lỡ tay bấm trượt là mất hết.
+      // Chỉ đóng bằng nút X hoặc nút Huỷ.
       document.body.appendChild(lop);
     }
     // rong = true -> lớp "rong"; truyền chuỗi (vd "rong-lon") thì dùng đúng lớp đó
@@ -637,9 +657,6 @@ window.Apex = (function () {
     document.body.style.overflow = '';
   };
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') dongHopThoai();
-  });
 
   /* ---------------- Tải ảnh lên (lưu ở backend, miễn phí) ---------------- */
 
@@ -687,7 +704,8 @@ window.Apex = (function () {
     nenAnh(file, function (blob, duoi) {
       var fd = new FormData();
       fd.append('file', blob, 'anh-' + Date.now() + '.' + (duoi || 'jpg'));
-      fetch(JAVA_API + '/anh', { method: 'POST', body: fd })
+      // Không đặt Content-Type: trình duyệt tự điền multipart kèm boundary
+      fetch(JAVA_API + '/anh', { method: 'POST', headers: themToken({}), body: fd })
         .then(function (r) {
           return r.text().then(function (t) {
             var j = {};
@@ -786,7 +804,8 @@ window.Apex = (function () {
       '</div>';
   };
 
-  var ganBoAnh = function (idGoc, dsBanDau) {
+  /** khiDoi(ds): gọi mỗi lần danh sách ảnh đổi — để hộp sửa cập nhật ảnh bìa to bên trái. */
+  var ganBoAnh = function (idGoc, dsBanDau, khiDoi) {
     var ds = (dsBanDau || []).filter(Boolean).slice();
     var luoi = document.getElementById(idGoc + '-luoi');
     var oFile = document.getElementById(idGoc + '-file');
@@ -812,6 +831,7 @@ window.Apex = (function () {
           '<i class="fa-solid fa-xmark"></i></button>' +
           '</div></div>';
       }).join('') || '<div class="bo-anh-trong">Chưa có ảnh</div>';
+      if (typeof khiDoi === 'function') khiDoi(ds.slice());
     };
 
     luoi.addEventListener('click', function (e) {
@@ -894,58 +914,14 @@ window.Apex = (function () {
 
   /* ---------------- Thao tác vật tư & nhà cung cấp ---------------- */
 
-  var suaVatTu = function (id, thayDoi) { return goiJava('PUT', '/vat-tu/' + id, thayDoi); };
-
-  /**
-   * Hộp thoại ghi nhận số gram nhựa đã dùng — thay cho prompt của trình duyệt.
-   * Nhập tổng đã dùng, hoặc cộng thêm phần vừa in xong.
-   */
-  var moFormGram = function (id) {
-    var v = null;
-    for (var i = 0; i < VAT_TU.length; i++) if (VAT_TU[i].id === id) v = VAT_TU[i];
-    if (!v) return;
-    var tong = (v.khoiLuongGram || 0) * (v.soLuong || 0);
-
-    moHopThoai(
-      '<div class="ht-dau"><div><h3>' + esc(v.ten) + '</h3>' +
-      '<div class="phu">' + (v.mau ? oMau(v.maMau) + esc(v.mau) + ' · ' : '') +
-      'cuộn ' + number(tong) + 'g · ' + money(Math.round(v.donGiaMoiGram || 0)) + '/g</div></div>' +
-      '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
-
-      '<div class="ht-than">' +
-      '<div class="o-nhap"><label for="ht-gram">Tổng số gram đã dùng</label>' +
-      '<input type="number" id="ht-gram" min="0" max="' + tong + '" step="1" value="' + (v.daDungGram || 0) + '" /></div>' +
-      '<div class="o-nhap"><label for="ht-them-gram">Hoặc cộng thêm vừa in xong (gram)</label>' +
-      '<input type="number" id="ht-them-gram" min="0" step="1" /></div>' +
-      '<div class="bao-loi" id="ht-loi-gram"></div></div>' +
-
-      '<div class="ht-chan"><div class="day-phai">' +
-      '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-      '<button class="nut nut-chinh" type="button" onclick="Apex.luuGram(' + id + ',' + tong + ')">' +
-      '<i class="fa-solid fa-floppy-disk"></i> Lưu</button></div></div>'
-    );
+  var suaVatTu = function (id, thayDoi, thongBao) {
+    return ghiRoiCapNhat('PUT', '/vat-tu/' + id, thayDoi, thongBao || 'Đã lưu vật tư');
   };
-
-  var luuGram = function (id, tong) {
-    var loi = document.getElementById('ht-loi-gram');
-    var them = parseInt(document.getElementById('ht-them-gram').value, 10);
-    var gram = parseInt(document.getElementById('ht-gram').value, 10);
-    if (!isNaN(them) && them > 0) gram = (isNaN(gram) ? 0 : gram) + them;
-    if (isNaN(gram) || gram < 0) { loi.textContent = 'Số gram không hợp lệ.'; return; }
-    if (gram > tong) { loi.textContent = 'Không thể dùng quá ' + tong + 'g của cuộn này.'; return; }
-    if (suaVatTu(id, { daDungGram: gram })) capNhatXong(['vat-tu'], 'Đã ghi nhận số gram');
-    else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090).';
+  var themVatTu = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/vat-tu', duLieu, thongBao || 'Đã thêm vật tư');
   };
-
-  /* Giữ tên cũ cho các trang đang gọi */
-  var datDaDung = function (id) { moFormGram(id); };
-  var dungThemGram = function (id) { moFormGram(id); };
-
-  var themVatTu = function (duLieu) { return goiJava('POST', '/vat-tu', duLieu); };
   var xoaVatTu = function (id) {
-    if (!confirm('Xoá vật tư này khỏi kho?')) return false;
-    if (goiJava('DELETE', '/vat-tu/' + id, null)) { capNhatXong(['vat-tu', 'danh-muc'], 'Đã xoá vật tư'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá vật tư này khỏi kho?', '/vat-tu/' + id, 'Đã xoá vật tư');
   };
   /**
    * Mã màu dự phòng theo TÊN — dùng khi bản ghi chỉ có chữ "Trắng", "Xám"...
@@ -963,7 +939,7 @@ window.Apex = (function () {
 
   /** "Xanh Lá" -> "xanh la" để tra bảng trên (bỏ dấu, thường hoá). */
   var khongDau = function (t) {
-    return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase().trim().replace(/\s+/g, ' ');
   };
 
@@ -1014,12 +990,14 @@ window.Apex = (function () {
     return null;
   };
 
-  var themMauSac = function (duLieu) { return goiJava('POST', '/mau-sac', duLieu); };
-  var suaMauSac = function (id, td) { return goiJava('PUT', '/mau-sac/' + id, td); };
+  var themMauSac = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/mau-sac', duLieu, thongBao || 'Đã thêm màu');
+  };
+  var suaMauSac = function (id, td, thongBao) {
+    return ghiRoiCapNhat('PUT', '/mau-sac/' + id, td, thongBao || 'Đã lưu màu');
+  };
   var xoaMauSac = function (id) {
-    if (!confirm('Xoá màu này? Vật tư đang dùng màu vẫn giữ nguyên tên màu cũ.')) return false;
-    if (goiJava('DELETE', '/mau-sac/' + id, null)) { capNhatXong(['mau-sac', 'vat-tu'], 'Đã xoá màu'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá màu này? Vật tư đang dùng màu vẫn giữ nguyên tên màu cũ.', '/mau-sac/' + id, 'Đã xoá màu');
   };
 
   /* ---------------- Danh mục sản phẩm ---------------- */
@@ -1044,11 +1022,6 @@ window.Apex = (function () {
       esc(d.ten) + '</span>';
   };
 
-  /** Đếm số sản phẩm đang thuộc một danh mục. */
-  var soSanPhamTheoDanhMuc = function (id) {
-    return PRODUCTS.filter(function (p) { return p.danhMucId === id; }).length;
-  };
-
   /* Bảng danh mục chứa HAI nhóm: danh mục sản phẩm (nhom = san_pham) và loại vật tư
      (nhom = vat_tu). Trang Sản phẩm chỉ lấy nhóm đầu, ô "Loại" ở Kho chỉ lấy nhóm sau. */
   var danhMucSanPham = function () {
@@ -1064,11 +1037,6 @@ window.Apex = (function () {
     return d ? d.ten : (LOAI_VAT_TU[v && v.loai] || 'Khác');
   };
 
-  /** Đếm số vật tư đang thuộc một loại. */
-  var soVatTuTheoDanhMuc = function (id) {
-    return VAT_TU.filter(function (v) { return v.danhMucId === id; }).length;
-  };
-
   /** Các cuộn nhựa trong kho — dùng cho ô chọn nhựa ở trang Sản phẩm. */
   var cuonNhua = function () {
     return VAT_TU.filter(function (v) { return v.loai === 'nhua'; });
@@ -1080,28 +1048,36 @@ window.Apex = (function () {
     return null;
   };
 
-  var themDanhMuc = function (duLieu) { return goiJava('POST', '/danh-muc', duLieu); };
-  var suaDanhMuc = function (id, td) { return goiJava('PUT', '/danh-muc/' + id, td); };
+  var themDanhMuc = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/danh-muc', duLieu, thongBao || 'Đã thêm');
+  };
+  var suaDanhMuc = function (id, td, thongBao) {
+    return ghiRoiCapNhat('PUT', '/danh-muc/' + id, td, thongBao || 'Đã lưu');
+  };
   var xoaDanhMuc = function (id) {
-    if (!confirm('Xoá danh mục này? Sản phẩm / vật tư đang thuộc sẽ chuyển về "Chưa phân loại".')) return false;
-    if (goiJava('DELETE', '/danh-muc/' + id, null)) { capNhatXong(['danh-muc', 'san-pham', 'vat-tu'], 'Đã xoá danh mục'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá danh mục này? Sản phẩm / vật tư đang thuộc sẽ chuyển về "Chưa phân loại".',
+      '/danh-muc/' + id, 'Đã xoá danh mục');
   };
 
-  var themKhuyenMai = function (duLieu) { return goiJava('POST', '/khuyen-mai', duLieu); };
-  var suaKhuyenMai = function (id, td) { return goiJava('PUT', '/khuyen-mai/' + id, td); };
+  var themKhuyenMai = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/khuyen-mai', duLieu, thongBao || 'Đã tạo khuyến mãi');
+  };
+  var suaKhuyenMai = function (id, td, thongBao) {
+    return ghiRoiCapNhat('PUT', '/khuyen-mai/' + id, td, thongBao || 'Đã lưu khuyến mãi');
+  };
   var xoaKhuyenMai = function (id) {
-    if (!confirm('Xoá mã khuyến mãi này? Mã vào thùng rác, đơn cũ đã dùng vẫn giữ nguyên.')) return false;
-    if (goiJava('DELETE', '/khuyen-mai/' + id, null)) { capNhatXong(['khuyen-mai'], 'Đã xoá khuyến mãi'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá mã khuyến mãi này? Mã vào thùng rác, đơn cũ đã dùng vẫn giữ nguyên.',
+      '/khuyen-mai/' + id, 'Đã xoá khuyến mãi');
   };
 
-  var themBaiViet = function (duLieu) { return goiJava('POST', '/bai-viet', duLieu); };
-  var suaBaiViet = function (id, td) { return goiJava('PUT', '/bai-viet/' + id, td); };
+  var themBaiViet = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/bai-viet', duLieu, thongBao || 'Đã đăng bài viết');
+  };
+  var suaBaiViet = function (id, td, thongBao) {
+    return ghiRoiCapNhat('PUT', '/bai-viet/' + id, td, thongBao || 'Đã lưu bài viết');
+  };
   var xoaBaiViet = function (id) {
-    if (!confirm('Xoá bài viết này? Bài vào thùng rác, khôi phục lại được.')) return false;
-    if (goiJava('DELETE', '/bai-viet/' + id, null)) { capNhatXong(['bai-viet'], 'Đã xoá bài viết'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá bài viết này? Bài vào thùng rác, khôi phục lại được.', '/bai-viet/' + id, 'Đã xoá bài viết');
   };
 
   /** Bảng tra chuyên mục bài viết — dùng chung cho trang quản trị và trang khách. */
@@ -1113,78 +1089,22 @@ window.Apex = (function () {
   };
   var badgeChuyenMuc = function (cm) { return badgeTheoMap(CHUYEN_MUC, cm || 'huong-dan'); };
 
-  var themNhaCungCap = function (duLieu) { return goiJava('POST', '/nha-cung-cap', duLieu); };
-  var suaNhaCungCap = function (id, td) { return goiJava('PUT', '/nha-cung-cap/' + id, td); };
+  var themNhaCungCap = function (duLieu, thongBao) {
+    return ghiRoiCapNhat('POST', '/nha-cung-cap', duLieu, thongBao || 'Đã thêm nhà cung cấp');
+  };
+  var suaNhaCungCap = function (id, td, thongBao) {
+    return ghiRoiCapNhat('PUT', '/nha-cung-cap/' + id, td, thongBao || 'Đã lưu nhà cung cấp');
+  };
   var xoaNhaCungCap = function (id) {
-    if (!confirm('Xoá nhà cung cấp này?')) return false;
-    if (goiJava('DELETE', '/nha-cung-cap/' + id, null)) { capNhatXong(['nha-cung-cap', 'vat-tu'], 'Đã xoá nhà cung cấp'); return true; }
-    return false;
+    return xoaSauKhiHoi('Xoá nhà cung cấp này?', '/nha-cung-cap/' + id, 'Đã xoá nhà cung cấp');
   };
-
-  /* ---------------- Tính chi phí & giá bán theo gram ---------------- */
-
-  /**
-   * Bảng chi phí:
-   *  - tienMuaVatTu : tổng tiền đã bỏ ra mua toàn bộ vật tư trong kho (máy in + nhựa)
-   *  - tienNhuaDaDung: tiền nhựa đã tiêu hao (đơn giá/gram × số gram đã in)
-   *  - tongChiPhi   : tienMuaVatTu + tienNhuaDaDung
-   *  - giaNhuaTrungBinhMoiGram: trung bình có trọng số của các cuộn nhựa
-   */
-  var tinhChiPhi = function () {
-    var tienMuaVatTu = VAT_TU.reduce(function (s, v) { return s + (v.tongTienMua || 0); }, 0);
-    var nhua = VAT_TU.filter(function (v) { return v.loai === 'nhua'; });
-    var tienNhuaDaDung = nhua.reduce(function (s, v) { return s + (v.tienDaDung || 0); }, 0);
-    var tongGramDaDung = nhua.reduce(function (s, v) { return s + (v.daDungGram || 0); }, 0);
-    var tongGramMua = nhua.reduce(function (s, v) { return s + (v.khoiLuongGram || 0) * (v.soLuong || 0); }, 0);
-    var tienNhuaTong = nhua.reduce(function (s, v) { return s + (v.tongTienMua || 0); }, 0);
-    var tienMayIn = VAT_TU.filter(function (v) { return v.loai === 'may_in'; })
-      .reduce(function (s, v) { return s + (v.tongTienMua || 0); }, 0);
-
-    return {
-      tienMuaVatTu: tienMuaVatTu,
-      tienMayIn: tienMayIn,
-      tienNhuaTong: tienNhuaTong,
-      tienNhuaDaDung: tienNhuaDaDung,
-      tongChiPhi: tienMuaVatTu + tienNhuaDaDung,
-      tongGramDaDung: tongGramDaDung,
-      tongGramMua: tongGramMua,
-      gramConLai: Math.max(0, tongGramMua - tongGramDaDung),
-      giaNhuaTrungBinhMoiGram: tongGramMua > 0 ? tienNhuaTong / tongGramMua : 0
-    };
-  };
-
-  /**
-   * Giá bán đề xuất mỗi gram = giá vốn nhựa/gram × (1 + tỉ lệ lãi).
-   * Mặc định tỉ lệ lãi lấy từ localStorage 'in3d_ti_le_lai' (đơn vị %, mặc định 120%).
-   */
-  var layTiLeLai = function () {
-    var v = parseFloat(localStorage.getItem('in3d_ti_le_lai'));
-    return isNaN(v) ? 120 : v;
-  };
-  var luuTiLeLai = function (v) { localStorage.setItem('in3d_ti_le_lai', String(v)); };
-
-  var giaBanMoiGram = function (tiLeLai) {
-    var cp = tinhChiPhi();
-    var lai = tiLeLai === undefined ? layTiLeLai() : tiLeLai;
-    return cp.giaNhuaTrungBinhMoiGram * (1 + lai / 100);
-  };
-
-  /** Danh sách mẫu vật in để ước tính giá bán (lưu localStorage). Chưa nhập thì trống. */
-  var laySanPhamIn = function () {
-    try {
-      var ds = JSON.parse(localStorage.getItem('in3d_san_pham_in'));
-      if (Array.isArray(ds)) return ds;
-    } catch (e) {}
-    return [];
-  };
-  var luuSanPhamIn = function (ds) { localStorage.setItem('in3d_san_pham_in', JSON.stringify(ds)); };
 
   /* ---------------- Menu ---------------- */
 
   var NAV = [
     { label: 'Quản lý bán hàng', items: [
       { key: 'tong-quan', text: 'Tổng quan', href: 'index.html', icon: 'fa-chart-pie' },
-      { key: 'don-hang', text: 'Đơn hàng', href: 'don-hang.html', icon: 'fa-cart-shopping', badge: function () { return ORDERS.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length || ''; } },
+      { key: 'don-hang', text: 'Đơn hàng', href: 'don-hang.html', icon: 'fa-cart-shopping', badge: function () { return (DEM && DEM.donChoXacNhan) || ''; } },
       { key: 'khach-hang', text: 'Khách hàng', href: 'khach-hang.html', icon: 'fa-users' },
       { key: 'khuyen-mai', text: 'Khuyến mãi', href: 'khuyen-mai.html', icon: 'fa-tags' }
     ]},
@@ -1252,7 +1172,7 @@ window.Apex = (function () {
 
     // Thông báo backend tắt + số đơn chờ trên menu được điền sau khi dữ liệu về
     // (capNhatBanner / capNhatBadgeMenu); shell() thường chạy trước lúc đó.
-    if (DA_NAP) { capNhatBanner(); capNhatBadgeMenu(); }
+    if (DA_THU) { capNhatBanner(); capNhatBadgeMenu(); }
   };
 
   var moMenu = function () {
@@ -1289,14 +1209,60 @@ window.Apex = (function () {
 
   var MAU_BIEU_DO = ['#10b981', '#f5b400', '#059669', '#c49000', '#84cc16', '#94a3b8'];
 
+  var BIEU_DO = {};         // id khung -> biểu đồ đang vẽ, để resize và huỷ đúng cái cũ
+  var CHO_VE = {};          // id khung -> option đang chờ echarts tải xong
+  var DA_CHO_ECHARTS = false;
+  var DA_GAN_RESIZE = false;
+
+  /* echarts (~1 MB) có thể tải SAU apex.js (defer) để dữ liệu được gọi sớm: dữ liệu về trước
+     thì cất option lại, script echarts chạy xong mới vẽ. */
+  var veHangCho = function () {
+    if (!window.echarts) return;
+    Object.keys(CHO_VE).forEach(function (id) {
+      var option = CHO_VE[id];
+      delete CHO_VE[id];
+      veBieuDo(id, option);
+    });
+  };
+  var choEcharts = function (id, option) {
+    CHO_VE[id] = option;
+    if (DA_CHO_ECHARTS) return;
+    DA_CHO_ECHARTS = true;
+    var the = document.querySelector('script[src*="echarts"]');
+    if (the) the.addEventListener('load', veHangCho);
+    document.addEventListener('DOMContentLoaded', veHangCho);
+    window.addEventListener('load', veHangCho);
+  };
+
+  /* MỘT listener resize cho mọi biểu đồ. Bản cũ gắn thêm một listener mỗi lần vẽ lại,
+     listener cũ vẫn gọi resize vào biểu đồ đã huỷ — càng lưu nhiều càng nặng. */
+  var ganResize = function () {
+    if (DA_GAN_RESIZE) return;
+    DA_GAN_RESIZE = true;
+    window.addEventListener('resize', function () {
+      Object.keys(BIEU_DO).forEach(function (id) {
+        var c = BIEU_DO[id];
+        if (!c || c.isDisposed()) { delete BIEU_DO[id]; return; }
+        if (!document.body.contains(c.getDom())) { c.dispose(); delete BIEU_DO[id]; return; }
+        c.resize();
+      });
+    });
+  };
+
   var veBieuDo = function (id, option) {
     var el = document.getElementById(id);
-    if (!el || !window.echarts) return null;
-    var cu = window.echarts.getInstanceByDom(el);
+    if (!el) return null;
+    if (!window.echarts) { choEcharts(id, option); return null; }
+    delete CHO_VE[id];
+    // Khung cũ bị thay bằng HTML mới (trang fill lại cả khối) thì huỷ biểu đồ nằm trên khung cũ
+    var cu = BIEU_DO[id];
+    if (cu && !cu.isDisposed() && cu.getDom() !== el) cu.dispose();
+    cu = window.echarts.getInstanceByDom(el);
     if (cu) cu.dispose();   // vẽ lại sau khi nạp dữ liệu mới thì bỏ instance cũ trước
     var chart = window.echarts.init(el);
     chart.setOption(option);
-    window.addEventListener('resize', function () { chart.resize(); });
+    BIEU_DO[id] = chart;
+    ganResize();
     return chart;
   };
 
@@ -1358,41 +1324,34 @@ window.Apex = (function () {
 
   return {
     brand: BRAND,
-    backendOk: function () { return BACKEND_OK; },   // hàm, vì giá trị chỉ biết sau khi nạp xong
+    // Khởi tạo trang & dữ liệu
+    trang: trang,
     datVeLai: datVeLai,
-    daNap: function () { return DA_NAP; },
-    capNhatXong: capNhatXong,
     taiLai: taiLai,
-    baoNhanh: baoNhanh,
+    lamMoi: lamMoi,
+    tk: tk,
+    dem: function () { return DEM; },
+    backendOk: function () { return BACKEND_OK; },   // hàm, vì giá trị chỉ biết sau khi nạp xong
+    daNap: function () { return DA_NAP; },
     orders: ORDERS,
     products: PRODUCTS,
-    customers: CUSTOMERS,
-    inventory: INVENTORY,
     vatTu: VAT_TU,
     nhaCungCap: NHA_CUNG_CAP,
     mauSac: MAU_SAC,
     danhMuc: DANH_MUC,
     baiViet: BAI_VIET,
     khuyenMai: KHUYEN_MAI,
+    nguoiDung: NGUOI_DUNG,
     loaiVatTu: LOAI_VAT_TU,
-    stats: STATS,
+    // Ghi
+    ghi: ghi,
+    dangLuu: dangLuu,
+    capNhatXong: capNhatXong,
+    baoNhanh: baoNhanh,
+    baoLoi: baoLoi,
     tienNgan: tienNgan,
     nguongSapHet: NGUONG_SAP_HET,
-    nguongNhuaSapHet: NGUONG_NHUA_SAP_HET,
-    ttVatTuThucTe: ttVatTuThucTe,
-    gramConLai: gramConLai,
-    tinhChiPhi: tinhChiPhi,
-    giaBanMoiGram: giaBanMoiGram,
-    layTiLeLai: layTiLeLai,
-    luuTiLeLai: luuTiLeLai,
-    laySanPhamIn: laySanPhamIn,
-    luuSanPhamIn: luuSanPhamIn,
     suaVatTu: suaVatTu,
-    moFormGram: moFormGram,
-    luuGram: luuGram,
-    luuNhapKho: luuNhapKho,
-    datDaDung: datDaDung,
-    dungThemGram: dungThemGram,
     themVatTu: themVatTu,
     xoaVatTu: xoaVatTu,
     oMau: oMau,
@@ -1403,12 +1362,10 @@ window.Apex = (function () {
     timDanhMuc: timDanhMuc,
     tenDanhMuc: tenDanhMuc,
     badgeDanhMuc: badgeDanhMuc,
-    soSanPhamTheoDanhMuc: soSanPhamTheoDanhMuc,
     danhMucSanPham: danhMucSanPham,
     danhMucVatTu: danhMucVatTu,
     tinhChatVatTu: LOAI_VAT_TU,
     tenLoaiVatTu: tenLoaiVatTu,
-    soVatTuTheoDanhMuc: soVatTuTheoDanhMuc,
     cuonNhua: cuonNhua,
     timVatTu: timVatTu,
     themDanhMuc: themDanhMuc,
@@ -1462,8 +1419,6 @@ window.Apex = (function () {
     ganBoAnh: ganBoAnh,
     luuSanPham: luuSanPham,
     xoaSanPham: xoaSanPham,
-    doiTrangThaiSanPham: doiTrangThaiSanPham,
-    doiTrangThaiVatTu: doiTrangThaiVatTu,
     shell: shell,
     moMenu: moMenu,
     dongMenu: dongMenu,
@@ -1473,9 +1428,6 @@ window.Apex = (function () {
     doiTrangThai: doiTrangThai,
     danhDauDaTT: danhDauDaTT,
     xoaDon: xoaDon,
-    anHienSanPham: anHienSanPham,
-    nhapKho: nhapKho,
-    themSanPhamMoi: themSanPhamMoi,
     bieuDoDuong: bieuDoDuong,
     bieuDoCot: bieuDoCot,
     bieuDoTron: bieuDoTron

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .o-tieu-de { max-width: 460px; }
     .o-tieu-de .chinh { display: block; line-height: 1.4; }
@@ -82,6 +82,7 @@
 
     /* ---------------- KPI ---------------- */
 
+    /* Backend chưa có khoá tổng hợp cho bài viết: đếm trên đúng danh sách trang đã nạp */
     function veKpi() {
       var hien = BV.filter(function (b) { return b.hienThi; }).length;
       var luot = BV.reduce(function (t, b) { return t + (b.luotXem || 0); }, 0);
@@ -178,13 +179,13 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        '<button class="nut nut-do" type="button" onclick="Apex.xoaBaiViet(' + b.id + ')">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaBaiViet(' + b.id + '))">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
-        (b.duongDan ? '<a class="nut nut-vien" target="_blank" rel="noopener" ' +
+        (b.duongDan ?'<a class="nut nut-vien" target="_blank" rel="noopener" ' +
           'href="' + Apex.esc(LINK_KHACH + encodeURIComponent(b.duongDan)) + '">' +
           '<i class="fa-solid fa-arrow-up-right-from-square"></i> Xem</a>' : '') +
-        '<button class="nut nut-vien" type="button" onclick="doiHienThi(' + b.id + ',' + (b.hienThi ? 'true' : 'false') + ')">' +
+        '<button class="nut nut-vien" type="button" onclick="doiHienThi(' + b.id + ',' + (b.hienThi ? 'true' : 'false') + ', this)">' +
         '<i class="fa-solid fa-' + (b.hienThi ? 'eye-slash' : 'eye') + '"></i> ' +
         (b.hienThi ? 'Tắt' : 'Hiện') + '</button>' +
         '<button class="nut nut-chinh" type="button" onclick="moFormBai(' + i + ')">' +
@@ -194,8 +195,9 @@
       Apex.moHopThoai(html);
     }
 
-    function doiHienThi(id, dangHien) {
-      if (Apex.suaBaiViet(id, { hienThi: !dangHien })) Apex.capNhatXong(['bai-viet'], dangHien ? 'Đã tắt bài viết' : 'Đã hiện bài viết');
+    function doiHienThi(id, dangHien, nut) {
+      // Hộp chi tiết không có ô báo lỗi: lỗi backend hiện toast đỏ
+      Apex.dangLuu(nut, Apex.suaBaiViet(id, { hienThi: !dangHien }, dangHien ? 'Đã tắt bài viết' : 'Đã hiện bài viết'));
     }
 
     /* ---------------- Hộp thoại thêm / sửa ---------------- */
@@ -265,11 +267,11 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaBaiViet(' + b.id + ')">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaBaiViet(' + b.id + '))">' +
           '<i class="fa-solid fa-trash"></i> Xoá</button>') +
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuBai(' + (b ? b.id : 'null') + ')">' +
+        '<button class="nut nut-chinh" type="button" onclick="luuBai(' + (b ? b.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
@@ -277,7 +279,7 @@
       layAnh = Apex.ganOTaiAnh('bv-anh', anhHienTai);
     }
 
-    function luuBai(id) {
+    function luuBai(id, nut) {
       var loi = document.getElementById('loi-form');
       var tieuDe = document.getElementById('f-tieu-de').value.trim();
       if (!tieuDe) { loi.textContent = 'Vui lòng nhập tiêu đề bài viết.'; return; }
@@ -294,13 +296,15 @@
         duongDan: document.getElementById('f-duong-dan').value.trim()
       };
       loi.textContent = '';
-      var ok = id ? Apex.suaBaiViet(id, duLieu) : Apex.themBaiViet(duLieu);
-      if (ok) Apex.capNhatXong(['bai-viet'], id ? 'Đã lưu bài viết' : 'Đã đăng bài viết');
-      else loi.textContent = 'Không lưu được bài viết. Kiểm tra lại backend Java (cổng 8090).';
+      // Nút khoá + "Đang lưu…" trong lúc chờ; backend từ chối (vd trùng đường dẫn) thì câu lỗi hiện ngay trong form
+      Apex.dangLuu(nut, id
+        ? Apex.suaBaiViet(id, duLieu, 'Đã lưu bài viết')
+        : Apex.themBaiViet(duLieu, 'Đã đăng bài viết'), loi);
     }
 
     function veLaiTrang() { veKpi(); veBang(); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    // MỘT request: trang này chỉ cần danh sách bài viết. Apex vẽ khi dữ liệu về và sau mỗi lần ghi.
+    Apex.trang({ bo: ['bai-viet'], ve: veLaiTrang });
   </script>
 </body>
 </html>

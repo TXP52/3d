@@ -8,9 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
+  <!-- echarts (~1 MB) tải SAU apex.js và defer: dữ liệu được gọi ngay, biểu đồ vẽ khi echarts xong -->
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -63,56 +64,66 @@
   <script>
     Apex.shell('tong-quan', 'Tổng quan');
 
+    /* Mức tồn backend đã xếp sẵn (mucTon: <= 0 hết, <= 5 sắp hết) -> huy hiệu, cùng kiểu Apex.badgeTon */
+    var BADGE_MUC_TON = {
+      het_hang: '<span class="badge badge-do">Hết hàng</span>',
+      sap_het: '<span class="badge badge-vang">Sắp hết</span>',
+      con_hang: '<span class="badge badge-xanh">Còn hàng</span>'
+    };
+
+    /* Mọi con số do backend tính sẵn trong khoá 'tong-quan' — trang chỉ vẽ.
+       Trước đây trang tải cả đơn hàng lẫn sản phẩm về rồi tự cộng: thẻ doanh thu cộng cả đơn
+       đã huỷ trong khi biểu đồ thì không, thẻ "đang bán" đếm cả sản phẩm đang ẩn. */
     function veLaiTrang() {
-      var don = Apex.orders;
-      var sp = Apex.products;
-      var doanhThu = don.reduce(function (s, o) { return s + o.total; }, 0);
-      var choXacNhan = don.filter(function (o) { return o.status === 'Chờ xác nhận'; }).length;
-      var sapHet = sp.filter(function (p) { return p.stock <= Apex.nguongSapHet; });
+      var tq = Apex.tk('tong-quan');
+      if (!tq) return;
+      var kpi = tq.kpi || {};
+      var thang = tq.theoThang || {};
 
       Apex.fill('#kpi', [
-        { nhan: 'Tổng doanh thu (đơn thật)', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
-        { nhan: 'Tổng đơn hàng', so: Apex.number(don.length) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
-        { nhan: 'Chờ xác nhận', so: Apex.number(choXacNhan) + ' đơn', icon: 'fa-clock', mau: choXacNhan ? 'bt-do' : 'bt-toi' },
-        { nhan: 'Sản phẩm đang bán', so: Apex.number(sp.length), icon: 'fa-cube', mau: 'bt-toi' }
+        { nhan: 'Tổng doanh thu (đơn thật)', so: Apex.money(kpi.doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
+        { nhan: 'Tổng đơn hàng', so: Apex.number(kpi.tongDon) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
+        { nhan: 'Chờ xác nhận', so: Apex.number(kpi.choXacNhan) + ' đơn', icon: 'fa-clock', mau: kpi.choXacNhan ? 'bt-do' : 'bt-toi' },
+        { nhan: 'Sản phẩm đang bán', so: Apex.number(kpi.soSanPhamDangBan), icon: 'fa-cube', mau: 'bt-toi' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
 
-      // Doanh thu theo tháng — TÍNH TỪ ĐƠN HÀNG THẬT, chưa có đơn thì nói thẳng
-      if (Apex.stats.coDuLieu) {
-        Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
-          { ten: 'Năm ' + Apex.stats.nam, duLieu: Apex.stats.doanhThuNam },
-          { ten: 'Năm ' + (Apex.stats.nam - 1), duLieu: Apex.stats.doanhThuNamTruoc }
+      // Doanh thu theo tháng (giờ Việt Nam, không cộng đơn huỷ) — chưa có đơn thì nói thẳng
+      if (thang.coDuLieu) {
+        Apex.bieuDoDuong('bd-doanh-thu', thang.nhan, [
+          { ten: 'Năm ' + thang.nam, duLieu: thang.namNay },
+          { ten: 'Năm ' + (thang.nam - 1), duLieu: thang.namTruoc }
         ], true);
       } else {
         Apex.fill('#bd-doanh-thu', '<div class="chua-co-so-lieu">' +
-          'Chưa có đơn hàng nào trong năm ' + Apex.stats.nam + ' để vẽ biểu đồ.<br>' +
+          'Chưa có đơn hàng nào trong năm ' + Apex.esc(thang.nam) + ' để vẽ biểu đồ.<br>' +
           'Biểu đồ sẽ tự hiện khi shop nhận đơn đầu tiên.</div>');
       }
 
-      // Tỉ trọng trạng thái đơn từ dữ liệu thật
-      var dem = {};
-      don.forEach(function (o) { dem[o.status] = (dem[o.status] || 0) + 1; });
-      Apex.bieuDoTron('bd-trang-thai', Object.keys(dem).map(function (k) { return { name: k, value: dem[k] }; }));
+      // Tỉ trọng trạng thái đơn (số đơn mỗi trạng thái)
+      Apex.bieuDoTron('bd-trang-thai', (tq.theoTrangThai || []).map(function (t) {
+        return { name: t.trangThaiTen, value: t.soDon };
+      }));
 
-      // Đơn gần nhất
-      Apex.fill('#bang-don-moi', don.slice(0, 6).map(function (o) {
-        return '<tr><td><strong>' + Apex.esc(o.id) + '</strong></td><td>' + Apex.esc(o.customer) + '</td>' +
-          '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
-          '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td></tr>';
+      // Đơn gần nhất (backend lấy sẵn 6 đơn mới nhất)
+      Apex.fill('#bang-don-moi', (tq.donGanNhat || []).map(function (o) {
+        return '<tr><td><strong>' + Apex.esc(o.maDon) + '</strong></td><td>' + Apex.esc(o.tenKhach) + '</td>' +
+          '<td class="giua">' + Apex.badgeTrangThai(o.trangThaiTen) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(o.tongTien) + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--chu-mo);padding:24px;">Chưa có đơn hàng nào.</td></tr>');
 
-      // Sắp hết hàng
-      Apex.fill('#bang-sap-het', (sapHet.length ? sapHet : []).slice(0, 6).map(function (p) {
-        return '<tr><td><div class="o-ten"><img class="anh-sp" src="' + (Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name)) + '" alt="" />' +
-          '<span class="chinh">' + Apex.esc(p.name) + '</span></div></td>' +
-          '<td class="giua">' + Apex.badgeTon(p.stock) + ' <strong>' + p.stock + '</strong></td></tr>';
+      // Sắp hết hàng (backend lấy sẵn tối đa 6 sản phẩm tồn <= 5)
+      Apex.fill('#bang-sap-het', (tq.sapHet || []).map(function (p) {
+        return '<tr><td><div class="o-ten"><img class="anh-sp" src="' + (Apex.anhDayDu(p.hinhAnh) || Apex.anhSanPham(p.ten)) + '" alt="" />' +
+          '<span class="chinh">' + Apex.esc(p.ten) + '</span></div></td>' +
+          '<td class="giua">' + (BADGE_MUC_TON[p.mucTon] || '') + ' <strong>' + Apex.number(p.tonKho) + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="2" style="text-align:center;color:var(--chu-mo);padding:24px;">Kho đang ổn — không có hàng sắp hết.</td></tr>');
     }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
+    // Một request cho cả trang; Apex gọi veLaiTrang khi dữ liệu về
+    Apex.trang({ bo: ['tong-quan'], ve: veLaiTrang });
   </script>
 </body>
 </html>

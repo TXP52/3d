@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .o-mau-lon {
       width: 34px; height: 34px; border-radius: 9px;
@@ -82,19 +82,29 @@
     Apex.shell('mau-sac', 'Màu sắc');
 
     var MS = Apex.mauSac || [];
-    var VT = Apex.vatTu || [];
 
-    /* Đếm xem mỗi màu đang được bao nhiêu vật tư dùng */
+    /* Số liệu backend đếm sẵn (khoá tk-mau-sac): KPI + số vật tư đang dùng từng màu.
+       Trước đây trang tải cả danh sách vật tư chỉ để đếm bằng JS. */
+    var TK = { kpi: {}, theoMau: [] };
+    var SO_VAT_TU = {};   // id màu -> số vật tư đang dùng
+
+    function docSoLieu() {
+      TK = Apex.tk('tk-mau-sac') || { kpi: {}, theoMau: [] };
+      SO_VAT_TU = {};
+      (TK.theoMau || []).forEach(function (t) { SO_VAT_TU[t.id] = t.soVatTu || 0; });
+    }
+
+    /* Mỗi màu đang được bao nhiêu vật tư dùng */
     function demDung(m) {
-      return VT.filter(function (v) { return v.mauSacId === m.id; }).length;
+      return SO_VAT_TU[m.id] || 0;
     }
 
     function veKpi() {
-      var dangDung = MS.filter(function (m) { return demDung(m) > 0; }).length;
+      var kpi = TK.kpi || {};
       Apex.fill('#kpi', [
-        { nhan: 'Tổng số màu', so: Apex.number(MS.length) + ' màu', icon: 'fa-palette', mau: 'bt-toi' },
-        { nhan: 'Đang dùng trong kho', so: Apex.number(dangDung) + ' màu', icon: 'fa-circle-check', mau: 'bt-xanh' },
-        { nhan: 'Chưa dùng', so: Apex.number(MS.length - dangDung) + ' màu', icon: 'fa-circle-minus', mau: 'bt-vang' }
+        { nhan: 'Tổng số màu', so: Apex.number(kpi.tongSoMau || 0) + ' màu', icon: 'fa-palette', mau: 'bt-toi' },
+        { nhan: 'Đang dùng trong kho', so: Apex.number(kpi.dangDung || 0) + ' màu', icon: 'fa-circle-check', mau: 'bt-xanh' },
+        { nhan: 'Chưa dùng', so: Apex.number(kpi.chuaDung || 0) + ' màu', icon: 'fa-circle-minus', mau: 'bt-vang' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
@@ -163,11 +173,11 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaMauSac(' + m.id + ')">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaMauSac(' + m.id + '))">' +
           '<i class="fa-solid fa-trash"></i> Xoá</button>') +
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuMau(' + (m ? m.id : 'null') + ')">' +
+        '<button class="nut nut-chinh" type="button" onclick="luuMau(' + (m ? m.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
@@ -189,7 +199,7 @@
       xem.style.background = chuanHex(o.value) || 'transparent';
     }
 
-    function luuMau(id) {
+    function luuMau(id, nut) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên màu.'; return; }
@@ -204,13 +214,16 @@
         ghiChu: document.getElementById('f-ghi-chu').value.trim()
       };
       loi.textContent = '';
-      var ok = id ? Apex.suaMauSac(id, duLieu) : Apex.themMauSac(duLieu);
-      if (ok) Apex.capNhatXong(['mau-sac', 'vat-tu'], id ? 'Đã lưu màu' : 'Đã thêm màu');
-      else loi.textContent = 'Không lưu được màu. Kiểm tra lại backend Java (cổng 8090).';
+      // Nút khoá + "Đang lưu…" trong lúc chờ; backend từ chối (vd trùng tên) thì câu lỗi hiện ngay trong form.
+      // Lưu xong Apex tự đóng hộp thoại, nạp lại trang và báo.
+      Apex.dangLuu(nut, id
+        ? Apex.suaMauSac(id, duLieu, 'Đã lưu màu')
+        : Apex.themMauSac(duLieu, 'Đã thêm màu'), loi);
     }
 
-    function veLaiTrang() { veKpi(); veLuoi(); veBang(); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    function veLaiTrang() { docSoLieu(); veKpi(); veLuoi(); veBang(); }
+    // MỘT request cho cả trang: bảng màu + số liệu đếm sẵn. Apex vẽ khi dữ liệu về và sau mỗi lần ghi.
+    Apex.trang({ bo: ['mau-sac', 'tk-mau-sac'], ve: veLaiTrang });
   </script>
 </body>
 </html>

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .nhom-ncc { padding: 14px 0; border-bottom: 1px solid var(--vien); }
     .nhom-ncc:first-child { padding-top: 0; }
@@ -74,13 +74,20 @@
     Apex.shell('nha-cung-cap', 'Nhà cung cấp');
 
     var NCC = Apex.nhaCungCap || [];
-    var VT = Apex.vatTu || [];
 
-    function vatTuCua(id) {
-      return VT.filter(function (v) { return v.nhaCungCapId === id; });
+    /* Số liệu backend gom sẵn (khoá tk-nha-cung-cap): KPI + từng nhà cung cấp có bao nhiêu
+       vật tư, tổng tiền đã nhập và danh sách vật tư. Trang khỏi tải cả kho về để lọc, cộng. */
+    var TK = { kpi: {}, theoNhaCungCap: [] };
+    var THEO_NCC = {};   // id nhà cung cấp -> { soVatTu, tongTienNhap, vatTu: [{id, ten, mau, maMau, tongTienMua}] }
+
+    function docSoLieu() {
+      TK = Apex.tk('tk-nha-cung-cap') || { kpi: {}, theoNhaCungCap: [] };
+      THEO_NCC = {};
+      (TK.theoNhaCungCap || []).forEach(function (t) { THEO_NCC[t.id] = t; });
     }
-    function tienCua(id) {
-      return vatTuCua(id).reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
+
+    function soLieuCua(id) {
+      return THEO_NCC[id] || { soVatTu: 0, tongTienNhap: 0, vatTu: [] };
     }
     function oLienHe(lienHe) {
       var lh = (lienHe || '').trim();
@@ -97,12 +104,11 @@
     /* ---------------- KPI ---------------- */
 
     function veKpi() {
-      var coNguon = VT.filter(function (v) { return v.nhaCungCapId; });
-      var tongTienNhap = coNguon.reduce(function (s, v) { return s + (Number(v.tongTienMua) || 0); }, 0);
+      var kpi = TK.kpi || {};
       Apex.fill('#kpi-ncc', [
-        { nhan: 'Nhà cung cấp', so: Apex.number(NCC.length), icon: 'fa-truck-field', mau: 'bt-xanh' },
-        { nhan: 'Vật tư đã nhập', so: Apex.number(coNguon.length), icon: 'fa-boxes-stacked', mau: 'bt-vang' },
-        { nhan: 'Tổng tiền đã nhập', so: Apex.money(tongTienNhap), icon: 'fa-wallet', mau: 'bt-toi' }
+        { nhan: 'Nhà cung cấp', so: Apex.number(kpi.soNhaCungCap || 0), icon: 'fa-truck-field', mau: 'bt-xanh' },
+        { nhan: 'Vật tư đã nhập', so: Apex.number(kpi.soVatTuCoNguon || 0), icon: 'fa-boxes-stacked', mau: 'bt-vang' },
+        { nhan: 'Tổng tiền đã nhập', so: Apex.money(kpi.tongTienNhap || 0), icon: 'fa-wallet', mau: 'bt-toi' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
@@ -114,13 +120,13 @@
 
     function veBang() {
       Apex.fill('#bang-ncc', NCC.map(function (n, i) {
-        var vt = vatTuCua(n.id);
+        var s = soLieuCua(n.id);
         return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
           '<td><strong>' + Apex.esc(n.ten || '') + '</strong></td>' +
           '<td>' + oLienHe(n.lienHe) + '</td>' +
           '<td>' + (n.ghiChu ? Apex.esc(n.ghiChu) : '<span style="color:var(--chu-mo);">—</span>') + '</td>' +
-          '<td class="giua">' + Apex.number(vt.length) + '</td>' +
-          '<td class="phai"><strong>' + Apex.money(tienCua(n.id)) + '</strong></td>' +
+          '<td class="giua">' + Apex.number(s.soVatTu || 0) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(s.tongTienNhap || 0) + '</strong></td>' +
           '</tr>';
       }).join('') ||
         '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có nhà cung cấp nào.</td></tr>');
@@ -128,7 +134,7 @@
 
     function veVatTuTheoNcc() {
       Apex.fill('#vat-tu-theo-ncc', NCC.map(function (n) {
-        var vt = vatTuCua(n.id);
+        var vt = soLieuCua(n.id).vatTu || [];
         var ds = vt.length
           ? '<div class="ds-vat-tu">' + vt.map(function (v) {
               return '<div class="dong-vt"><span><strong>' + Apex.esc(v.ten || '') + '</strong>' +
@@ -145,7 +151,8 @@
     function moChiTiet(i) {
       var n = NCC[i];
       if (!n) return;
-      var vt = vatTuCua(n.id);
+      var s = soLieuCua(n.id);
+      var vt = s.vatTu || [];
 
       var dong = function (nhan, giaTri) {
         return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
@@ -168,8 +175,8 @@
         '<div class="ht-than">' +
         '<div>' +
         dong('Liên hệ', oLienHe(n.lienHe)) +
-        dong('Số vật tư đã nhập', Apex.number(vt.length)) +
-        dong('Tổng tiền đã nhập', '<strong>' + Apex.money(tienCua(n.id)) + '</strong>') +
+        dong('Số vật tư đã nhập', Apex.number(s.soVatTu || 0)) +
+        dong('Tổng tiền đã nhập', '<strong>' + Apex.money(s.tongTienNhap || 0) + '</strong>') +
         '</div>' +
         (n.ghiChu
           ? '<div style="margin-top:14px;"><div style="font-weight:600;margin-bottom:5px;">Ghi chú</div>' +
@@ -179,7 +186,7 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        '<button class="nut nut-do" type="button" onclick="Apex.xoaNhaCungCap(' + n.id + ')">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaNhaCungCap(' + n.id + '))">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
         '<button class="nut nut-chinh" type="button" onclick="moForm(' + i + ')">' +
@@ -217,14 +224,14 @@
 
         '<div class="ht-chan"><div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (n ? n.id : 'null') + ')">' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (n ? n.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html);
     }
 
-    function luuForm(id) {
+    function luuForm(id, nut) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên nhà cung cấp.'; return; }
@@ -235,13 +242,15 @@
         ghiChu: document.getElementById('f-ghi-chu').value.trim()
       };
       loi.textContent = '';
-      var ok = id ? Apex.suaNhaCungCap(id, duLieu) : Apex.themNhaCungCap(duLieu);
-      if (ok) Apex.capNhatXong(['nha-cung-cap', 'vat-tu'], id ? 'Đã lưu nhà cung cấp' : 'Đã thêm nhà cung cấp');
-      else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
+      // Nút khoá + "Đang lưu…" trong lúc chờ; lỗi backend hiện ngay trong form, lưu xong Apex tự nạp lại trang
+      Apex.dangLuu(nut, id
+        ? Apex.suaNhaCungCap(id, duLieu, 'Đã lưu nhà cung cấp')
+        : Apex.themNhaCungCap(duLieu, 'Đã thêm nhà cung cấp'), loi);
     }
 
-    function veLaiTrang() { veKpi(); veBang(); veVatTuTheoNcc(); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    function veLaiTrang() { docSoLieu(); veKpi(); veBang(); veVatTuTheoNcc(); }
+    // MỘT request cho cả trang: danh sách nhà cung cấp + số liệu gom sẵn. Apex vẽ khi dữ liệu về và sau mỗi lần ghi.
+    Apex.trang({ bo: ['nha-cung-cap', 'tk-nha-cung-cap'], ve: veLaiTrang });
   </script>
 </body>
 </html>

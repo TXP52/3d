@@ -8,9 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
+  <!-- echarts (~1 MB) tải SAU apex.js và defer: dữ liệu được gọi ngay, biểu đồ vẽ khi echarts xong -->
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     .dong-tong td { font-weight: 700; background: #f6f7f8; }
     .hang-gia { margin-top: 18px; }
@@ -117,11 +118,39 @@
     Apex.shell('quan-ly-von', 'Quản lý vốn & chi phí');
 
     (function () {
+      /* Mọi con số vốn, chi phí, doanh thu, lãi/lỗ và giá bán/gram do backend tính sẵn (khoá 'von').
+         Trước đây trang tự cộng từ toàn bộ vật tư + đơn hàng tải về, doanh thu còn cộng cả đơn
+         đã huỷ nên lãi/lỗ bị thổi lên. Tỉ lệ lãi và danh sách mẫu in vẫn lưu ở trình duyệt này:
+         tỉ lệ lãi gửi kèm khi khởi tạo (tiLeLai), mẫu in gửi lên để backend tính giá. */
+      var KHOA_TI_LE = 'in3d_ti_le_lai';
+      var KHOA_MAU_IN = 'in3d_san_pham_in';
+
+      /** Tỉ lệ lãi đã lưu (%), chưa có hoặc hỏng thì 120%. */
+      function docTiLeLai() {
+        var v = NaN;
+        try { v = parseFloat(localStorage.getItem(KHOA_TI_LE)); } catch (e) { v = NaN; }
+        return isNaN(v) ? 120 : v;
+      }
+      // Giữ trong biến: trình duyệt chặn localStorage thì vẫn áp dụng được cho lần xem này
+      var TI_LE_LAI = docTiLeLai();
+
+      /** Danh sách mẫu in [{ ten, gram }] lưu ở trình duyệt. Chưa nhập thì trống. */
+      function docMauIn() {
+        try {
+          var ds = JSON.parse(localStorage.getItem(KHOA_MAU_IN));
+          if (Array.isArray(ds)) return ds.filter(function (m) { return m && typeof m === 'object'; });
+        } catch (e) { }
+        return [];
+      }
+      function ghiMauIn(ds) {
+        try { localStorage.setItem(KHOA_MAU_IN, JSON.stringify(ds)); } catch (e) { /* bị chặn thì thôi */ }
+      }
+
       /* ---------- PHẦN 1: KPI (vẽ lại được sau mỗi lần ghi nhận gram) ---------- */
       function veKpi() {
-      var cp = Apex.tinhChiPhi();
-      var doanhThu = Apex.orders.reduce(function (s, o) { return s + (o.total || 0); }, 0);
-      var laiLo = doanhThu - cp.tongChiPhi;
+      var von = Apex.tk('von') || {};
+      var cp = von.chiPhi || {};
+      var laiLo = von.laiLo || 0;
       var dsKpi = [
         {
           nhan: 'Tổng chi phí', so: Apex.money(cp.tongChiPhi), icon: 'fa-coins', mau: 'bt-do',
@@ -136,7 +165,7 @@
           phu: '<div class="thay-doi" style="color:var(--chu-mo);">' + Apex.number(cp.tongGramDaDung) + 'g / ' + Apex.number(cp.tongGramMua) + 'g</div>'
         },
         {
-          nhan: 'Doanh thu đơn hàng', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh',
+          nhan: 'Doanh thu đơn hàng', so: Apex.money(von.doanhThu), icon: 'fa-wallet', mau: 'bt-xanh',
           phu: '<div class="thay-doi ' + (laiLo >= 0 ? 'tang' : 'giam') + '">Lãi/Lỗ: ' + Apex.money(laiLo) + '</div>'
         }
       ];
@@ -236,7 +265,8 @@
 
       /* ---------- PHẦN 3 + 4: Chi tiết chi phí, nhựa đã dùng theo cuộn ---------- */
       function veChiPhi() {
-      var cp = Apex.tinhChiPhi();
+      var von = Apex.tk('von') || {};
+      var cp = von.chiPhi || {};
       Apex.fill('#bang-chi-phi',
         '<tr><td>Tiền mua máy in</td><td class="phai">' + Apex.money(cp.tienMayIn) + '</td></tr>' +
         '<tr><td>Tiền mua nhựa (toàn bộ cuộn)</td><td class="phai">' + Apex.money(cp.tienNhuaTong) + '</td></tr>' +
@@ -244,10 +274,8 @@
         '<td class="phai" style="color:var(--vang);font-weight:700;">' + Apex.money(cp.tienNhuaDaDung) + '</td></tr>' +
         '<tr class="dong-tong"><td>TỔNG CHI PHÍ</td><td class="phai">' + Apex.money(cp.tongChiPhi) + '</td></tr>');
 
-      /* ---------- PHẦN 4: Nhựa đã dùng theo cuộn ---------- */
-      var cuonNhua = Apex.vatTu.filter(function (v) { return v.loai === 'nhua'; });
-      Apex.fill('#bang-nhua', cuonNhua.map(function (v) {
-        var tongGram = (v.khoiLuongGram || 0) * (v.soLuong || 0);
+      /* ---------- PHẦN 4: Nhựa đã dùng theo cuộn (backend lọc sẵn các cuộn nhựa, đúng thứ tự kho) ---------- */
+      Apex.fill('#bang-nhua', (von.cuonNhua || []).map(function (v) {
         return '<tr class="hang-bam" onclick="moFormGram(' + v.id + ')" title="Bấm để nhập số gram đã dùng">' +
           '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.anhSanPham(v.ten) + '" alt="" />' +
           '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
@@ -255,18 +283,66 @@
           '</div></div></td>' +
           '<td class="phai">' + Apex.money(Math.round(v.donGiaMoiGram || 0)) + '/g</td>' +
           '<td class="giua"><strong>' + Apex.number(v.daDungGram || 0) + 'g</strong></td>' +
-          '<td class="giua">' + Apex.number(v.conLaiGram != null ? v.conLaiGram : Math.max(0, tongGram - (v.daDungGram || 0))) + 'g</td>' +
+          '<td class="giua">' + Apex.number(v.conLaiGram || 0) + 'g</td>' +
           '<td class="phai">' + Apex.money(v.tienDaDung || 0) + '</td>' +
           '</tr>';
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có cuộn nhựa nào trong kho.</td></tr>');
       }
 
+      /** Một cuộn nhựa trong khoá 'von' theo id (có tongGram, daDungGram, donGiaMoiGram...). */
+      function timCuon(id) {
+        return ((Apex.tk('von') || {}).cuonNhua || []).filter(function (x) { return x.id === id; })[0] || null;
+      }
+
       /* ---------- PHẦN 5 + 6: Giá bán theo gram ---------- */
+      /* Giá dự kiến các mẫu in: backend tính (POST /quan-tri/von/gia-mau-in — CHỈ TÍNH, không lưu)
+         theo giá nhựa trung bình trong kho và tỉ lệ lãi đang dùng, làm tròn tới 500đ.
+         Nhớ kết quả lần gần nhất theo đúng dữ liệu đã gửi: vẽ lại sau khi ghi nhận gram mà
+         giá nhựa, tỉ lệ lãi và danh sách mẫu không đổi thì khỏi hỏi lại. */
+      var GIA_MAU_IN = null;   // { khoa, ds: [{ ten, gram, tienNhua, giaBan, lai }] }
+      var LUOT_GIA = 0;        // lần hỏi mới nhất; kết quả lần cũ về muộn thì bỏ
+
+      function hangMauIn(ds, dangTinh) {
+        var cho = '<span style="color:var(--chu-mo);">…</span>';
+        return ds.map(function (m, i) {
+          return '<tr class="hang-bam" onclick="moFormMau(' + i + ')" title="Bấm để sửa hoặc xoá mẫu">' +
+            '<td><strong>' + Apex.esc(m.ten) + '</strong></td>' +
+            '<td class="giua">' + Apex.number(m.gram || 0) + 'g</td>' +
+            '<td class="phai">' + (dangTinh ? cho : Apex.money(m.tienNhua)) + '</td>' +
+            '<td class="phai" style="font-weight:700;color:var(--accent-dam);">' + (dangTinh ? cho : Apex.money(m.giaBan)) + '</td>' +
+            '<td class="phai" style="color:var(--accent-dam);">' + (dangTinh ? cho : Apex.money(m.lai)) + '</td>' +
+            '</tr>';
+        }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
+      }
+
+      function tinhGiaMauIn(ds, tiLe, von) {
+        var o = document.getElementById('bang-mau-in');
+        if (!o) return;
+        if (!ds.length) { o.innerHTML = hangMauIn([]); return; }
+
+        var khoa = JSON.stringify([tiLe, (von.chiPhi || {}).giaNhuaTrungBinhMoiGram, ds]);
+        if (GIA_MAU_IN && GIA_MAU_IN.khoa === khoa) { o.innerHTML = hangMauIn(GIA_MAU_IN.ds); return; }
+
+        o.innerHTML = hangMauIn(ds, true);   // hiện tên + gram trước, số tiền "…" trong lúc tính
+        var luot = ++LUOT_GIA;
+        Apex.ghi('POST', '/quan-tri/von/gia-mau-in', { tiLeLai: tiLe, mauIn: ds }).then(function (kq) {
+          if (luot !== LUOT_GIA) return;
+          GIA_MAU_IN = { khoa: khoa, ds: (kq && kq.mauIn) || [] };
+          var bang = document.getElementById('bang-mau-in');
+          if (bang) bang.innerHTML = hangMauIn(GIA_MAU_IN.ds);
+        }, function (e) {
+          if (luot !== LUOT_GIA) return;
+          var bang = document.getElementById('bang-mau-in');
+          if (bang) bang.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--do);padding:28px;">' +
+            'Chưa tính được giá mẫu in: ' + Apex.esc(e.message) + '</td></tr>';
+        });
+      }
+
       window.veLai = function () {
-        var c = Apex.tinhChiPhi();
-        var tiLe = Apex.layTiLeLai();
-        var giaVon = Math.round(c.giaNhuaTrungBinhMoiGram);
-        var giaBan = Math.round(Apex.giaBanMoiGram(tiLe));
+        var von = Apex.tk('von') || {};
+        var tiLe = von.tiLeLai != null ? von.tiLeLai : TI_LE_LAI;
+        var giaVon = von.giaVonMoiGram || 0;
+        var giaBan = von.giaBanMoiGram || 0;
 
         var html =
           '<div class="the">' +

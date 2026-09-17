@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .dong-tt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--vien); }
     .dong-tt:last-child { border-bottom: none; }
@@ -120,16 +120,18 @@
           '<span class="badge ' + lop + '"><span class="cham"></span>' + chu + '</span></div>';
       };
 
+      // Các con số đếm sẵn ở backend (khoá 'tk-cai-dat') — không phải tải cả danh sách về để đếm
       function veLaiTrang() {
+        var tk = Apex.tk('tk-cai-dat') || {};
         Apex.fill('#trang-thai-ht',
           dong('Tài khoản đăng nhập', taiKhoan.lop, taiKhoan.chu) +
-          dong('Số sản phẩm', 'badge-xam', Apex.number(Apex.products.length)) +
-          dong('Số danh mục sản phẩm', 'badge-xam', Apex.number(Apex.danhMucSanPham().length)) +
-          dong('Số loại vật tư', 'badge-xam', Apex.number(Apex.danhMucVatTu().length)) +
-          dong('Số đơn hàng', 'badge-xam', Apex.number(Apex.orders.length))
+          dong('Số sản phẩm', 'badge-xam', Apex.number(tk.soSanPham)) +
+          dong('Số danh mục sản phẩm', 'badge-xam', Apex.number(tk.soDanhMucSanPham)) +
+          dong('Số loại vật tư', 'badge-xam', Apex.number(tk.soLoaiVatTu)) +
+          dong('Số đơn hàng', 'badge-xam', Apex.number(tk.soDonHang))
         );
       }
-      Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
+      Apex.trang({ bo: ['tk-cai-dat'], ve: veLaiTrang });   // một request; Apex gọi veLaiTrang khi dữ liệu về
     })();
   </script>
 </body>

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -61,30 +61,44 @@
   <script>
     Apex.shell('don-hang', 'Đơn hàng');
 
+    /* Số đơn / tổng tiền theo trạng thái và số món mỗi đơn do backend đếm sẵn (khoá 'tk-don-hang').
+       Trang chỉ lọc hàng theo ô chọn trạng thái trên danh sách đã nạp — lọc giao diện. */
+    var THEO_DON = {};   // id đơn -> { soMon, phuongThuc, daThanhToan }
+
     function veKpi() {
-      var don = Apex.orders;
+      var tk = Apex.tk('tk-don-hang') || {};
+      var theoTt = {};
+      (tk.theoTrangThai || []).forEach(function (t) { theoTt[t.trangThai] = t; });
       var cau = [
-        { tt: 'Chờ xác nhận', icon: 'fa-clock', mau: 'bt-vang' },
-        { tt: 'Đang giao', icon: 'fa-truck', mau: 'bt-toi' },
-        { tt: 'Hoàn thành', icon: 'fa-circle-check', mau: 'bt-xanh' },
-        { tt: 'Đã huỷ', icon: 'fa-ban', mau: 'bt-do' }
+        { khoa: 'cho_xac_nhan', tt: 'Chờ xác nhận', icon: 'fa-clock', mau: 'bt-vang' },
+        { khoa: 'dang_giao', tt: 'Đang giao', icon: 'fa-truck', mau: 'bt-toi' },
+        { khoa: 'hoan_thanh', tt: 'Hoàn thành', icon: 'fa-circle-check', mau: 'bt-xanh' },
+        { khoa: 'da_huy', tt: 'Đã huỷ', icon: 'fa-ban', mau: 'bt-do' }
       ];
       Apex.fill('#kpi', cau.map(function (c) {
-        var ds = don.filter(function (o) { return o.status === c.tt; });
-        var tong = ds.reduce(function (s, o) { return s + o.total; }, 0);
+        var s = theoTt[c.khoa] || {};
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + c.tt + '</span>' +
           '<span class="bieu-tuong ' + c.mau + '"><i class="fa-solid ' + c.icon + '"></i></span></div>' +
-          '<div class="so">' + ds.length + ' đơn</div>' +
-          '<div class="thay-doi" style="color:var(--chu-mo)">' + Apex.money(tong) + '</div></div>';
+          '<div class="so">' + Apex.number(s.soDon) + ' đơn</div>' +
+          '<div class="thay-doi" style="color:var(--chu-mo)">' + Apex.money(s.tongTien) + '</div></div>';
       }).join(''));
+    }
+
+    /** Số món của đơn: backend đếm sẵn; thiếu thì lấy số Apex đã đổi từ chi tiết đơn. */
+    function soMonCua(o) {
+      return THEO_DON[o.dbId] ? THEO_DON[o.dbId].soMon : (o.items || 0);
+    }
+
+    function timDon(dbId) {
+      for (var i = 0; i < Apex.orders.length; i++) if (Apex.orders[i].dbId === dbId) return Apex.orders[i];
+      return null;
     }
 
     function veBang(loc) {
       var don = Apex.orders.filter(function (o) { return !loc || o.status === loc; });
       Apex.fill('#bang-don', don.map(function (o) {
-        var i = Apex.orders.indexOf(o);
-        var mon = (o.chiTiet || []).map(function (c) { return Apex.esc(c.ten) + ' ×' + c.soLuong; }).join('<br>') || (o.items + ' món');
-        return '<tr class="hang-bam" onclick="moChiTiet(' + i + ')" title="Bấm để xem chi tiết">' +
+        var mon = (o.chiTiet || []).map(function (c) { return Apex.esc(c.ten) + ' ×' + c.soLuong; }).join('<br>') || (soMonCua(o) + ' món');
+        return '<tr class="hang-bam" onclick="moChiTiet(' + o.dbId + ')" title="Bấm để xem chi tiết">' +
           '<td><strong>' + Apex.esc(o.id) + '</strong></td>' +
           '<td><div class="o-ten"><div><div class="chinh">' + Apex.esc(o.customer) + '</div><div class="phu">' + Apex.esc(o.phone) + '</div></div></div></td>' +
           '<td style="font-size:12.5px;color:var(--chu-mo);">' + mon + '</td>' +
@@ -98,8 +112,8 @@
 
     /* ---------------- Hộp thoại chi tiết đơn ---------------- */
 
-    function moChiTiet(i) {
-      var o = Apex.orders[i];
+    function moChiTiet(dbId) {
+      var o = timDon(dbId);
       if (!o) return;
 
       var dong = function (nhan, giaTri) {
@@ -118,9 +132,11 @@
                 : '') +
               '<strong>' + Apex.money((c.donGia || 0) * (c.soLuong || 0)) + '</strong></span></div>';
           }).join('') + '</div>'
-        : '<div style="color:var(--chu-mo);font-size:13.5px;">' + Apex.esc(o.items || 0) + ' món</div>';
+        : '<div style="color:var(--chu-mo);font-size:13.5px;">' + Apex.esc(soMonCua(o)) + ' món</div>';
 
+      var ttHienTai = '';   // khoá trạng thái đang có, để trả ô chọn về nếu backend từ chối đổi
       var chonTt = Object.keys(Apex.ttMap).map(function (k) {
+        if (Apex.ttMap[k] === o.status) ttHienTai = k;
         return '<option value="' + k + '"' + (Apex.ttMap[k] === o.status ? ' selected' : '') + '>' +
           Apex.ttMap[k] + '</option>';
       }).join('');
@@ -135,6 +151,9 @@
         dong('Trạng thái', Apex.badgeTrangThai(o.status)) +
         dong('Khách hàng', Apex.esc(o.customer)) +
         dong('Số điện thoại', Apex.esc(o.phone || '—')) +
+        // Địa chỉ giao và ghi chú của khách — bản cũ không hiện nên phải hỏi lại khách
+        dong('Địa chỉ giao', Apex.esc(o.diaChi || '—')) +
+        (o.ghiChu ? dong('Ghi chú', Apex.esc(o.ghiChu)) : '') +
         dong('Thanh toán', Apex.esc(o.payment)) +
         // Đơn có dùng mã thì tách rõ tạm tính / giảm giá, không thì chỉ một dòng tổng tiền
         ((o.tienGiam > 0 || o.tienGiamSanPham > 0)
@@ -153,24 +172,43 @@
         '<div style="margin-top:16px;font-weight:600;">Sản phẩm đã đặt</div>' + mon +
         '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
         '<label for="ct-tt-don">Đổi trạng thái đơn</label>' +
-        '<select id="ct-tt-don" onchange="Apex.doiTrangThai(' + o.dbId + ', this.value)">' + chonTt + '</select></div>' +
+        '<select id="ct-tt-don" data-cu="' + ttHienTai + '" onchange="doiTrangThaiDon(' + o.dbId + ', this)">' + chonTt + '</select></div>' +
+        // Backend từ chối (hoặc mất kết nối) thì câu báo hiện ở đây, hộp thoại vẫn mở
+        '<div class="bao-loi" id="loi-don"></div>' +
         '</div>' +
 
+        // Apex.dangLuu: khoá nút + "Đang xoá…/Đang lưu…" trong lúc chờ, lỗi hiện ở ô .bao-loi phía trên.
+        // Ghi xong Apex tự đóng hộp thoại, nạp lại trang và báo toast.
         '<div class="ht-chan">' +
-        '<button class="nut nut-do" type="button" onclick="Apex.xoaDon(' + o.dbId + ')">' +
+        '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaDon(' + o.dbId + '))">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
-        '<button class="nut nut-xanh" type="button" onclick="Apex.danhDauDaTT(' + o.dbId + ')">' +
+        '<button class="nut nut-xanh" type="button" onclick="Apex.dangLuu(this, Apex.danhDauDaTT(' + o.dbId + '))">' +
         '<i class="fa-solid fa-check"></i> Đã thanh toán</button></div>' +
         '</div>';
 
       Apex.moHopThoai(html);
     }
 
+    /* Đổi trạng thái ngay khi chọn. Trong lúc chờ ô chọn bị khoá; backend từ chối thì câu báo
+       hiện trong hộp và ô chọn trả về trạng thái cũ để không hiểu nhầm là đã đổi. */
+    function doiTrangThaiDon(dbId, oChon) {
+      var cu = oChon.getAttribute('data-cu');
+      Apex.dangLuu(oChon, Apex.doiTrangThai(dbId, oChon.value)).then(function (kq) {
+        if (kq === undefined && cu && document.body.contains(oChon)) oChon.value = cu;
+      });
+    }
+
     function locDon() { veBang(document.getElementById('loc-trang-thai').value); }
 
-    function veLaiTrang() { veKpi(); veBang(document.getElementById('loc-trang-thai').value); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    function veLaiTrang() {
+      THEO_DON = {};
+      ((Apex.tk('tk-don-hang') || {}).theoDon || []).forEach(function (d) { THEO_DON[d.id] = d; });
+      veKpi();
+      veBang(document.getElementById('loc-trang-thai').value);
+    }
+    // Một request cho cả trang; Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi
+    Apex.trang({ bo: ['don-hang', 'tk-don-hang'], ve: veLaiTrang });
   </script>
 </body>
 </html>

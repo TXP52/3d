@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .dong-het { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--vien); }
     .dong-het:last-child { border-bottom: none; }
@@ -75,37 +75,44 @@
   <script>
     Apex.shell('kho', 'Kho & vật tư');
 
-    var VT = Apex.vatTu || [];
-    var NCC = Apex.nhaCungCap || [];
+    var VT = Apex.vatTu;
+    var NCC = Apex.nhaCungCap;
+
+    /* Số liệu tổng hợp backend tính sẵn (khoá tk-kho): vốn, máy in, gram nhựa, số đếm theo
+       trạng thái, danh sách nhựa sắp hết và % đã dùng từng dòng. Trước đây trang tự cộng
+       trên cả danh sách vật tư và tự suy trạng thái bằng một bản sao quy tắc của Java. */
+    var TK = {};
+    var PT_DA_DUNG = {};   // id vật tư -> % đã dùng (0..100)
+
+    function docThongKe() {
+      TK = Apex.tk('tk-kho') || {};
+      PT_DA_DUNG = {};
+      (TK.theoVatTu || []).forEach(function (x) { PT_DA_DUNG[x.id] = x.phanTramDaDung || 0; });
+    }
 
     /* ---------------- KPI ---------------- */
 
     function veKpi() {
-      var cp = Apex.tinhChiPhi();
-      var soMayIn = VT.filter(function (v) { return v.loai === 'may_in'; }).length;
-      var soCuonNhua = VT.filter(function (v) { return v.loai === 'nhua'; })
-        .reduce(function (s, v) { return s + (v.soLuong || 0); }, 0);
-
       Apex.fill('#kpi',
         '<div class="kpi"><div class="dong-dau"><span class="nhan">Tổng vốn vật tư</span>' +
         '<span class="bieu-tuong bt-xanh"><i class="fa-solid fa-sack-dollar"></i></span></div>' +
-        '<div class="so">' + Apex.money(cp.tienMuaVatTu) + '</div>' +
+        '<div class="so">' + Apex.money(TK.tongVon) + '</div>' +
         '<div class="thay-doi">Đã bỏ ra mua toàn bộ kho</div></div>' +
 
         '<div class="kpi"><div class="dong-dau"><span class="nhan">Máy in</span>' +
         '<span class="bieu-tuong bt-toi"><i class="fa-solid fa-print"></i></span></div>' +
-        '<div class="so">' + Apex.number(soMayIn) + ' máy</div>' +
-        '<div class="thay-doi">' + Apex.money(cp.tienMayIn) + '</div></div>' +
+        '<div class="so">' + Apex.number(TK.soMayIn) + ' máy</div>' +
+        '<div class="thay-doi">' + Apex.money(TK.tienMayIn) + '</div></div>' +
 
         '<div class="kpi"><div class="dong-dau"><span class="nhan">Cuộn nhựa</span>' +
         '<span class="bieu-tuong bt-vang"><i class="fa-solid fa-record-vinyl"></i></span></div>' +
-        '<div class="so">' + Apex.number(soCuonNhua) + ' cuộn</div>' +
-        '<div class="thay-doi">Tổng ' + Apex.number(cp.tongGramMua) + 'g nhựa đã mua</div></div>' +
+        '<div class="so">' + Apex.number(TK.soCuonNhua) + ' cuộn</div>' +
+        '<div class="thay-doi">Tổng ' + Apex.number(TK.tongGramMua) + 'g nhựa đã mua</div></div>' +
 
         '<div class="kpi"><div class="dong-dau"><span class="nhan">Nhựa còn lại</span>' +
-        '<span class="bieu-tuong ' + (cp.gramConLai <= Apex.nguongNhuaSapHet ? 'bt-do' : 'bt-xanh') + '"><i class="fa-solid fa-weight-hanging"></i></span></div>' +
-        '<div class="so">' + Apex.number(cp.gramConLai) + 'g</div>' +
-        '<div class="thay-doi">đã dùng ' + Apex.number(cp.tongGramDaDung) + 'g</div></div>'
+        '<span class="bieu-tuong ' + (TK.nhuaConItCanhBao ? 'bt-do' : 'bt-xanh') + '"><i class="fa-solid fa-weight-hanging"></i></span></div>' +
+        '<div class="so">' + Apex.number(TK.gramConLai) + 'g</div>' +
+        '<div class="thay-doi">đã dùng ' + Apex.number(TK.tongGramDaDung) + 'g</div></div>'
       );
     }
 
@@ -114,10 +121,10 @@
     function veLocTrangThai() {
       var el = document.getElementById('loc-trang-thai');
       var dangChon = el.value;
+      var dem = TK.theoTrangThai || {};
       el.innerHTML = '<option value="">Tất cả trạng thái</option>' +
         Object.keys(Apex.ttVatTu).map(function (k) {
-          var so = VT.filter(function (v) { return Apex.ttVatTuThucTe(v) === k; }).length;
-          return '<option value="' + k + '">' + Apex.ttVatTu[k].ten + ' (' + so + ')</option>';
+          return '<option value="' + k + '">' + Apex.ttVatTu[k].ten + ' (' + (dem[k] || 0) + ')</option>';
         }).join('');
       el.value = dangChon;
     }
@@ -129,18 +136,18 @@
 
     function veBang() {
       var loc = document.getElementById('loc-trang-thai').value;
+      // Lọc theo trangThaiTinh backend suy sẵn — đúng trường mà huy hiệu và số đếm dùng
       var html = VT.map(function (v, i) { return { v: v, i: i }; })
-        .filter(function (x) { return !loc || Apex.ttVatTuThucTe(x.v) === loc; })
+        .filter(function (x) { return !loc || x.v.trangThaiTinh === loc; })
         .map(function (x) {
           var v = x.v;
           // Nhựa đếm bằng gram, máy in và dụng cụ đếm bằng cái — backend gửi sẵn donVi
           var dv = v.donVi || 'cái';
-          var tong = v.tongCoThe || 0;
           var daDung = v.daDungGram || 0;
-          var pt = tong > 0 ? Math.min(100, daDung / tong * 100) : 0;
+          var pt = PT_DA_DUNG[v.id] || 0;
           var mau = pt > 70 ? 'var(--vang)' : 'var(--accent)';
 
-          return '<tr class="hang-bam" onclick="moChiTiet(' + x.i + ')" title="Bấm để xem chi tiết">' +
+          return '<tr class="hang-bam" onclick="moFormVatTu(' + x.i + ')" title="Bấm để xem và sửa">' +
             '<td><div class="o-ten"><img class="anh-sp" src="' + anhVatTu(v) + '" alt="" ' +
             'onerror="this.src=\'' + Apex.anhSanPham(v.ten) + '\'" />' +
             '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
@@ -159,75 +166,12 @@
         }).join('');
 
       Apex.fill('#bang-vat-tu', html ||
-        '<tr><td colspan="8" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        '<tr><td colspan="9" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
         (loc ? 'Không có vật tư nào ở trạng thái này.' : 'Kho chưa có vật tư nào.') +
         '</td></tr>');
     }
 
-    /* ---------------- Hộp thoại CHI TIẾT ---------------- */
-
-    function moChiTiet(i) {
-      var v = VT[i];
-      if (!v) return;
-      var laNhua = v.loai === 'nhua';
-      var dv = v.donVi || 'cái';   // nhựa: g · máy in, dụng cụ: cái
-      var tt = v.trangThai || 'con_hang';
-      var ttThuc = Apex.ttVatTuThucTe(v);
-
-      var dong = function (nhan, giaTri) {
-        return '<div class="dong-tt"><span class="nhan-tt">' + nhan + '</span>' +
-          '<span class="gia-tri">' + giaTri + '</span></div>';
-      };
-
-      var chonTt = Object.keys(Apex.ttVatTu).map(function (k) {
-        return '<option value="' + k + '"' + (k === tt ? ' selected' : '') + '>' + Apex.ttVatTu[k].ten + '</option>';
-      }).join('');
-
-      var html =
-        '<div class="ht-dau">' +
-        '<div><h3>' + Apex.esc(v.ten) + '</h3><div class="phu">' +
-        Apex.esc(Apex.tenLoaiVatTu(v)) +
-        (v.mau ? ' · ' + Apex.oMau(v.maMau, v.mau) + Apex.esc(v.mau) : '') + '</div></div>' +
-        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
-        '<i class="fa-solid fa-xmark"></i></button></div>' +
-
-        '<div class="ht-than"><div class="ct-2cot">' +
-        '<img class="anh-chi-tiet" src="' + anhVatTu(v) + '" alt="" onerror="this.src=\'' + Apex.anhSanPham(v.ten) + '\'" />' +
-        '<div>' +
-        dong('Trạng thái', Apex.badgeTtVatTu(ttThuc)) +
-        dong('Giá mua 1 đơn vị', Apex.money(v.gia || 0)) +
-        dong('Số lượng', Apex.number(v.soLuong || 0)) +
-        dong('Tổng tiền đã mua', '<strong>' + Apex.money(v.tongTienMua || 0) + '</strong>') +
-        (laNhua ? dong('Khối lượng mỗi cuộn', Apex.number(v.khoiLuongGram || 0) + 'g') : '') +
-        (laNhua ? dong('Đơn giá theo gram', Math.round(v.donGiaMoiGram || 0).toLocaleString('vi-VN') + '₫/g') : '') +
-        dong('Đã dùng', '<strong>' + Apex.number(v.daDungGram || 0) + ' ' + dv + '</strong> / ' +
-             Apex.number(v.tongCoThe || 0) + ' ' + dv) +
-        dong(laNhua ? 'Tiền nhựa đã tiêu hao' : 'Tiền đã dùng', Apex.money(v.tienDaDung || 0)) +
-        dong('Còn lại', '<strong>' + Apex.number(v.conLai || 0) + ' ' + dv + '</strong>') +
-        dong('Nhà cung cấp', v.nhaCungCap ? Apex.esc(v.nhaCungCap) : '—') +
-        (v.ghiChu ? dong('Ghi chú', Apex.esc(v.ghiChu)) : '') +
-        '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
-        '<label for="ct-tt-vt">Đổi nhanh trạng thái</label>' +
-        '<select id="ct-tt-vt" onchange="Apex.doiTrangThaiVatTu(' + v.id + ', this.value)">' + chonTt + '</select>' +
-        '</div>' +
-        '</div></div></div>' +
-
-        '<div class="ht-chan">' +
-        '<button class="nut nut-do" type="button" onclick="Apex.xoaVatTu(' + v.id + ')">' +
-        '<i class="fa-solid fa-trash"></i> Xoá</button>' +
-        '<div class="day-phai">' +
-        (laNhua
-          ? '<button class="nut nut-xanh" type="button" onclick="Apex.dungThemGram(' + v.id + ', ' +
-            jsStr(v.ten) + ')"><i class="fa-solid fa-plus"></i> Ghi nhận</button>'
-          : '') +
-        '<button class="nut nut-chinh" type="button" onclick="moFormVatTu(' + i + ')">' +
-        '<i class="fa-solid fa-pen-to-square"></i> Sửa</button>' +
-        '</div></div>';
-
-      Apex.moHopThoai(html, 'rong-lon');
-    }
-
-    /* ---------------- Hộp thoại THÊM / SỬA ---------------- */
+    /* ---------------- Hộp thoại XEM + SỬA: bấm dòng nào mở dòng đó, sửa xong bấm Lưu ---------------- */
 
     var layAnh = null;
 
@@ -269,13 +213,16 @@
 
       var html =
         '<div class="ht-dau">' +
-        '<div><h3>' + (moi ? 'Thêm vật tư mới' : 'Sửa vật tư') + '</h3>' +
-        (moi ? '' : '<div class="phu">' + Apex.esc(v.ten) + '</div>') + '</div>' +
+        '<div><h3>' + (moi ? 'Thêm vật tư mới' : Apex.esc(v.ten)) + '</h3>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(Apex.tenLoaiVatTu(v)) + '</div>') + '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
-        '<div class="ht-than">' +
-        Apex.htmlOTaiAnh('vt-anh', anhHienTai, 'Chọn ảnh') +
+        '<div class="ht-than"><div class="ct-2cot">' +
+        // Cột trái: ảnh to + chọn file / dán link ảnh
+        '<div class="cot-anh">' + Apex.htmlOTaiAnh('vt-anh', anhHienTai, 'Chọn ảnh') + '</div>' +
+        // Cột phải: toàn bộ thông tin, sửa thẳng tại chỗ
+        '<div>' +
         '<div class="o-nhap"><label for="f-ten">Tên vật tư *</label>' +
         '<input type="text" id="f-ten" value="' +
         (v ? Apex.esc(v.ten) : '') + '" /></div>' +
@@ -307,17 +254,25 @@
         '<div class="o-nhap"><label for="f-ghichu">Ghi chú</label>' +
         '<textarea id="f-ghichu" rows="2">' +
         (v ? Apex.esc(v.ghiChu || '') : '') + '</textarea></div>' +
+        '<div class="tom-tat-sua" id="tom-tat-vt"></div>' +
         '<div class="bao-loi" id="loi-form"></div>' +
-        '</div>' +
+        '</div></div></div>' +
 
-        '<div class="ht-chan"><div class="day-phai">' +
+        '<div class="ht-chan">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaVatTu(' + v.id + '))">' +
+          '<i class="fa-solid fa-trash"></i> Xoá</button>') +
+        '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (v ? v.id : 'null') + ')">' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (v ? v.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
-      Apex.moHopThoai(html);
+      Apex.moHopThoai(html, 'rong-lon');
       layAnh = Apex.ganOTaiAnh('vt-anh', anhHienTai);
+      ['f-gia', 'f-sl', 'f-gram', 'f-dung'].forEach(function (id) {
+        var e = document.getElementById(id);
+        if (e) e.addEventListener('input', veTomTatVt);
+      });
       doiMauVatTu();
       doiDonViTheoLoai();
     }
@@ -339,6 +294,28 @@
 
       if (oGram) oGram.style.display = laNhua ? '' : 'none';
       if (nhan) nhan.textContent = laNhua ? 'Đã dùng (gram)' : 'Đã dùng (cái)';
+      veTomTatVt();
+    }
+
+    /** Tóm tắt tính ngay khi gõ: tổng tiền, còn lại, tiền đã dùng — theo đúng đơn vị của loại. */
+    function veTomTatVt() {
+      var o = document.getElementById('tom-tat-vt');
+      var oLoai = document.getElementById('f-loai');
+      if (!o || !oLoai) return;
+      var chon = oLoai.options[oLoai.selectedIndex];
+      var laNhua = !!chon && chon.getAttribute('data-tinh-chat') === 'nhua';
+      var so = function (id) {
+        var e = document.getElementById(id);
+        return e ? (parseInt(e.value, 10) || 0) : 0;
+      };
+      var gia = so('f-gia'), sl = so('f-sl'), gram = so('f-gram'), daDung = so('f-dung');
+      var tong = laNhua ? gram * sl : sl;
+      var dv = laNhua ? 'g' : ' cái';
+      var tienDaDung = laNhua ? (gram > 0 ? Math.round(gia / gram * daDung) : 0) : gia * daDung;
+      o.innerHTML = 'Tổng tiền mua <strong>' + Apex.money(gia * sl) + '</strong>' +
+        (laNhua && gram ? ' · Đơn giá <strong>' + Apex.number(Math.round(gia / gram)) + 'đ/g</strong>' : '') +
+        ' · Còn lại <strong>' + Apex.number(Math.max(0, tong - daDung)) + dv + '</strong>' +
+        (daDung ? ' · Tiền đã dùng <strong>' + Apex.money(tienDaDung) + '</strong>' : '');
     }
 
     /* Ô vuông cạnh ô Màu đổi theo màu đang chọn */
@@ -350,7 +327,7 @@
       oMau.style.background = m ? (Apex.maMauCua(m.maMau, m.ten) || '#e4e6e9') : '#e4e6e9';
     }
 
-    function luuForm(id) {
+    function luuForm(id, nut) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên vật tư.'; return; }
@@ -401,30 +378,30 @@
         duLieu.daDungGram = daDung;
       }
 
-      loi.textContent = '';
-      var ok = id ? Apex.suaVatTu(id, duLieu) : Apex.themVatTu(duLieu);
-      if (ok) Apex.capNhatXong(['vat-tu', 'danh-muc'], id ? 'Đã lưu vật tư' : 'Đã thêm vật tư');
-      else loi.textContent = 'Không lưu được vật tư. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
+      // Lưu xong Apex tự đóng hộp, nạp lại các khoá của trang rồi hiện toast; backend từ chối
+      // thì câu backend báo hiện ngay trong ô lỗi, hộp vẫn mở.
+      Apex.dangLuu(nut, function () { return id ? Apex.suaVatTu(id, duLieu) : Apex.themVatTu(duLieu); }, loi);
     }
 
     /* ---------------- Nhựa sắp hết ---------------- */
 
+    /* Backend lọc sẵn các cuộn nhựa còn ≤ 200g (tk-kho.nhuaSapHet), kèm trạng thái đã suy */
     function veSapHet() {
-      var sapHet = VT.filter(function (v) {
-        return v.loai === 'nhua' && Apex.gramConLai(v) <= Apex.nguongNhuaSapHet;
-      });
-      Apex.fill('#nhua-sap-het', sapHet.map(function (v) {
+      Apex.fill('#nhua-sap-het', (TK.nhuaSapHet || []).map(function (v) {
         return '<div class="dong-het"><div>' +
           '<div class="ten-vt">' + Apex.esc(v.ten) + '</div>' +
           '<div class="phu-vt">Màu: ' + (v.mau ? Apex.oMau(v.maMau, v.mau) + Apex.esc(v.mau) : '—') +
-          ' · Còn lại <strong>' + Apex.number(Apex.gramConLai(v)) + 'g</strong></div>' +
+          ' · Còn lại <strong>' + Apex.number(v.conLaiGram) + 'g</strong></div>' +
           '</div>' + Apex.badgeTtVatTu(v) + '</div>';
       }).join('') || '<div style="text-align:center;color:var(--chu-mo);padding:28px;">Nhựa còn đủ dùng.</div>');
     }
 
     /* Vẽ lại toàn trang từ dữ liệu trong Apex — gọi lúc mở trang và sau mỗi lần ghi */
-    function veLaiTrang() { veKpi(); veLocTrangThai(); veBang(); veSapHet(); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    function veLaiTrang() { docThongKe(); veKpi(); veLocTrangThai(); veBang(); veSapHet(); }
+
+    /* Một request cho cả trang: vật tư, danh mục (ô Loại, tên loại), màu sắc và nhà cung cấp
+       (hai ô chọn trong form) cùng số liệu tk-kho. Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+    Apex.trang({ bo: ['vat-tu', 'danh-muc', 'mau-sac', 'nha-cung-cap', 'tk-kho'], ve: veLaiTrang });
   </script>
 </body>
 </html>

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .chu-cai {
       width: 36px; height: 36px; flex: 0 0 36px;
@@ -62,49 +62,64 @@
   <script>
     Apex.shell('khach-hang', 'Khách hàng');
 
-    function veLaiTrang() {
-      var kh = Apex.customers || [];
-      var daDangKy = kh.filter(function (c) { return c.group !== 'Khách lẻ'; }).length;
-      var vangLai = kh.filter(function (c) { return c.group === 'Khách lẻ'; }).length;
-      var tongChi = kh.reduce(function (s, c) { return s + (c.spent || 0); }, 0);
-
+    /* Thẻ KPI; k = null (chưa có quyền xem) thì hiện gạch ngang chứ không hiện "0 khách" dễ tưởng thật */
+    function veKpi(k) {
       Apex.fill('#kpi', [
-        { nhan: 'Tổng khách hàng', so: Apex.number(kh.length) + ' khách', icon: 'fa-users', mau: 'bt-xanh' },
-        { nhan: 'Tài khoản đã đăng ký', so: Apex.number(daDangKy), icon: 'fa-user-check', mau: 'bt-vang' },
-        { nhan: 'Khách vãng lai', so: Apex.number(vangLai), icon: 'fa-user-clock', mau: 'bt-toi' },
-        { nhan: 'Tổng chi tiêu', so: Apex.money(tongChi), icon: 'fa-wallet', mau: 'bt-do' }
-      ].map(function (k) {
-        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
-          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
-          '<div class="so">' + k.so + '</div></div>';
+        { nhan: 'Tổng khách hàng', so: k ? Apex.number(k.tongKhach) + ' khách' : '—', icon: 'fa-users', mau: 'bt-xanh' },
+        { nhan: 'Tài khoản đã đăng ký', so: k ? Apex.number(k.daDangKy) : '—', icon: 'fa-user-check', mau: 'bt-vang' },
+        { nhan: 'Khách vãng lai', so: k ? Apex.number(k.vangLai) : '—', icon: 'fa-user-clock', mau: 'bt-toi' },
+        { nhan: 'Tổng chi tiêu', so: k ? Apex.money(k.tongChiTieu) : '—', icon: 'fa-wallet', mau: 'bt-do' }
+      ].map(function (o) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + o.nhan + '</span>' +
+          '<span class="bieu-tuong ' + o.mau + '"><i class="fa-solid ' + o.icon + '"></i></span></div>' +
+          '<div class="so">' + o.so + '</div></div>';
       }).join(''));
+    }
 
-      function badgeNhom(nhom) {
-        var lop = 'badge-xam';
-        if (nhom === 'Quản trị') lop = 'badge-do';
-        else if (nhom === 'Khách hàng') lop = 'badge-duong';
-        return '<span class="badge ' + lop + '"><span class="cham"></span>' + Apex.esc(nhom || 'Khách lẻ') + '</span>';
+    /* Màu huy hiệu theo nhóm backend trả (quan_tri / khach_hang / khach_le) */
+    function badgeNhom(c) {
+      var lop = 'badge-xam';
+      if (c.nhom === 'quan_tri') lop = 'badge-do';
+      else if (c.nhom === 'khach_hang') lop = 'badge-duong';
+      return '<span class="badge ' + lop + '"><span class="cham"></span>' + Apex.esc(c.nhomTen || 'Khách lẻ') + '</span>';
+    }
+
+    function chuCai(ten) {
+      var t = (ten || '?').trim();
+      return Apex.esc(t ? t.charAt(0).toUpperCase() : '?');
+    }
+
+    /* Danh sách khách do backend gom sẵn (khoá 'khach-hang'): tài khoản ghép với đơn theo
+       nguoi_dung_id, khách vãng lai gom theo số điện thoại; tổng chi không cộng đơn đã huỷ.
+       Trước đây JS ghép theo HỌ TÊN nên hai người trùng tên bị gộp làm một. */
+    function veLaiTrang() {
+      var kh = Apex.tk('khach-hang');
+
+      // null = chưa đăng nhập admin (hoặc phiên hết hạn): danh sách có email, số điện thoại nên
+      // backend không trả. Nói rõ thay vì hiện bảng thiếu như bản cũ.
+      if (!kh) {
+        veKpi(null);
+        Apex.fill('#bang-khach', '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+          'Cần <a href="dang-nhap.html">đăng nhập tài khoản quản trị</a> để xem danh sách khách hàng.</td></tr>');
+        return;
       }
 
-      function chuCai(ten) {
-        var t = (ten || '?').trim();
-        return Apex.esc(t ? t.charAt(0).toUpperCase() : '?');
-      }
-
-      Apex.fill('#bang-khach', kh.map(function (c) {
+      veKpi(kh.kpi || {});
+      Apex.fill('#bang-khach', (kh.khach || []).map(function (c) {
         return '<tr>' +
-          '<td><div class="o-ten"><span class="chu-cai">' + chuCai(c.name) + '</span>' +
-            '<span><span class="chinh">' + Apex.esc(c.name || 'Không rõ') + '</span>' +
-            '<span class="phu">' + Apex.esc(c.id || '') + '</span></span></div></td>' +
+          '<td><div class="o-ten"><span class="chu-cai">' + chuCai(c.ten) + '</span>' +
+            '<span><span class="chinh">' + Apex.esc(c.ten || 'Không rõ') + '</span>' +
+            '<span class="phu">' + (c.nguoiDungId ? 'KH-' + Apex.esc(c.nguoiDungId) : '') + '</span></span></div></td>' +
           '<td>' + Apex.esc(c.email || '—') + '</td>' +
-          '<td>' + Apex.esc(c.phone || '—') + '</td>' +
-          '<td>' + badgeNhom(c.group) + '</td>' +
-          '<td class="giua">' + Apex.number(c.orders || 0) + '</td>' +
-          '<td class="phai"><strong>' + Apex.money(c.spent || 0) + '</strong></td>' +
+          '<td>' + Apex.esc(c.soDienThoai || '—') + '</td>' +
+          '<td>' + badgeNhom(c) + '</td>' +
+          '<td class="giua">' + Apex.number(c.soDon || 0) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(c.tongChi || 0) + '</strong></td>' +
           '</tr>';
       }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
     }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
+    // Một request cho cả trang (Apex tự gửi kèm token admin); Apex gọi veLaiTrang khi dữ liệu về
+    Apex.trang({ bo: ['khach-hang'], ve: veLaiTrang });
   </script>
 </body>
 </html>

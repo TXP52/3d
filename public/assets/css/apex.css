@@ -355,6 +355,11 @@ html.dang-tai::before {
 }
 .bao-nhanh.hien { opacity: 1; transform: none; }
 .bao-nhanh i { color: var(--accent); }
+/* Toast báo lỗi (Apex.baoLoi) — lỗi không có ô .bao-loi nào để hiện */
+.bao-nhanh.loi { background: #991b1b; }
+.bao-nhanh.loi i { color: #fecaca; }
+/* Nút / ô chọn đang chờ backend ghi (Apex.dangLuu): khoá bấm, hiện vòng quay */
+.dang-ban { opacity: .72; cursor: progress; pointer-events: none; }
 .bao-backend {
   display: flex; align-items: center; gap: 10px;
   background: var(--do-nhat); color: #991b1b; border: 1px solid #fecaca;
@@ -643,6 +648,16 @@ html.dang-tai::before {
   border: 1px solid var(--vien); cursor: pointer;
 }
 .dai-anh-nho img.dang-xem { border: 2px solid var(--accent); }
+
+/* Hộp SỬA dạng hai cột (sản phẩm, vật tư): cột trái là ảnh to + chỗ đổi ảnh */
+.cot-anh .o-anh { flex-direction: column; align-items: stretch; }
+.cot-anh .o-anh .xem-truoc { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.cot-anh .bo-anh { margin-top: 12px; }
+.tom-tat-sua {
+  margin-top: 4px; padding: 10px 12px; border-radius: var(--radius-nho);
+  background: #f6f7f8; font-size: 13px; color: var(--chu-mo); line-height: 1.7;
+}
+.tom-tat-sua strong { color: var(--chu); }
 
 /* ---------------- Responsive ---------------- */
 

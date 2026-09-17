@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
   <style>
     .o-icon {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -91,12 +91,25 @@
   <script>
     Apex.shell('danh-muc', 'Danh mục');
 
-    var DM = Apex.danhMuc || [];          // cả hai nhóm, giữ nguyên thứ tự để moForm(i) tra theo chỉ số
+    var DM = Apex.danhMuc;                // cả hai nhóm, giữ nguyên thứ tự để moForm(i) tra theo chỉ số
     var DM_SP, DM_VT;
     function tinhNhom() { DM_SP = Apex.danhMucSanPham(); DM_VT = Apex.danhMucVatTu(); }
     tinhNhom();
-    var SP = Apex.products || [];
     var TC = Apex.tinhChatVatTu;          // { may_in, nhua, dung_cu }
+
+    /* Số liệu backend đếm sẵn (khoá tk-danh-muc): số danh mục mỗi nhóm và số sản phẩm / vật tư
+       của từng danh mục. Trước đây trang tải cả danh sách sản phẩm (~2,4 s) và vật tư chỉ để đếm. */
+    var TK = {};
+    var SO_THEO_DM = {};                  // id danh mục -> { soSanPham, soVatTu }
+
+    function docThongKe() {
+      TK = Apex.tk('tk-danh-muc') || {};
+      SO_THEO_DM = {};
+      (TK.theoDanhMuc || []).forEach(function (x) { SO_THEO_DM[x.id] = x; });
+    }
+    function soSanPham(id) { return (SO_THEO_DM[id] && SO_THEO_DM[id].soSanPham) || 0; }
+    function soVatTu(id) { return (SO_THEO_DM[id] && SO_THEO_DM[id].soVatTu) || 0; }
+    function soKpi(khoa) { return (TK.kpi && TK.kpi[khoa]) || 0; }
     var MAU_TC = { may_in: 'badge-toi', nhua: 'badge-xanh', dung_cu: 'badge-duong' };
 
     /* Bộ icon gợi ý — nhóm đầu cho sản phẩm, nhóm sau cho vật tư */
@@ -118,8 +131,8 @@
 
     function veKpi() {
       Apex.fill('#kpi', [
-        { nhan: 'Danh mục sản phẩm', so: Apex.number(DM_SP.length), icon: 'fa-folder-tree', mau: 'bt-toi' },
-        { nhan: 'Loại vật tư', so: Apex.number(DM_VT.length), icon: 'fa-boxes-stacked', mau: 'bt-xanh' }
+        { nhan: 'Danh mục sản phẩm', so: Apex.number(soKpi('danhMucSanPham')), icon: 'fa-folder-tree', mau: 'bt-toi' },
+        { nhan: 'Loại vật tư', so: Apex.number(soKpi('loaiVatTu')), icon: 'fa-boxes-stacked', mau: 'bt-xanh' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
@@ -131,7 +144,7 @@
 
     function veBangSanPham() {
       Apex.fill('#bang-san-pham', DM_SP.map(function (d) {
-        var so = Apex.soSanPhamTheoDanhMuc(d.id);
+        var so = soSanPham(d.id);
         return '<tr class="hang-bam" onclick="moForm(' + viTri(d) + ')">' +
           '<td><div class="o-ten">' + oIcon(d, false) + '<span class="chinh">' + Apex.esc(d.ten) + '</span></div></td>' +
           '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(d.moTa || '—') + '</td>' +
@@ -150,7 +163,7 @@
 
     function veBangVatTu() {
       Apex.fill('#bang-vat-tu', DM_VT.map(function (d) {
-        var so = Apex.soVatTuTheoDanhMuc(d.id);
+        var so = soVatTu(d.id);
         return '<tr class="hang-bam" onclick="moForm(' + viTri(d) + ')">' +
           '<td><div class="o-ten">' + oIcon(d, true) + '<span class="chinh">' + Apex.esc(d.ten) + '</span></div></td>' +
           '<td class="giua">' + badgeTc(d.tinhChat || 'dung_cu') + '</td>' +
@@ -171,7 +184,7 @@
       var nhom = d ? (d.nhom || 'san_pham') : (nhomMoi || 'san_pham');
       var laVatTu = nhom === 'vat_tu';
       var iconChon = d ? (d.icon || 'fa-folder') : (laVatTu ? 'fa-box' : 'fa-folder');
-      var so = d ? (laVatTu ? Apex.soVatTuTheoDanhMuc(d.id) : Apex.soSanPhamTheoDanhMuc(d.id)) : 0;
+      var so = d ? (laVatTu ? soVatTu(d.id) : soSanPham(d.id)) : 0;
 
       var luoiIcon = ICONS.map(function (ic) {
         return '<button type="button" class="' + (ic === iconChon ? 'chon' : '') + '" data-icon="' + ic + '" ' +
@@ -210,7 +223,7 @@
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
         '<input type="number" id="f-thu-tu" min="0" step="1" value="' +
-        (d ? (d.thuTu || 0) : ((laVatTu ? DM_VT.length : DM_SP.length) + 1)) + '" />' +
+        (d ? (d.thuTu || 0) : (soKpi(laVatTu ? 'loaiVatTu' : 'danhMucSanPham') + 1)) + '" />' +
         '</div>' +
         (laVatTu ? '' :
           '<div class="o-nhap"><label for="f-hien">Hiển thị</label><select id="f-hien">' +
@@ -226,11 +239,11 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.xoaDanhMuc(' + d.id + ')">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaDanhMuc(' + d.id + '))">' +
           '<i class="fa-solid fa-trash"></i> Xoá</button>') +
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (d ? d.id : 'null') + ')">' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' + (d ? d.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
 
@@ -243,7 +256,7 @@
       document.getElementById('f-icon').value = nut.getAttribute('data-icon');
     }
 
-    function luuForm(id) {
+    function luuForm(id, nut) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên.'; return; }
@@ -261,14 +274,16 @@
       };
       if (oTc) duLieu.tinhChat = oTc.value;
 
-      loi.textContent = '';
-      var ok = id ? Apex.suaDanhMuc(id, duLieu) : Apex.themDanhMuc(duLieu);
-      if (ok) Apex.capNhatXong(['danh-muc', 'vat-tu', 'san-pham'], id ? 'Đã lưu' : 'Đã thêm');
-      else loi.textContent = 'Không lưu được. Kiểm tra lại backend Java (cổng 8090) rồi thử lại.';
+      // Lưu xong Apex tự đóng hộp, nạp lại danh mục + số đếm rồi hiện toast; backend từ chối
+      // (vd trùng tên) thì câu đó hiện ngay trong ô lỗi, hộp vẫn mở.
+      Apex.dangLuu(nut, function () { return id ? Apex.suaDanhMuc(id, duLieu) : Apex.themDanhMuc(duLieu); }, loi);
     }
 
-    function veLaiTrang() { tinhNhom(); veKpi(); veBangSanPham(); veBangVatTu(); }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về, và sau mỗi lần ghi
+    function veLaiTrang() { tinhNhom(); docThongKe(); veKpi(); veBangSanPham(); veBangVatTu(); }
+
+    /* Một request cho cả trang: danh mục + số đếm tk-danh-muc (không cần tải sản phẩm, vật tư).
+       Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+    Apex.trang({ bo: ['danh-muc', 'tk-danh-muc'], ve: veLaiTrang });
   </script>
 </body>
 </html>

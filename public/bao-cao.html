@@ -8,9 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=27" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="assets/js/apex.js?v=25"></script>
+  <link href="assets/css/apex.css?v=29" rel="stylesheet">
+  <script src="assets/js/apex.js?v=27"></script>
+  <!-- echarts (~1 MB) tải SAU apex.js và defer: dữ liệu được gọi ngay, biểu đồ vẽ khi echarts xong -->
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
   <div class="apex-khung">
@@ -70,18 +71,20 @@
   <script>
     Apex.shell('bao-cao', 'Báo cáo doanh thu');
 
+    /* Mọi con số do backend tính sẵn trong khoá 'bao-cao' — trang chỉ vẽ.
+       Doanh thu KHÔNG cộng đơn đã huỷ (cả thẻ KPI, biểu đồ lẫn tỉ trọng); số đơn thì đếm hết
+       vì đó là đơn đã nhận. Trước đây thẻ KPI cộng cả đơn huỷ còn biểu đồ thì không. */
     function veLaiTrang() {
-      var don = Apex.orders || [];
-      var doanhThu = don.reduce(function (s, o) { return s + (o.total || 0); }, 0);
-      var soDon = don.length;
-      var trungBinh = soDon ? doanhThu / soDon : 0;
-      var hoanThanh = don.filter(function (o) { return o.status === 'Hoàn thành'; }).length;
-      var tiLe = soDon ? Math.round(hoanThanh * 1000 / soDon) / 10 : 0;
+      var bc = Apex.tk('bao-cao');
+      if (!bc) return;
+      var kpi = bc.kpi || {};
+      var thang = bc.theoThang || {};
+      var tiLe = kpi.tiLeHoanThanh || 0;
 
       Apex.fill('#kpi', [
-        { nhan: 'Doanh thu', so: Apex.money(doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
-        { nhan: 'Số đơn', so: Apex.number(soDon) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
-        { nhan: 'Giá trị đơn trung bình', so: Apex.money(Math.round(trungBinh)), icon: 'fa-chart-simple', mau: 'bt-toi' },
+        { nhan: 'Doanh thu', so: Apex.money(kpi.doanhThu), icon: 'fa-wallet', mau: 'bt-xanh' },
+        { nhan: 'Số đơn', so: Apex.number(kpi.soDon) + ' đơn', icon: 'fa-cart-shopping', mau: 'bt-vang' },
+        { nhan: 'Giá trị đơn trung bình', so: Apex.money(kpi.giaTriTrungBinh), icon: 'fa-chart-simple', mau: 'bt-toi' },
         { nhan: 'Tỉ lệ hoàn thành', so: tiLe + '%', icon: 'fa-circle-check', mau: tiLe >= 50 ? 'bt-xanh' : 'bt-do' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
@@ -89,38 +92,36 @@
           '<div class="so">' + k.so + '</div></div>';
       }).join(''));
 
-      // Doanh thu + số đơn theo tháng — TÍNH TỪ ĐƠN HÀNG THẬT.
-      // Doanh thu không cộng đơn đã huỷ; số đơn thì đếm hết vì đó là đơn đã nhận.
-      if (Apex.stats.coDuLieu) {
-        Apex.bieuDoDuong('bd-doanh-thu', Apex.stats.thang, [
-          { ten: 'Năm ' + Apex.stats.nam, duLieu: Apex.stats.doanhThuNam },
-          { ten: 'Năm ' + (Apex.stats.nam - 1), duLieu: Apex.stats.doanhThuNamTruoc }
+      // Doanh thu + số đơn theo tháng (giờ Việt Nam)
+      if (thang.coDuLieu) {
+        Apex.bieuDoDuong('bd-doanh-thu', thang.nhan, [
+          { ten: 'Năm ' + thang.nam, duLieu: thang.namNay },
+          { ten: 'Năm ' + (thang.nam - 1), duLieu: thang.namTruoc }
         ], true);
-        Apex.bieuDoCot('bd-don', Apex.stats.thang, Apex.stats.donTheoThang, 'Số đơn');
+        Apex.bieuDoCot('bd-don', thang.nhan, thang.soDon, 'Số đơn');
       } else {
         var chuaCo = '<div class="chua-co-so-lieu">Chưa có đơn hàng nào trong năm ' +
-          Apex.stats.nam + ' để lập biểu đồ.</div>';
+          Apex.esc(thang.nam) + ' để lập biểu đồ.</div>';
         Apex.fill('#bd-doanh-thu', chuaCo);
         Apex.fill('#bd-don', chuaCo);
       }
 
-      // Tỉ trọng doanh thu theo trạng thái
-      var gom = {};
-      don.forEach(function (o) { gom[o.status] = (gom[o.status] || 0) + (o.total || 0); });
-      Apex.bieuDoTron('bd-tron', Object.keys(gom).map(function (k) {
-        return { name: k, value: gom[k] };
+      // Tỉ trọng doanh thu theo trạng thái (đơn huỷ không phải doanh thu nên không có miếng nào)
+      Apex.bieuDoTron('bd-tron', (bc.tiTrongDoanhThu || []).map(function (t) {
+        return { name: t.trangThaiTen, value: t.doanhThu };
       }));
 
-      // Bảng chi tiết
-      Apex.fill('#bang-chi-tiet', don.map(function (o) {
-        return '<tr><td><strong>' + Apex.esc(o.id) + '</strong></td>' +
-          '<td>' + Apex.esc(o.customer) + '</td>' +
-          '<td>' + Apex.esc(o.date) + '</td>' +
-          '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
-          '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td></tr>';
+      // Bảng chi tiết — ngày đã đổi sẵn sang d/M/yyyy giờ Việt Nam
+      Apex.fill('#bang-chi-tiet', (bc.don || []).map(function (o) {
+        return '<tr><td><strong>' + Apex.esc(o.maDon) + '</strong></td>' +
+          '<td>' + Apex.esc(o.tenKhach) + '</td>' +
+          '<td>' + Apex.esc(o.ngay) + '</td>' +
+          '<td class="giua">' + Apex.badgeTrangThai(o.trangThaiTen) + '</td>' +
+          '<td class="phai"><strong>' + Apex.money(o.tongTien) + '</strong></td></tr>';
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có đơn hàng nào để lập báo cáo.</td></tr>');
     }
-    Apex.datVeLai(veLaiTrang);   // Apex gọi ngay khi dữ liệu về
+    // Một request cho cả trang; Apex gọi veLaiTrang khi dữ liệu về
+    Apex.trang({ bo: ['bao-cao'], ve: veLaiTrang });
   </script>
 </body>
 </html>
