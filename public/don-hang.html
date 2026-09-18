@@ -8,13 +8,53 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=29" rel="stylesheet">
-  <script src="assets/js/apex.js?v=27"></script>
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
       font-size: 13.5px; padding: 8px 12px; border: 1px solid var(--vien); border-radius: 9px;
+    }
+
+    /* Đơn gõ tay: mỗi món một dòng thêm/bớt được (chọn sản phẩm -> phân loại -> số lượng -> giá) */
+    .dau-mon-tay, .dong-mon-tay {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) 68px 108px 34px;
+      gap: 8px;
+      align-items: center;
+    }
+    .dau-mon-tay {
+      font-size: 12px; font-weight: 600; color: var(--chu-mo);
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 6px;
+    }
+    .dong-mon-tay { margin-bottom: 8px; }
+    .dong-mon-tay select, .dong-mon-tay input { margin: 0; }
+    /* Giá để nguyên = lấy đúng giá web đang bán, nên ô giá tự điền nhìn mờ hơn giá shop tự gõ */
+    .dong-mon-tay input.mon-gia[data-tu-dong="1"] { color: var(--chu-mo); }
+    .nut-bo-dong {
+      height: 34px; border: 1px solid var(--vien); border-radius: 8px;
+      background: var(--the); color: var(--do); cursor: pointer; font-size: 15px;
+    }
+    .nut-bo-dong:hover { border-color: var(--do); }
+    .tong-mon { margin-top: 10px; font-size: 13.5px; color: var(--chu-mo); }
+    .tong-mon strong { color: var(--chu); font-size: 15px; }
+    /* Câu gợi ý đứng ngoài một ô nhập (apex.css chỉ tô cho .o-nhap .goi-y) */
+    .ht-than > .goi-y { color: var(--chu-mo); font-size: 12px; margin: -6px 0 10px 0; }
+    .o-nhap .o-tick {
+      display: inline-flex; align-items: center; gap: 8px; margin: 0;
+      font-weight: 600; font-size: 13.5px; cursor: pointer;
+    }
+    .o-nhap .o-tick input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); }
+
+    /* Điện thoại: ô chọn sản phẩm chiếm cả hàng, các ô số xếp hàng dưới */
+    @media (max-width: 560px) {
+      .dau-mon-tay { display: none; }
+      .dong-mon-tay {
+        grid-template-columns: 1fr 68px 108px 34px;
+        padding-bottom: 8px; border-bottom: 1px dashed var(--vien);
+      }
+      .dong-mon-tay .mon-sp { grid-column: 1 / -1; }
     }
   </style>
 </head>
@@ -32,20 +72,25 @@
         <div class="the">
           <div class="the-dau">
             <div><h3>Tất cả đơn hàng</h3></div>
-            <select id="loc-trang-thai" class="nut nut-vien" style="padding:7px 10px;" onchange="locDon()">
-              <option value="">Tất cả trạng thái</option>
-              <option>Chờ xác nhận</option>
-              <option>Đang xử lý</option>
-              <option>Đang giao</option>
-              <option>Hoàn thành</option>
-              <option>Đã huỷ</option>
-            </select>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <select id="loc-trang-thai" class="nut nut-vien" style="padding:7px 10px;" onchange="locDon()">
+                <option value="">Tất cả trạng thái</option>
+                <option>Chờ xác nhận</option>
+                <option>Đang xử lý</option>
+                <option>Đang giao</option>
+                <option>Hoàn thành</option>
+                <option>Đã huỷ</option>
+              </select>
+              <button class="nut nut-chinh" type="button" onclick="moFormDon()">
+                <i class="fa-solid fa-plus"></i> Tạo đơn
+              </button>
+            </div>
           </div>
           <div class="the-than khong-dem bang-cuon">
             <table class="bang">
               <thead>
                 <tr>
-                  <th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Thanh toán</th>
+                  <th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th class="giua">Kênh</th><th>Thanh toán</th>
                   <th class="giua">Trạng thái</th><th>Ngày đặt</th><th class="phai">Tổng tiền</th>
                 </tr>
               </thead>
@@ -64,6 +109,43 @@
     /* Số đơn / tổng tiền theo trạng thái và số món mỗi đơn do backend đếm sẵn (khoá 'tk-don-hang').
        Trang chỉ lọc hàng theo ô chọn trạng thái trên danh sách đã nạp — lọc giao diện. */
     var THEO_DON = {};   // id đơn -> { soMon, phuongThuc, daThanhToan }
+
+    /* Đơn THÔ của khoá 'don-hang' (id -> đơn backend trả). Apex.orders đổi đơn sang dạng bảng cũ
+       nên chưa mang kênh bán và phân loại đã bán; hai thứ đó đọc thẳng ở đây. */
+    var DON_THO = {};
+
+    /* Kênh bán — cùng bộ khoá với DonHang.KENH_HOP_LE bên backend */
+    var KENH = {
+      website:  { ten: 'Website',  mau: 'badge-duong', icon: 'fa-solid fa-globe' },
+      facebook: { ten: 'Facebook', mau: 'badge-tim',   icon: 'fa-brands fa-facebook' },
+      zalo:     { ten: 'Zalo',     mau: 'badge-xanh',  icon: 'fa-solid fa-comment-dots' },
+      tai_shop: { ten: 'Tại shop', mau: 'badge-cam',   icon: 'fa-solid fa-store' },
+      khac:     { ten: 'Khác',     mau: 'badge-xam',   icon: 'fa-solid fa-ellipsis' }
+    };
+    var PHUONG_THUC = { cod: 'COD', chuyen_khoan: 'Chuyển khoản', vi_dien_tu: 'Ví điện tử', the: 'Thẻ' };
+
+    function donTho(dbId) { return DON_THO[dbId] || {}; }
+
+    /** Huy hiệu kênh bán; kênh lạ thì hiện đúng tên backend trả chứ không đoán. */
+    function badgeKenh(o) {
+      var d = donTho(o.dbId);
+      var k = d.kenh || 'website';
+      var c = KENH[k] || { ten: d.kenhTen || k, mau: 'badge-xam', icon: 'fa-solid fa-circle' };
+      return '<span class="badge ' + c.mau + '"><i class="' + c.icon + '"></i>' +
+        Apex.esc(d.kenhTen || c.ten) + '</span>';
+    }
+
+    /** Các món của đơn, lấy bản THÔ để có tên phân loại đã bán. */
+    function monCua(o) {
+      var d = donTho(o.dbId);
+      return d.chiTiet || [];
+    }
+
+    /** "Móc khoá mèo — Đỏ" — tên phân loại chụp lúc đặt, đổi tên sau không ảnh hưởng đơn cũ. */
+    function tenMon(c) {
+      return Apex.esc(c.tenSanPham) +
+        (c.tenBienThe ? ' <span style="color:var(--chu-mo)">— ' + Apex.esc(c.tenBienThe) + '</span>' : '');
+    }
 
     function veKpi() {
       var tk = Apex.tk('tk-don-hang') || {};
@@ -97,17 +179,19 @@
     function veBang(loc) {
       var don = Apex.orders.filter(function (o) { return !loc || o.status === loc; });
       Apex.fill('#bang-don', don.map(function (o) {
-        var mon = (o.chiTiet || []).map(function (c) { return Apex.esc(c.ten) + ' ×' + c.soLuong; }).join('<br>') || (soMonCua(o) + ' món');
+        var mon = monCua(o).map(function (c) { return tenMon(c) + ' ×' + c.soLuong; }).join('<br>') ||
+          (soMonCua(o) + ' món');
         return '<tr class="hang-bam" onclick="moChiTiet(' + o.dbId + ')" title="Bấm để xem chi tiết">' +
           '<td><strong>' + Apex.esc(o.id) + '</strong></td>' +
           '<td><div class="o-ten"><div><div class="chinh">' + Apex.esc(o.customer) + '</div><div class="phu">' + Apex.esc(o.phone) + '</div></div></div></td>' +
           '<td style="font-size:12.5px;color:var(--chu-mo);">' + mon + '</td>' +
+          '<td class="giua">' + badgeKenh(o) + '</td>' +
           '<td>' + Apex.esc(o.payment) + '</td>' +
           '<td class="giua">' + Apex.badgeTrangThai(o.status) + '</td>' +
           '<td>' + Apex.esc(o.date) + '</td>' +
           '<td class="phai"><strong>' + Apex.money(o.total) + '</strong></td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Không có đơn hàng nào' + (loc ? ' ở trạng thái "' + loc + '"' : '') + '.</td></tr>');
+      }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--chu-mo);padding:28px;">Không có đơn hàng nào' + (loc ? ' ở trạng thái "' + loc + '"' : '') + '.</td></tr>');
     }
 
     /* ---------------- Hộp thoại chi tiết đơn ---------------- */
@@ -121,11 +205,12 @@
           '<span class="gia-tri">' + giaTri + '</span></div>';
       };
 
-      var mon = (o.chiTiet || []).length
-        ? '<div class="ds-mon">' + o.chiTiet.map(function (c) {
+      var ds = monCua(o);
+      var mon = ds.length
+        ? '<div class="ds-mon">' + ds.map(function (c) {
             var goc = c.donGiaGoc || c.donGia || 0;
             var duocGiam = goc > (c.donGia || 0);
-            return '<div class="dong-mon"><span>' + Apex.esc(c.ten) +
+            return '<div class="dong-mon"><span>' + tenMon(c) +
               ' <span style="color:var(--chu-mo)">×' + c.soLuong + '</span></span>' +
               '<span>' + (duocGiam
                 ? '<s style="color:var(--chu-mo);font-weight:400;">' + Apex.money(goc * c.soLuong) + '</s> '
@@ -149,6 +234,8 @@
         '<div class="ht-than">' +
         '<div>' +
         dong('Trạng thái', Apex.badgeTrangThai(o.status)) +
+        // Kênh bán: đơn web hay chủ shop gõ tay từ Facebook / Zalo / tại shop
+        dong('Kênh bán', badgeKenh(o)) +
         dong('Khách hàng', Apex.esc(o.customer)) +
         dong('Số điện thoại', Apex.esc(o.phone || '—')) +
         // Địa chỉ giao và ghi chú của khách — bản cũ không hiện nên phải hỏi lại khách
@@ -199,16 +286,360 @@
       });
     }
 
+    /* ================= ĐƠN GÕ TAY =================
+       Khách mua qua Facebook / Zalo / tại shop: chủ shop gõ đơn ở đây.
+       Đơn này TRỪ KHO y như đơn khách tự đặt trên web (POST /api/quan-tri/don-hang). */
+
+    /* Sản phẩm THÔ của khoá 'san-pham': Apex.products bỏ mất danh sách biến thể nên
+       ô chọn phân loại phải đọc thẳng bộ dữ liệu gốc. */
+    var SP_THO = [];
+    var SP_THEO_ID = {};
+
+    /* Danh bạ + khách lẻ (khoá 'khach-hang', cần token admin) để gợi ý khi gõ đơn */
+    var KHACH = [];
+    var KHACH_THEO_NHAN = {};
+
+    function nhanKhach(c) {
+      return (c.ten || 'Khách lẻ') + (c.soDienThoai ? ' — ' + c.soDienThoai : '');
+    }
+
+    function docDanhBa() {
+      var kh = Apex.tk('khach-hang');
+      KHACH = ((kh && kh.khach) || []).filter(function (c) { return c.nhom !== 'quan_tri'; });
+      KHACH_THEO_NHAN = {};
+      KHACH.forEach(function (c) {
+        var n = nhanKhach(c);
+        if (!KHACH_THEO_NHAN[n]) KHACH_THEO_NHAN[n] = c;   // trùng nhãn thì giữ người đầu danh sách
+      });
+    }
+
+    function docSanPham() {
+      SP_THO = (Apex.tk('san-pham') || []).filter(function (s) { return !s.daXoa; });
+      SP_THEO_ID = {};
+      SP_THO.forEach(function (s) { SP_THEO_ID[s.id] = s; });
+    }
+
+    /** Biến thể của một sản phẩm; sản phẩm cũ chưa có biến thể nào thì trả mảng rỗng. */
+    function bienTheCua(sanPhamId) {
+      var s = SP_THEO_ID[sanPhamId];
+      return (s && s.bienThe) || [];
+    }
+
+    function timBienThe(sanPhamId, bienTheId) {
+      var ds = bienTheCua(sanPhamId);
+      for (var i = 0; i < ds.length; i++) if (String(ds[i].id) === String(bienTheId)) return ds[i];
+      return null;
+    }
+
+    /** Ô chọn phân loại: mặc định đứng trước, kèm màu và tồn kho để chủ shop chọn nhanh. */
+    function htmlChonBienThe(sanPhamId, dangChon) {
+      var ds = bienTheCua(sanPhamId);
+      if (!ds.length) {
+        return '<select class="mon-bt" disabled aria-label="Phân loại">' +
+          '<option value="">Không có phân loại</option></select>';
+      }
+      return '<select class="mon-bt" aria-label="Phân loại" onchange="doiBienThe(this)">' +
+        ds.map(function (b) {
+          var ten = b.ten || 'Mặc định';
+          if (b.mau) ten += ' · ' + b.mau;
+          ten += ' · tồn ' + Apex.number(b.tonKho || 0);
+          return '<option value="' + b.id + '"' + (String(b.id) === String(dangChon) ? ' selected' : '') + '>' +
+            Apex.esc(ten) + '</option>';
+        }).join('') + '</select>';
+    }
+
+    /** Một dòng món: chọn sản phẩm -> phân loại -> số lượng -> đơn giá (sửa được). */
+    function htmlDongMon() {
+      var chonSp = '<option value="">— Chọn sản phẩm —</option>' +
+        SP_THO.map(function (s) {
+          return '<option value="' + s.id + '">' + Apex.esc(s.ten) + '</option>';
+        }).join('') +
+        '<option value="tu-go">— Món tự gõ —</option>';
+
+      return '<div class="dong-mon-tay">' +
+        '<select class="mon-sp" aria-label="Sản phẩm" onchange="doiSanPham(this)">' + chonSp + '</select>' +
+        '<select class="mon-bt" aria-label="Phân loại" disabled>' +
+        '<option value="">Chọn sản phẩm trước</option></select>' +
+        '<input type="number" class="mon-sl" aria-label="Số lượng" min="1" step="1" value="1" oninput="tinhTongMon()" />' +
+        '<input type="number" class="mon-gia" aria-label="Đơn giá" min="0" step="1000" ' +
+        'data-tu-dong="1" placeholder="Giá web" oninput="this.setAttribute(\'data-tu-dong\', \'0\'); tinhTongMon();" />' +
+        '<button type="button" class="nut-bo-dong" title="Bỏ món này" onclick="boDongMon(this)">' +
+        '<i class="fa-solid fa-xmark"></i></button>' +
+        '</div>';
+    }
+
+    function themDongMon() {
+      var ds = document.getElementById('ds-mon-tay');
+      if (!ds) return;
+      ds.insertAdjacentHTML('beforeend', htmlDongMon());
+      tinhTongMon();
+    }
+
+    function boDongMon(nut) {
+      var dong = nut.closest('.dong-mon-tay');
+      if (dong) dong.parentNode.removeChild(dong);
+      tinhTongMon();
+    }
+
+    /** Đổi sản phẩm: dựng lại ô phân loại và điền giá niêm yết của phân loại mặc định. */
+    function doiSanPham(oChon) {
+      var dong = oChon.closest('.dong-mon-tay');
+      var oBt = dong.querySelector('.mon-bt');
+      var oGia = dong.querySelector('.mon-gia');
+
+      if (oChon.value === 'tu-go') {
+        // Món ngoài bảng sản phẩm (in theo yêu cầu, phụ kiện lẻ): gõ tên và giá tay
+        oBt.outerHTML = '<input type="text" class="mon-bt mon-ten" aria-label="Tên món" ' +
+          'placeholder="Tên món tự gõ" oninput="tinhTongMon()" />';
+        oGia.setAttribute('data-tu-dong', '0');
+        oGia.value = '';
+        oGia.placeholder = 'Giá bán';
+        tinhTongMon();
+        return;
+      }
+
+      var ds = bienTheCua(oChon.value);
+      oBt.outerHTML = htmlChonBienThe(oChon.value, ds.length ? ds[0].id : '');
+      oGia.placeholder = 'Giá web';
+      dienGiaTuDong(dong);
+    }
+
+    /** Đổi phân loại: giá tự điền theo phân loại mới, trừ khi chủ shop đã gõ giá riêng. */
+    function doiBienThe(oChon) {
+      dienGiaTuDong(oChon.closest('.dong-mon-tay'));
+    }
+
+    /* Giá niêm yết của phân loại đang chọn. Ô giá còn data-tu-dong="1" nghĩa là chủ shop
+       chưa sửa -> lúc lưu KHÔNG gửi donGia, để backend tính đúng giá web (đã trừ khuyến
+       mãi sản phẩm). Gửi giá niêm yết lên là ghi đè luôn cả khuyến mãi đang chạy. */
+    function dienGiaTuDong(dong) {
+      var oSp = dong.querySelector('.mon-sp');
+      var oBt = dong.querySelector('.mon-bt');
+      var oGia = dong.querySelector('.mon-gia');
+      var bt = oBt && oBt.tagName === 'SELECT' ? timBienThe(oSp.value, oBt.value) : null;
+      var sp = SP_THEO_ID[oSp.value];
+      if (oGia.getAttribute('data-tu-dong') === '1') {
+        oGia.value = bt ? (bt.giaHienThi || 0) : (sp ? (sp.gia || 0) : '');
+      }
+      tinhTongMon();
+    }
+
+    /** Tạm tính = Σ số lượng × giá đang hiện. Khuyến mãi do backend tính lại lúc lưu. */
+    function tinhTongMon() {
+      var tong = 0, soMon = 0;
+      document.querySelectorAll('#ds-mon-tay .dong-mon-tay').forEach(function (d) {
+        var sl = parseInt(d.querySelector('.mon-sl').value, 10) || 0;
+        var gia = parseInt(d.querySelector('.mon-gia').value, 10) || 0;
+        if (sl > 0) { tong += sl * gia; soMon++; }
+      });
+      var o = document.getElementById('tong-mon');
+      if (o) {
+        o.innerHTML = soMon
+          ? 'Tạm tính ' + soMon + ' món: <strong>' + Apex.money(tong) + '</strong> ' +
+            '<span style="font-size:12.5px;">(chưa trừ khuyến mãi — backend tính lại lúc lưu)</span>'
+          : 'Chưa chọn món nào.';
+      }
+    }
+
+    /** Gõ tên khách trùng một người trong danh bạ thì điền sẵn số điện thoại, địa chỉ và nối đơn. */
+    function chonKhachCu() {
+      var o = document.getElementById('f-tim-khach');
+      var c = KHACH_THEO_NHAN[o.value.trim()];
+      var bao = document.getElementById('bao-khach');
+      if (!c) {
+        document.getElementById('f-nguoi-dung-id').value = '';
+        bao.textContent = 'Khách mới thì bỏ qua ô này, gõ thẳng tên và số điện thoại bên dưới.';
+        return;
+      }
+      document.getElementById('f-ten-khach').value = c.ten || '';
+      document.getElementById('f-sdt').value = c.soDienThoai || '';
+      document.getElementById('f-dia-chi').value = c.diaChi || '';
+      // Khách lẻ (chưa có dòng trong danh bạ) thì không nối được đơn vào tài khoản nào
+      document.getElementById('f-nguoi-dung-id').value = c.laTaiKhoan && c.nguoiDungId ? c.nguoiDungId : '';
+      bao.textContent = c.laTaiKhoan
+        ? 'Đơn sẽ được nối vào khách KH-' + c.nguoiDungId + ' trong danh bạ.'
+        : 'Khách lẻ — đơn ghi theo tên và số điện thoại, không nối vào danh bạ.';
+    }
+
+    function moFormDon() {
+      var chonKenh = Object.keys(KENH).map(function (k) {
+        return '<option value="' + k + '"' + (k === 'facebook' ? ' selected' : '') + '>' + KENH[k].ten + '</option>';
+      }).join('');
+      var chonTt = Object.keys(Apex.ttMap).map(function (k) {
+        return '<option value="' + k + '"' + (k === 'cho_xac_nhan' ? ' selected' : '') + '>' +
+          Apex.ttMap[k] + '</option>';
+      }).join('');
+      var chonPt = Object.keys(PHUONG_THUC).map(function (k) {
+        return '<option value="' + k + '">' + PHUONG_THUC[k] + '</option>';
+      }).join('');
+      // Gợi ý mã đang chạy; chủ shop vẫn gõ tay mã khác được, backend kiểm tra lại
+      var maDangChay = (Apex.khuyenMai || []).filter(function (k) {
+        return k.ma && k.trangThai === 'dang_chay' && k.kieuApDung !== 'san_pham';
+      });
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>Tạo đơn hàng</h3>' +
+        '<div class="phu">Đơn gõ tay (Facebook, Zalo, tại shop) — vẫn trừ kho như đơn trên web</div></div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
+        '<i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-tim-khach">Khách quen trong danh bạ</label>' +
+        '<input type="text" id="f-tim-khach" list="ds-khach-cu" autocomplete="off" ' +
+        'placeholder="Gõ tên hoặc số điện thoại để chọn nhanh" oninput="chonKhachCu()" />' +
+        '<datalist id="ds-khach-cu">' +
+        Object.keys(KHACH_THEO_NHAN).map(function (n) {
+          return '<option value="' + Apex.esc(n) + '"></option>';
+        }).join('') + '</datalist>' +
+        '<div class="goi-y" id="bao-khach">' +
+        (KHACH.length
+          ? 'Khách mới thì bỏ qua ô này, gõ thẳng tên và số điện thoại bên dưới.'
+          : 'Chưa có khách nào trong danh bạ (hoặc chưa đăng nhập quản trị).') +
+        '</div></div>' +
+        '<input type="hidden" id="f-nguoi-dung-id" value="" />' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-ten-khach">Họ và tên *</label>' +
+        '<input type="text" id="f-ten-khach" /></div>' +
+        '<div class="o-nhap"><label for="f-sdt">Số điện thoại *</label>' +
+        '<input type="text" id="f-sdt" /></div>' +
+        '</div>' +
+        '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ giao</label>' +
+        '<input type="text" id="f-dia-chi" placeholder="Khách lấy tại shop thì để trống" /></div>' +
+        '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
+        '<input type="text" id="f-ghi-chu" placeholder="Giao giờ hành chính, gói quà..." /></div>' +
+
+        '<div class="o-nhap"><label>Món trong đơn *</label>' +
+        '<div class="dau-mon-tay"><span>Sản phẩm</span><span>Phân loại</span><span>SL</span>' +
+        '<span>Đơn giá</span><span></span></div>' +
+        '<div id="ds-mon-tay"></div>' +
+        '<button type="button" class="nut nut-vien nut-nho" onclick="themDongMon()">' +
+        '<i class="fa-solid fa-plus"></i> Thêm món</button>' +
+        '<div class="tong-mon" id="tong-mon"></div>' +
+        '<div class="goi-y">Để nguyên ô đơn giá = bán đúng giá web (đã trừ khuyến mãi sản phẩm); ' +
+        'gõ số khác là giá riêng chủ shop bớt cho khách.</div></div>' +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-kenh">Kênh bán</label>' +
+        '<select id="f-kenh">' + chonKenh + '</select></div>' +
+        '<div class="o-nhap"><label for="f-tt-don">Trạng thái đơn</label>' +
+        '<select id="f-tt-don">' + chonTt + '</select></div>' +
+        '<div class="o-nhap"><label for="f-phuong-thuc">Cách thanh toán</label>' +
+        '<select id="f-phuong-thuc">' + chonPt + '</select></div>' +
+        '<div class="o-nhap"><label for="f-ma-km">Mã khuyến mãi</label>' +
+        '<input type="text" id="f-ma-km" list="ds-ma-km" placeholder="Bỏ trống nếu không dùng mã" />' +
+        '<datalist id="ds-ma-km">' + maDangChay.map(function (k) {
+          return '<option value="' + Apex.esc(k.ma) + '">' + Apex.esc(k.ten || '') + '</option>';
+        }).join('') + '</datalist></div>' +
+        '</div>' +
+
+        '<div class="o-nhap"><label class="o-tick" for="f-da-tt">' +
+        '<input type="checkbox" id="f-da-tt" /> Khách đã trả tiền rồi</label></div>' +
+
+        '<div class="goi-y">Đơn tạo thẳng ở trạng thái "Đã huỷ" thì không trừ kho.</div>' +
+        '<div class="bao-loi" id="loi-tao-don"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan"><div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuDonMoi(this)">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Tạo đơn</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html, 'rong');
+      themDongMon();   // mở form là có sẵn một dòng món cho nhanh
+    }
+
+    /** Đọc các dòng món thành mảng matHang gửi cho backend. */
+    function docMatHang() {
+      var mon = [];
+      document.querySelectorAll('#ds-mon-tay .dong-mon-tay').forEach(function (d) {
+        var oSp = d.querySelector('.mon-sp');
+        var oBt = d.querySelector('.mon-bt');
+        var sl = parseInt(d.querySelector('.mon-sl').value, 10) || 0;
+        var oGia = d.querySelector('.mon-gia');
+        var gia = parseInt(oGia.value, 10);
+
+        if (oSp.value === 'tu-go') {
+          var ten = (oBt.value || '').trim();
+          if (!ten) return;                       // dòng tự gõ chưa có tên: bỏ qua
+          // Món ngoài bảng sản phẩm thì giá phải do chủ shop gõ, không có giá web nào để lấy
+          mon.push({ ten: ten, soLuong: sl, donGia: isNaN(gia) ? 0 : Math.max(0, gia) });
+          return;
+        }
+        if (!oSp.value) return;                   // dòng chưa chọn sản phẩm: bỏ qua
+
+        var m = { sanPhamId: parseInt(oSp.value, 10), soLuong: sl };
+        if (oBt.tagName === 'SELECT' && oBt.value) m.bienTheId = parseInt(oBt.value, 10);
+        var sp = SP_THEO_ID[oSp.value];
+        if (sp) m.ten = sp.ten;                   // để câu báo lỗi của backend gọi đúng tên món
+        // Chủ shop không sửa giá thì KHÔNG gửi donGia: backend giữ đúng giá web đang bán
+        if (oGia.getAttribute('data-tu-dong') !== '1' && !isNaN(gia)) m.donGia = Math.max(0, gia);
+        mon.push(m);
+      });
+      return mon;
+    }
+
+    function luuDonMoi(nut) {
+      var loi = document.getElementById('loi-tao-don');
+      var tenKhach = document.getElementById('f-ten-khach').value.trim();
+      var sdt = document.getElementById('f-sdt').value.trim();
+      // Cùng câu chữ với backend để chủ shop không thấy hai kiểu báo cho một lỗi
+      if (!tenKhach) { loi.textContent = 'Vui lòng nhập họ và tên'; return; }
+      if (!sdt) { loi.textContent = 'Vui lòng nhập số điện thoại'; return; }
+
+      var matHang = docMatHang();
+      if (!matHang.length) { loi.textContent = 'Đơn phải có ít nhất một món'; return; }
+      for (var i = 0; i < matHang.length; i++) {
+        if (!matHang[i].soLuong || matHang[i].soLuong <= 0) {
+          loi.textContent = 'Số lượng phải lớn hơn 0';
+          return;
+        }
+      }
+
+      var nguoiDungId = parseInt(document.getElementById('f-nguoi-dung-id').value, 10);
+      var duLieu = {
+        tenKhach: tenKhach,
+        soDienThoai: sdt,
+        diaChi: document.getElementById('f-dia-chi').value.trim(),
+        ghiChu: document.getElementById('f-ghi-chu').value.trim(),
+        kenh: document.getElementById('f-kenh').value,
+        trangThai: document.getElementById('f-tt-don').value,
+        maKhuyenMai: document.getElementById('f-ma-km').value.trim(),
+        thanhToan: {
+          phuongThuc: document.getElementById('f-phuong-thuc').value,
+          daThanhToan: document.getElementById('f-da-tt').checked
+        },
+        matHang: matHang
+      };
+      if (nguoiDungId) duLieu.nguoiDungId = nguoiDungId;
+
+      // Ghi xong: Apex đóng hộp thoại, nạp lại các khoá của trang (kho đã trừ) rồi báo toast.
+      // Backend từ chối (mã sai, món không còn bán...) thì câu đó hiện ngay trong ô lỗi.
+      Apex.dangLuu(nut, function () {
+        return Apex.ghi('POST', '/quan-tri/don-hang', duLieu).then(function (kq) {
+          return Apex.capNhatXong('Đã tạo đơn hàng').then(function () { return kq; });
+        });
+      }, loi, 'Đang tạo đơn…');
+    }
+
     function locDon() { veBang(document.getElementById('loc-trang-thai').value); }
 
     function veLaiTrang() {
       THEO_DON = {};
       ((Apex.tk('tk-don-hang') || {}).theoDon || []).forEach(function (d) { THEO_DON[d.id] = d; });
+      DON_THO = {};
+      (Apex.tk('don-hang') || []).forEach(function (d) { DON_THO[d.id] = d; });
+      docSanPham();
+      docDanhBa();
       veKpi();
       veBang(document.getElementById('loc-trang-thai').value);
     }
-    // Một request cho cả trang; Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi
-    Apex.trang({ bo: ['don-hang', 'tk-don-hang'], ve: veLaiTrang });
+    /* Một request cho cả trang; ngoài đơn hàng còn xin sản phẩm (để chọn món và phân loại),
+       danh bạ khách và mã khuyến mãi cho form tạo đơn — tất cả đều từ bộ nhớ đệm của server.
+       Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+    Apex.trang({ bo: ['don-hang', 'tk-don-hang', 'san-pham', 'khach-hang', 'khuyen-mai'], ve: veLaiTrang });
   </script>
 </body>
 </html>

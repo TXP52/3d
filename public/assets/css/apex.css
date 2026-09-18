@@ -161,6 +161,25 @@ a { color: inherit; text-decoration: none; }
 .apex-topbar .tim input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-nhat); }
 .apex-topbar .tim .bieu-tuong { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--chu-mo); font-size: 13px; }
 
+/* Nút "Làm mới" — bắt server đọc lại dữ liệu từ database, chỉ hiện khi đang đăng nhập */
+.apex-topbar .nut-lam-moi {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--vien);
+  background: var(--the);
+  border-radius: 8px;
+  color: var(--chu-mo);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.apex-topbar .nut-lam-moi:hover { border-color: var(--accent); color: var(--accent-dam); }
+
 .apex-topbar .nguoi-dung {
   display: flex;
   align-items: center;
@@ -703,6 +722,9 @@ html.dang-tai::before {
     width: 100%;
     min-width: 0;
   }
+  /* Nút Làm mới chỉ còn biểu tượng cho đỡ chật */
+  .apex-topbar .nut-lam-moi { flex-shrink: 0; padding: 0 10px; }
+  .apex-topbar .nut-lam-moi span { display: none; }
   .apex-topbar .nguoi-dung { flex-shrink: 0; }
   .apex-topbar .nguoi-dung .ten,
   .apex-topbar .nguoi-dung .thoat { display: none; }

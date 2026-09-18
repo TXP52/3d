@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=29" rel="stylesheet">
-  <script src="assets/js/apex.js?v=27"></script>
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
   <style>
     /* Một sản phẩm in được bằng nhiều cuộn nhựa -> danh sách dòng thêm/bớt được */
     .dau-nhua, .dong-nhua {
@@ -355,8 +355,19 @@
       });
 
       var dsCu = p ? (p.vatTus || []) : [];
+      NHUA_BAN_DAU = chuKyNhua(dsCu);
       if (dsCu.length) dsCu.forEach(function (v) { themDongNhua(v); });
       else themDongNhua();
+    }
+
+    /* Danh sách nhựa lúc mở form, để lúc lưu biết có đụng vào nhựa hay không.
+       Không đụng thì KHỎI gửi vatTus: backend khỏi đọc lại bảng san_pham_vat_tu,
+       bớt một lượt đi-về Supabase (~250 ms) cho lượt sửa tên/giá/ảnh thông thường. */
+    var NHUA_BAN_DAU = '';
+    function chuKyNhua(ds) {
+      return (ds || []).map(function (v) {
+        return [v.vatTuId, v.soLuong, v.gramNhua, v.gramThua].join(':');
+      }).join('|');
     }
 
     /* ---------------- Danh sách cuộn nhựa trong form ---------------- */
@@ -537,7 +548,6 @@
       var duLieu = {
         soLuong: tongSl,
         nhieuMau: nhieuMau,
-        vatTus: dsNhua,
         ten: ten,
         gia: gia,
         tonKho: ton,
@@ -550,6 +560,8 @@
         // Tất cả ảnh theo thứ tự; backend lấy ảnh đầu làm ảnh bìa
         danhSachAnh: layAnh ? layAnh() : []
       };
+      // Có sửa dòng nhựa (hoặc thêm sản phẩm mới) thì mới gửi vatTus lên
+      if (!dbId || chuKyNhua(dsNhua) !== NHUA_BAN_DAU) duLieu.vatTus = dsNhua;
 
       // Lưu xong Apex tự đóng hộp, nạp lại các khoá của trang (có vat-tu vì số gram vừa bị
       // trừ khỏi cuộn nhựa) rồi hiện toast. Backend từ chối (vd "Cuộn X chỉ còn 120g") thì

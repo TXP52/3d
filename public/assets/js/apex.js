@@ -312,6 +312,7 @@ window.Apex = (function () {
   var DA_NAP = false;     // đã nạp được ít nhất một lần
   var DA_THU = false;     // đã có kết quả (được hoặc lỗi) — lúc đó mới biết có báo đỏ hay không
   var LUOT_NAP = 0;       // lượt nạp mới nhất; kết quả của lượt cũ về muộn thì bỏ qua
+  var LOI_NAP = null;     // lỗi của lần nạp gần nhất — để nút đang chờ nạp báo đúng lý do
 
   /** Đường dẫn khởi tạo: luôn kèm 'dem' cho số trên menu, cộng các tham số trang cần (vd tiLeLai). */
   var duongDanKhoiTao = function (lamMoi) {
@@ -357,11 +358,19 @@ window.Apex = (function () {
     batTai();
     return fetch(JAVA_API + duongDanKhoiTao(lamMoi), { headers: themToken({}), cache: 'no-store' })
       .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
+        if (!r.ok) {
+          // 401/403: token hết hạn hoặc không phải admin (vd nút Làm mới cần quyền admin)
+          var loiHttp = new Error(r.status === 401 || r.status === 403
+            ? 'Phiên đăng nhập đã hết hạn hoặc không đủ quyền. Hãy đăng nhập lại.'
+            : 'Lỗi backend: HTTP ' + r.status);
+          loiHttp.status = r.status;
+          throw loiHttp;
+        }
         return r.json();
       })
       .then(function (kq) {
         tatTai();
+        LOI_NAP = null;
         if (luot !== LUOT_NAP) return true;   // đã có lượt nạp mới hơn, để lượt đó vẽ
         var lanDau = !DA_NAP;
         try { apDungKetQua(kq); } catch (e) { if (window.console) console.error('Apex: dữ liệu khởi tạo lạ', e); }
@@ -371,8 +380,11 @@ window.Apex = (function () {
         capNhatBanner();
         veLaiNeuCo(lanDau);
         return true;
-      }, function () {
+      }, function (e) {
         tatTai();
+        // Lỗi mạng (fetch tự reject) không mang câu tiếng Việt nào -> nói thẳng là chưa gọi được backend
+        LOI_NAP = (e && e.status) ? e
+          : new Error('Không kết nối được backend Java (cổng 8090). Kiểm tra backend đã chạy chưa rồi thử lại.');
         // Backend tắt thì bảng để TRỐNG và có thông báo đỏ ở đầu trang (capNhatBanner),
         // không gọi hàm vẽ với số liệu rỗng — nhìn "0 đơn, 0 ₫" dễ tưởng là thật.
         if (luot === LUOT_NAP) {
@@ -423,8 +435,30 @@ window.Apex = (function () {
   /** Nạp lại các khoá của trang (server trả từ cache, rất nhanh) rồi vẽ lại. Trả Promise<boolean>. */
   var taiLai = function () { return napTrang(false); };
 
-  /** Bắt server đọc lại mọi thứ từ database (sau khi sửa tay trên Supabase Dashboard) rồi vẽ lại. */
-  var lamMoi = function () { return napTrang(true); };
+  /* Nút bấm chờ một lần NẠP (không phải ghi) thì phải biết khi nạp trượt: napTrang chỉ trả
+     false nên Apex.dangLuu tưởng là xong, tắt nút mà không báo gì — chủ shop thấy "thành công"
+     trong lúc số trên trang vẫn là số cũ. Hai hàm dưới NÉM đúng câu lỗi để dangLuu hiện ra;
+     Apex.trang()/Apex.taiLai() giữ nếp cũ (trả false, banner đỏ đầu trang lo phần báo). */
+  var nemNeuKhongNap = function (hua) {
+    return hua.then(function (duoc) {
+      if (duoc) return true;
+      throw (LOI_NAP || new Error('Chưa nạp lại được dữ liệu, thử lại sau.'));
+    });
+  };
+
+  /** Như taiLai nhưng nạp trượt thì reject — cho nút bấm chờ nạp xong (dùng kèm Apex.dangLuu). */
+  var taiLaiHoacLoi = function () { return nemNeuKhongNap(napTrang(false)); };
+
+  /** Nút "Làm mới": bắt server đọc lại mọi thứ từ database (sau khi sửa tay trên Supabase
+      Dashboard) rồi vẽ lại. Nạp trượt / không đủ quyền thì reject để nút báo lỗi thật. */
+  var lamMoi = function () { return nemNeuKhongNap(napTrang(true)); };
+
+  /** Nút "Làm mới" ở topbar: khoá nút + "Đang làm mới…", xong thì toast, trượt thì toast đỏ. */
+  var bamLamMoi = function (nut) {
+    return dangLuu(nut, lamMoi(), null, 'Đang làm mới…').then(function (duoc) {
+      if (duoc) baoNhanh('Đã làm mới dữ liệu');
+    });
+  };
 
   /** Giá trị thô của một khoá trong lần khởi tạo gần nhất (vd 'tong-quan', 'tk-kho'); chưa có thì null. */
   var tk = function (khoa) {
@@ -1111,6 +1145,8 @@ window.Apex = (function () {
     { label: 'Quản lý sản phẩm', items: [
       { key: 'san-pham', text: 'Sản phẩm', href: 'san-pham.html', icon: 'fa-cube' },
       { key: 'danh-muc', text: 'Danh mục', href: 'danh-muc.html', icon: 'fa-folder-tree' },
+      // Bộ sưu tập: gom sản phẩm thành chủ đề trên web khách (một sản phẩm nằm được nhiều bộ)
+      { key: 'bo-suu-tap', text: 'Bộ sưu tập', href: 'bo-suu-tap.html', icon: 'fa-layer-group' },
       { key: 'kho', text: 'Kho & vật tư', href: 'kho.html', icon: 'fa-warehouse' },
       { key: 'nha-cung-cap', text: 'Nhà cung cấp', href: 'nha-cung-cap.html', icon: 'fa-truck-field' },
       { key: 'mau-sac', text: 'Màu sắc', href: 'mau-sac.html', icon: 'fa-palette' }
@@ -1163,6 +1199,14 @@ window.Apex = (function () {
       '<div class="tieu-de">' + esc(tieuDe || '') + '</div>' +
       '<div class="tim"><span class="bieu-tuong"><i class="fa-solid fa-magnifying-glass"></i></span>' +
       '<input type="search" aria-label="Tìm trong bảng" oninput="Apex.timTrongBang(this.value)" /></div>' +
+      // Sửa tay trên Supabase Dashboard thì bộ nhớ đệm của server còn giữ số cũ tới 10 phút:
+      // nút này bắt server đọc lại cả 9 bộ dữ liệu rồi vẽ lại trang. Cần token admin nên chỉ
+      // hiện khi đang đăng nhập; hết quyền / mất backend thì Apex.lamMoi() reject và dangLuu báo đỏ.
+      (phien
+        ? '<button class="nut-lam-moi" type="button" onclick="Apex.bamLamMoi(this)" ' +
+          'title="Đọc lại dữ liệu từ database (sau khi sửa tay trên Supabase Dashboard)">' +
+          '<i class="fa-solid fa-rotate"></i><span>Làm mới</span></button>'
+        : '') +
       '<div class="nguoi-dung" onclick="' + (phien ? '' : "window.location.href='dang-nhap.html'") + '">' +
       '<span class="avatar">' + esc(tat) + '</span>' +
       '<span class="ten">' + esc(phien ? phien.hoTen : 'Đăng nhập') + '</span>' +
@@ -1328,7 +1372,9 @@ window.Apex = (function () {
     trang: trang,
     datVeLai: datVeLai,
     taiLai: taiLai,
+    taiLaiHoacLoi: taiLaiHoacLoi,
     lamMoi: lamMoi,
+    bamLamMoi: bamLamMoi,
     tk: tk,
     dem: function () { return DEM; },
     backendOk: function () { return BACKEND_OK; },   // hàm, vì giá trị chỉ biết sau khi nạp xong

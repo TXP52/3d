@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=29" rel="stylesheet">
-  <script src="assets/js/apex.js?v=27"></script>
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
   <style>
     .chu-cai {
       width: 36px; height: 36px; flex: 0 0 36px;
@@ -19,6 +19,15 @@
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 14px;
     }
+    /* Nút sửa / thêm vào danh bạ ở cuối mỗi hàng — cả hàng bấm được, nút chỉ để nhìn là biết */
+    .nut-hang {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--vien); background: var(--the);
+      color: var(--chu-mo); font-size: 13px; cursor: pointer;
+    }
+    tr:hover .nut-hang { border-color: var(--accent); color: var(--accent-dam); }
+    /* Câu gợi ý đứng ngoài một ô nhập (apex.css chỉ tô cho .o-nhap .goi-y) */
+    .ht-than > .goi-y { color: var(--chu-mo); font-size: 12px; margin: -6px 0 10px 0; }
   </style>
 </head>
 <body>
@@ -37,6 +46,9 @@
             <div>
               <h3>Danh sách khách hàng</h3>
             </div>
+            <button class="nut nut-chinh" type="button" onclick="moForm(null)">
+              <i class="fa-solid fa-plus"></i> Thêm khách hàng
+            </button>
           </div>
           <div class="the-than khong-dem bang-cuon">
             <table class="bang">
@@ -48,6 +60,7 @@
                   <th>Nhóm</th>
                   <th class="giua">Số đơn</th>
                   <th class="phai">Tổng chi tiêu</th>
+                  <th class="giua"></th>
                 </tr>
               </thead>
               <tbody id="bang-khach"></tbody>
@@ -61,6 +74,9 @@
 
   <script>
     Apex.shell('khach-hang', 'Khách hàng');
+
+    /* Danh sách khách của lần nạp gần nhất — moForm(i) tra theo chỉ số trong mảng này */
+    var KHACH = [];
 
     /* Thẻ KPI; k = null (chưa có quyền xem) thì hiện gạch ngang chứ không hiện "0 khách" dễ tưởng thật */
     function veKpi(k) {
@@ -89,6 +105,11 @@
       return Apex.esc(t ? t.charAt(0).toUpperCase() : '?');
     }
 
+    /* Tài khoản quản trị không sửa / xoá ở trang này (backend cũng từ chối), khách lẻ thì
+       chưa có dòng trong bảng nguoi_dung nên chỉ thêm mới được. */
+    function suaDuoc(c) { return c.laTaiKhoan && c.nhom !== 'quan_tri'; }
+    function themDuoc(c) { return !c.laTaiKhoan; }
+
     /* Danh sách khách do backend gom sẵn (khoá 'khach-hang'): tài khoản ghép với đơn theo
        nguoi_dung_id, khách vãng lai gom theo số điện thoại; tổng chi không cộng đơn đã huỷ.
        Trước đây JS ghép theo HỌ TÊN nên hai người trùng tên bị gộp làm một. */
@@ -98,26 +119,124 @@
       // null = chưa đăng nhập admin (hoặc phiên hết hạn): danh sách có email, số điện thoại nên
       // backend không trả. Nói rõ thay vì hiện bảng thiếu như bản cũ.
       if (!kh) {
+        KHACH = [];
         veKpi(null);
-        Apex.fill('#bang-khach', '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        Apex.fill('#bang-khach', '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
           'Cần <a href="dang-nhap.html">đăng nhập tài khoản quản trị</a> để xem danh sách khách hàng.</td></tr>');
         return;
       }
 
+      KHACH = kh.khach || [];
       veKpi(kh.kpi || {});
-      Apex.fill('#bang-khach', (kh.khach || []).map(function (c) {
-        return '<tr>' +
+      Apex.fill('#bang-khach', KHACH.map(function (c, i) {
+        var bam = suaDuoc(c) || themDuoc(c);
+        var phu = (c.nguoiDungId ? 'KH-' + Apex.esc(c.nguoiDungId) : '') +
+          (c.ghiChu ? (c.nguoiDungId ? ' · ' : '') + Apex.esc(c.ghiChu) : '');
+        return '<tr' + (bam ? ' class="hang-bam" onclick="moForm(' + i + ')" title="Bấm để ' +
+            (suaDuoc(c) ? 'sửa khách' : 'thêm khách vào danh bạ') + '"' : '') + '>' +
           '<td><div class="o-ten"><span class="chu-cai">' + chuCai(c.ten) + '</span>' +
             '<span><span class="chinh">' + Apex.esc(c.ten || 'Không rõ') + '</span>' +
-            '<span class="phu">' + (c.nguoiDungId ? 'KH-' + Apex.esc(c.nguoiDungId) : '') + '</span></span></div></td>' +
+            '<span class="phu">' + phu + '</span></span></div></td>' +
           '<td>' + Apex.esc(c.email || '—') + '</td>' +
           '<td>' + Apex.esc(c.soDienThoai || '—') + '</td>' +
           '<td>' + badgeNhom(c) + '</td>' +
           '<td class="giua">' + Apex.number(c.soDon || 0) + '</td>' +
           '<td class="phai"><strong>' + Apex.money(c.tongChi || 0) + '</strong></td>' +
+          '<td class="giua">' + (bam
+            ? '<button class="nut-hang" type="button" tabindex="-1" aria-label="' +
+              (suaDuoc(c) ? 'Sửa khách' : 'Thêm vào danh bạ') + '">' +
+              '<i class="fa-solid ' + (suaDuoc(c) ? 'fa-pen' : 'fa-user-plus') + '"></i></button>'
+            : '') + '</td>' +
           '</tr>';
-      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
+      }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có khách hàng nào.</td></tr>');
     }
+
+    /* ---------------- Hộp thoại THÊM / SỬA ----------------
+       Khách chủ shop nhập tay nằm luôn trong bảng nguoi_dung (không có mật khẩu nên chưa
+       đăng nhập được), nhờ vậy đơn gõ tay nối được vào khách và lần sau gõ tên là ra. */
+
+    function moForm(i) {
+      var c = (i === null || i === undefined) ? null : KHACH[i];
+      var sua = !!(c && suaDuoc(c));           // có dòng trong nguoi_dung -> sửa / xoá được
+      var tieuDe = !c ? 'Thêm khách hàng' : (sua ? 'Sửa khách hàng' : 'Thêm khách vào danh bạ');
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + tieuDe + '</h3>' +
+        (c ? '<div class="phu">' + Apex.esc(c.ten || '') +
+             (sua ? '' : ' · khách lẻ, ' + Apex.number(c.soDon || 0) + ' đơn đã mua') + '</div>' : '') +
+        '</div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
+        '<i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-ho-ten">Họ và tên *</label>' +
+        '<input type="text" id="f-ho-ten" value="' + (c ? Apex.esc(c.ten || '') : '') + '" /></div>' +
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-sdt">Số điện thoại</label>' +
+        '<input type="text" id="f-sdt" value="' + (c ? Apex.esc(c.soDienThoai || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-email">Email</label>' +
+        '<input type="email" id="f-email" value="' + (c ? Apex.esc(c.email || '') : '') + '" ' +
+        'placeholder="Bỏ trống cũng được" /></div>' +
+        '</div>' +
+        '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ</label>' +
+        '<input type="text" id="f-dia-chi" value="' + (c ? Apex.esc(c.diaChi || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
+        '<input type="text" id="f-ghi-chu" value="' + (c ? Apex.esc(c.ghiChu || '') : '') + '" ' +
+        'placeholder="Khách quen, hay mua móc khoá..." /></div>' +
+        '<div class="goi-y">Khách nhập ở đây chưa có mật khẩu nên chưa tự đăng nhập được — ' +
+        'chỉ để nhớ liên hệ và gắn vào đơn gõ tay.</div>' +
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (sua ? '<button class="nut nut-do" type="button" onclick="xoaKhach(' + c.nguoiDungId + ', this)">' +
+               '<i class="fa-solid fa-trash"></i> Xoá</button>' : '') +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuForm(' +
+        (sua ? c.nguoiDungId : 'null') + ', this)">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html);
+    }
+
+    function luuForm(id, nut) {
+      var loi = document.getElementById('loi-form');
+      var hoTen = document.getElementById('f-ho-ten').value.trim();
+      // Cùng câu chữ với backend để một lỗi không có hai kiểu báo
+      if (!hoTen) { loi.textContent = 'Vui lòng nhập họ và tên'; return; }
+
+      var duLieu = {
+        hoTen: hoTen,
+        soDienThoai: document.getElementById('f-sdt').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        diaChi: document.getElementById('f-dia-chi').value.trim(),
+        ghiChu: document.getElementById('f-ghi-chu').value.trim()
+      };
+
+      // Ghi xong Apex đóng hộp, nạp lại khoá 'khach-hang' (backend đã nạp lại bộ nhớ đệm ND)
+      // rồi hiện toast; backend từ chối (email trùng...) thì câu đó hiện ngay trong ô lỗi.
+      Apex.dangLuu(nut, function () {
+        var hua = id
+          ? Apex.ghi('PUT', '/quan-tri/khach-hang/' + id, duLieu)
+          : Apex.ghi('POST', '/quan-tri/khach-hang', duLieu);
+        return hua.then(function (kq) {
+          return Apex.capNhatXong(id ? 'Đã lưu khách hàng' : 'Đã thêm khách hàng').then(function () { return kq; });
+        });
+      }, loi);
+    }
+
+    function xoaKhach(id, nut) {
+      if (!confirm('Xoá khách này khỏi danh bạ? Đơn hàng cũ của khách vẫn giữ nguyên.')) return;
+      Apex.dangLuu(nut, function () {
+        return Apex.ghi('DELETE', '/quan-tri/khach-hang/' + id).then(function () {
+          return Apex.capNhatXong('Đã xoá khách hàng');
+        });
+      });
+    }
+
     // Một request cho cả trang (Apex tự gửi kèm token admin); Apex gọi veLaiTrang khi dữ liệu về
     Apex.trang({ bo: ['khach-hang'], ve: veLaiTrang });
   </script>

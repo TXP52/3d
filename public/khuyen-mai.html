@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=29" rel="stylesheet">
-  <script src="assets/js/apex.js?v=27"></script>
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
   <style>
     /* Mã giảm giá: kiểu vé, dễ nhìn ra ngay giữa bảng */
     .ma-km {
@@ -221,7 +221,8 @@
         if (k.chiKhachMoi) d.push('<span class="badge badge-tim">Chỉ khách mới</span>');
         if (k.dieuKienDiaChi) d.push('<span class="badge badge-duong">Theo khu vực</span>');
         if (k.apDungCho && k.apDungCho !== 'tat_ca') {
-          d.push('Chỉ ' + (Apex.apDungCho[k.apDungCho] || {}).ten);
+          // Giá trị lạ (sửa tay trên Supabase Dashboard) thì in nguyên chữ, không ra "Chỉ undefined"
+          d.push('Chỉ ' + Apex.esc((Apex.apDungCho[k.apDungCho] || {}).ten || k.apDungCho));
         }
       }
       return d.length ? d.join('<br>') : 'Không kèm điều kiện';
@@ -277,7 +278,7 @@
         '<div class="ht-dau">' +
         '<div><h3>' + Apex.esc(k.ten) + '</h3>' +
         '</div>' +
-        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+        '<button class="nut-dong" type="button" onclick="dongForm()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
         '<div class="ve-km">' +
@@ -317,7 +318,7 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaKhuyenMai(' + k.id + '))">' +
+        '<button class="nut nut-do" type="button" onclick="xoaKm(' + k.id + ', this)">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="batTat(' + k.id + ',' + (k.hoatDong ? 'true' : 'false') + ', this)">' +
@@ -392,7 +393,7 @@
         '<div class="ht-dau">' +
         '<div><h3>' + (moi ? 'Tạo khuyến mãi' : 'Sửa khuyến mãi') + '</h3>' +
         (moi ? '' : '<div class="phu">' + Apex.esc(k.ma || k.ten) + '</div>') + '</div>' +
-        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()"><i class="fa-solid fa-xmark"></i></button></div>' +
+        '<button class="nut-dong" type="button" onclick="dongForm()"><i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
 
@@ -494,10 +495,10 @@
         '</div>' +
 
         '<div class="ht-chan">' +
-        (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaKhuyenMai(' + k.id + '))">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="xoaKm(' + k.id + ', this)">' +
           '<i class="fa-solid fa-trash"></i> Xoá</button>') +
         '<div class="day-phai">' +
-        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-vien" type="button" onclick="dongForm()">Huỷ</button>' +
         '<button class="nut nut-chinh" type="button" onclick="luuKm(' + (k ? k.id : 'null') + ', this)">' +
         '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
         '</div></div>';
@@ -531,6 +532,19 @@
     function henXemTruoc() {
       clearTimeout(HEN_XEM_TRUOC);
       HEN_XEM_TRUOC = setTimeout(xemTruocGia, 350);
+    }
+
+    /* MỌI đường ra khỏi hộp thoại phải tắt hẹn giờ: sửa một ô rồi bấm Huỷ / X / Xoá ngay thì
+       hẹn giờ vẫn còn, 350ms sau bắn một POST xem-truoc-gia lạc lõng (có lúc chạy song song
+       với lệnh xoá). Lưu thì luuKm đã tự tắt. */
+    function dongForm() {
+      clearTimeout(HEN_XEM_TRUOC);
+      Apex.dongHopThoai();
+    }
+
+    function xoaKm(id, nut) {
+      clearTimeout(HEN_XEM_TRUOC);
+      Apex.dangLuu(nut, Apex.xoaKhuyenMai(id));
     }
 
     function xemTruocGia() {
@@ -706,6 +720,7 @@
     }
 
     function luuKm(id, nut) {
+      clearTimeout(HEN_XEM_TRUOC);   // đang lưu thì khỏi hỏi giá xem trước nữa
       var loi = document.getElementById('loi-form');
       var duLieu = docForm();
       var laSp = duLieu.kieuApDung === 'san_pham';

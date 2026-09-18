@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bộ sưu tập</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
+  <style>
+    /* Đường dẫn bộ sưu tập trên web khách (/bo-suu-tap.html?duong-dan=...) */
+    .duong-dan {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px; color: var(--chu-mo);
+      background: #f4f5f6; border-radius: 6px; padding: 1px 6px;
+    }
+
+    /* Chọn sản phẩm cho bộ: bên trái là hàng trong shop, bên phải là bộ đang xếp */
+    .khung-chon { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .khung-chon { grid-template-columns: 1fr; } }
+    .cot-chon {
+      border: 1px solid var(--vien); border-radius: 10px; padding: 10px;
+      display: flex; flex-direction: column; min-width: 0;
+    }
+    .cot-chon .tieu-de-cot {
+      font-size: 12px; font-weight: 600; color: var(--chu-mo);
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 8px;
+    }
+    .cot-chon input.tim-sp { margin-bottom: 8px; }
+    .ds-chon { display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; }
+    .the-sp {
+      display: flex; align-items: center; gap: 8px; min-width: 0;
+      border: 1px solid var(--vien); border-radius: 9px; padding: 5px 8px;
+      font-size: 13px; background: var(--the);
+    }
+    .the-sp.bam { cursor: pointer; }
+    .the-sp.bam:hover { border-color: var(--accent); background: var(--accent-nhat); }
+    .the-sp img { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .the-sp .ten-sp { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .the-sp .so-thu-tu {
+      width: 20px; flex-shrink: 0; text-align: center;
+      color: var(--chu-mo); font-size: 12px; font-weight: 700;
+    }
+    .the-sp button {
+      width: 26px; height: 26px; flex-shrink: 0;
+      border: 1px solid var(--vien); border-radius: 6px; background: var(--the);
+      color: var(--chu-mo); cursor: pointer; font-size: 11px;
+    }
+    .the-sp button:hover { border-color: var(--accent); color: var(--accent-dam); }
+    .the-sp button.bo:hover { border-color: var(--do); color: var(--do); }
+    .ds-chon .trong { color: var(--chu-mo); font-size: 13px; padding: 10px 2px; }
+  </style>
+</head>
+<body>
+  <div class="apex-khung">
+    <div id="apex-sidebar-cho"></div>
+    <div class="apex-noi-dung">
+      <div id="apex-topbar-cho"></div>
+      <main class="apex-trang">
+
+        <!-- KPI -->
+        <div class="luoi-kpi" id="kpi"></div>
+
+        <!-- Danh sách bộ sưu tập -->
+        <div class="the">
+          <div class="the-dau">
+            <div>
+              <h3>Tất cả bộ sưu tập</h3>
+              <div class="phu">Một sản phẩm nằm được trong nhiều bộ — khác với danh mục (mỗi sản phẩm một danh mục).</div>
+            </div>
+            <button class="nut nut-chinh" type="button" onclick="moForm(null)">
+              <i class="fa-solid fa-plus"></i> Thêm
+            </button>
+          </div>
+          <div class="the-than khong-dem bang-cuon">
+            <table class="bang">
+              <thead>
+                <tr>
+                  <th>Bộ sưu tập</th>
+                  <th>Mô tả</th>
+                  <th class="giua">Sản phẩm</th>
+                  <th class="giua">Thứ tự</th>
+                  <th class="giua">Hiển thị</th>
+                </tr>
+              </thead>
+              <tbody id="bang-bo"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    Apex.shell('bo-suu-tap', 'Bộ sưu tập');
+
+    /* Bộ sưu tập của lần nạp gần nhất (khoá 'bo-suu-tap' = GET /api/bo-suu-tap?tatCa=true).
+       moForm(i) tra theo chỉ số trong mảng này. */
+    var BO = [];
+    var SP_CHON = [];      // id sản phẩm đang xếp trong bộ — THỨ TỰ ở đây chính là thứ tự trong bộ
+    var layAnh = null;     // hàm lấy URL ảnh bìa của ô tải ảnh đang mở
+
+    function soKpi(khoa) {
+      var tk = Apex.tk('tk-bo-suu-tap') || {};
+      return (tk.kpi && tk.kpi[khoa]) || 0;
+    }
+
+    function veKpi() {
+      Apex.fill('#kpi', [
+        { nhan: 'Tổng bộ sưu tập', so: Apex.number(soKpi('tongBo')), icon: 'fa-layer-group', mau: 'bt-toi' },
+        { nhan: 'Đang hiện trên web', so: Apex.number(soKpi('dangHien')), icon: 'fa-eye', mau: 'bt-xanh' },
+        { nhan: 'Sản phẩm đã xếp bộ', so: Apex.number(soKpi('tongSanPham')), icon: 'fa-cube', mau: 'bt-vang' }
+      ].map(function (k) {
+        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
+          '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
+          '<div class="so">' + k.so + '</div></div>';
+      }).join(''));
+    }
+
+    /** Ảnh bìa của bộ; chưa có thì lấy ảnh sản phẩm đầu tiên, không có nữa thì ô "Chưa có ảnh". */
+    function anhBo(b) {
+      var u = b.hinhAnh || (b.sanPham && b.sanPham[0] && b.sanPham[0].hinhAnh) || '';
+      return u ? Apex.anhDayDu(u) : Apex.anhSanPham();
+    }
+
+    function veBang() {
+      Apex.fill('#bang-bo', BO.map(function (b, i) {
+        return '<tr class="hang-bam" onclick="moForm(' + i + ')" title="Bấm để sửa bộ sưu tập">' +
+          '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.esc(anhBo(b)) + '" alt="" ' +
+            'onerror="this.style.opacity=\'.25\'" />' +
+            '<span><span class="chinh">' + Apex.esc(b.ten) + '</span>' +
+            '<span class="phu"><span class="duong-dan">/' + Apex.esc(b.duongDan || '') + '</span></span></span></div></td>' +
+          '<td style="color:var(--chu-mo);font-size:13px;">' + Apex.esc(b.moTa || '—') + '</td>' +
+          '<td class="giua">' + (b.soSanPham > 0
+            ? '<span class="badge badge-xanh">' + b.soSanPham + ' sản phẩm</span>'
+            : '<span class="badge badge-xam">Trống</span>') + '</td>' +
+          '<td class="giua">' + Apex.number(b.thuTu || 0) + '</td>' +
+          '<td class="giua">' + (b.hienThi
+            ? '<span class="badge badge-xanh"><span class="cham"></span> Đang hiện</span>'
+            : '<span class="badge badge-xam"><span class="cham"></span> Đang ẩn</span>') + '</td>' +
+          '</tr>';
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
+        'Chưa có bộ sưu tập nào — bấm "Thêm" để gom vài sản phẩm thành một bộ trên web khách.</td></tr>');
+    }
+
+    /* ---------------- Chọn sản phẩm cho bộ ----------------
+       Thứ tự bấm chính là thứ tự sản phẩm hiện trong bộ trên web khách, nên bên phải
+       có nút lên / xuống chứ không chỉ là danh sách đã tick. */
+
+    function timSanPham(id) {
+      for (var i = 0; i < Apex.products.length; i++) if (Apex.products[i].dbId === id) return Apex.products[i];
+      return null;
+    }
+
+    function anhSp(p) {
+      return p && p.img ? Apex.anhDayDu(p.img) : Apex.anhSanPham();
+    }
+
+    /** Cột trái: sản phẩm chưa xếp vào bộ, lọc theo ô tìm. */
+    function veKhoSanPham() {
+      var o = document.getElementById('tim-sp');
+      var tu = ((o && o.value) || '').trim().toLowerCase();
+      var con = Apex.products.filter(function (p) {
+        return SP_CHON.indexOf(p.dbId) < 0 && (!tu || (p.name || '').toLowerCase().indexOf(tu) >= 0);
+      });
+      Apex.fill('#kho-sp', con.map(function (p) {
+        return '<div class="the-sp bam" onclick="themSanPham(' + p.dbId + ')" title="Thêm vào bộ">' +
+          '<img src="' + Apex.esc(anhSp(p)) + '" alt="" onerror="this.style.opacity=\'.25\'" />' +
+          '<span class="ten-sp">' + Apex.esc(p.name) + '</span>' +
+          '<button type="button" tabindex="-1" aria-label="Thêm"><i class="fa-solid fa-plus"></i></button>' +
+          '</div>';
+      }).join('') || '<div class="trong">' +
+        (tu ? 'Không có sản phẩm nào khớp "' + Apex.esc(tu) + '".' : 'Đã xếp hết sản phẩm vào bộ này.') + '</div>');
+    }
+
+    /** Cột phải: sản phẩm trong bộ, theo đúng thứ tự sẽ hiện trên web. */
+    function veBoDangXep() {
+      Apex.fill('#bo-sp', SP_CHON.map(function (id, i) {
+        var p = timSanPham(id);
+        return '<div class="the-sp">' +
+          '<span class="so-thu-tu">' + (i + 1) + '</span>' +
+          '<img src="' + Apex.esc(anhSp(p)) + '" alt="" onerror="this.style.opacity=\'.25\'" />' +
+          '<span class="ten-sp">' + Apex.esc(p ? p.name : 'Sản phẩm #' + id) + '</span>' +
+          (i > 0 ? '<button type="button" onclick="doiChoSanPham(' + i + ', -1)" title="Lên trước">' +
+                   '<i class="fa-solid fa-arrow-up"></i></button>' : '') +
+          (i < SP_CHON.length - 1 ? '<button type="button" onclick="doiChoSanPham(' + i + ', 1)" title="Xuống sau">' +
+                   '<i class="fa-solid fa-arrow-down"></i></button>' : '') +
+          '<button type="button" class="bo" onclick="boSanPham(' + i + ')" title="Bỏ khỏi bộ">' +
+          '<i class="fa-solid fa-xmark"></i></button>' +
+          '</div>';
+      }).join('') || '<div class="trong">Chưa chọn sản phẩm nào — bấm ở cột bên trái.</div>');
+      var dem = document.getElementById('dem-sp');
+      if (dem) dem.textContent = SP_CHON.length ? '(' + SP_CHON.length + ')' : '';
+    }
+
+    function veHaiCot() { veKhoSanPham(); veBoDangXep(); }
+
+    function themSanPham(id) {
+      if (SP_CHON.indexOf(id) < 0) SP_CHON.push(id);
+      veHaiCot();
+    }
+    function boSanPham(i) {
+      SP_CHON.splice(i, 1);
+      veHaiCot();
+    }
+    function doiChoSanPham(i, buoc) {
+      var j = i + buoc;
+      if (j < 0 || j >= SP_CHON.length) return;
+      var tam = SP_CHON[i];
+      SP_CHON[i] = SP_CHON[j];
+      SP_CHON[j] = tam;
+      veBoDangXep();
+    }
+
+    /* ---------------- Hộp thoại THÊM / SỬA ---------------- */
+
+    function moForm(i) {
+      var b = (i === null || i === undefined) ? null : BO[i];
+      var moi = !b;
+      var anhHienTai = b ? (b.hinhAnh || '') : '';
+      SP_CHON = b ? (b.sanPham || []).map(function (s) { return s.id; }) : [];
+
+      var html =
+        '<div class="ht-dau">' +
+        '<div><h3>' + (moi ? 'Thêm bộ sưu tập' : 'Sửa bộ sưu tập') + '</h3>' +
+        (moi ? '' : '<div class="phu">' + Apex.esc(b.ten) + '</div>') + '</div>' +
+        '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
+        '<i class="fa-solid fa-xmark"></i></button></div>' +
+
+        '<div class="ht-than">' +
+        '<div class="o-nhap"><label for="f-ten">Tên bộ sưu tập *</label>' +
+        '<input type="text" id="f-ten" value="' + (b ? Apex.esc(b.ten) : '') + '" ' +
+        'placeholder="Quà tặng Noel, Móc khoá anime..." /></div>' +
+
+        '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
+        '<input type="text" id="f-duong-dan" value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" ' +
+        'placeholder="Bỏ trống thì tự sinh từ tên" />' +
+        '<div class="goi-y">Địa chỉ bộ này trên web khách; trùng với bộ khác thì backend tự thêm -2, -3…</div></div>' +
+
+        '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
+        '<input type="text" id="f-mo-ta" value="' + (b ? Apex.esc(b.moTa || '') : '') + '" ' +
+        'placeholder="Một câu ngắn hiện dưới tên bộ" /></div>' +
+
+        Apex.htmlOTaiAnh('bst-anh', anhHienTai, 'Ảnh bìa') +
+
+        '<div class="luoi-nhap-2">' +
+        '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
+        '<input type="number" id="f-thu-tu" min="0" step="1" value="' +
+        (b ? (b.thuTu || 0) : (BO.length + 1)) + '" /></div>' +
+        '<div class="o-nhap"><label for="f-hien">Hiển thị trên web</label>' +
+        '<select id="f-hien">' +
+        '<option value="true"' + (!b || b.hienThi ? ' selected' : '') + '>Đang hiện</option>' +
+        '<option value="false"' + (b && !b.hienThi ? ' selected' : '') + '>Đang ẩn</option>' +
+        '</select></div>' +
+        '</div>' +
+
+        '<div class="o-nhap"><label>Sản phẩm trong bộ</label>' +
+        '<div class="khung-chon">' +
+        '<div class="cot-chon"><div class="tieu-de-cot">Sản phẩm trong shop</div>' +
+        '<input type="text" class="tim-sp" id="tim-sp" placeholder="Tìm theo tên..." ' +
+        'oninput="veKhoSanPham()" autocomplete="off" />' +
+        '<div class="ds-chon" id="kho-sp"></div></div>' +
+        '<div class="cot-chon"><div class="tieu-de-cot">Đã chọn <span id="dem-sp"></span></div>' +
+        '<div class="ds-chon" id="bo-sp"></div></div>' +
+        '</div>' +
+        '<div class="goi-y">Thứ tự trên xuống ở cột phải chính là thứ tự sản phẩm hiện trong bộ.</div></div>' +
+
+        '<div class="bao-loi" id="loi-form"></div>' +
+        '</div>' +
+
+        '<div class="ht-chan">' +
+        (moi ? '' : '<button class="nut nut-do" type="button" onclick="xoaBo(' + b.id + ', this)">' +
+          '<i class="fa-solid fa-trash"></i> Xoá</button>') +
+        '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuBo(' + (b ? b.id : 'null') + ', this)">' +
+        '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
+        '</div></div>';
+
+      Apex.moHopThoai(html, 'rong');
+      layAnh = Apex.ganOTaiAnh('bst-anh', anhHienTai);
+      veHaiCot();
+    }
+
+    function luuBo(id, nut) {
+      var loi = document.getElementById('loi-form');
+      var ten = document.getElementById('f-ten').value.trim();
+      // Cùng câu chữ với backend để một lỗi không có hai kiểu báo
+      if (!ten) { loi.textContent = 'Tên bộ sưu tập không được để trống.'; return; }
+
+      var duLieu = {
+        ten: ten,
+        duongDan: document.getElementById('f-duong-dan').value.trim(),
+        moTa: document.getElementById('f-mo-ta').value.trim(),
+        hinhAnh: layAnh ? layAnh() : '',
+        thuTu: parseInt(document.getElementById('f-thu-tu').value, 10) || 0,
+        hienThi: document.getElementById('f-hien').value === 'true',
+        sanPham: SP_CHON.slice()          // gửi cả bộ: thứ tự id gửi lên là thứ tự trong bộ
+      };
+
+      // Ghi xong Apex đóng hộp, nạp lại bộ sưu tập + sản phẩm (backend đã nạp lại bộ nhớ đệm)
+      // rồi hiện toast; backend từ chối thì câu đó hiện ngay trong ô lỗi, hộp vẫn mở.
+      Apex.dangLuu(nut, function () {
+        var hua = id
+          ? Apex.ghi('PUT', '/bo-suu-tap/' + id, duLieu)
+          : Apex.ghi('POST', '/bo-suu-tap', duLieu);
+        return hua.then(function (kq) {
+          return Apex.capNhatXong(id ? 'Đã lưu bộ sưu tập' : 'Đã thêm bộ sưu tập').then(function () { return kq; });
+        });
+      }, loi);
+    }
+
+    function xoaBo(id, nut) {
+      if (!confirm('Xoá bộ sưu tập này? Sản phẩm trong bộ vẫn còn nguyên trong shop.')) return;
+      Apex.dangLuu(nut, function () {
+        return Apex.ghi('DELETE', '/bo-suu-tap/' + id).then(function () {
+          return Apex.capNhatXong('Đã xoá bộ sưu tập');
+        });
+      });
+    }
+
+    function veLaiTrang() {
+      BO = Apex.tk('bo-suu-tap') || [];
+      veKpi();
+      veBang();
+    }
+    /* Một request cho cả trang: bộ sưu tập + số đếm tk-bo-suu-tap + sản phẩm (để chọn hàng
+       cho bộ). Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+    Apex.trang({ bo: ['bo-suu-tap', 'tk-bo-suu-tap', 'san-pham'], ve: veLaiTrang });
+  </script>
+</body>
+</html>

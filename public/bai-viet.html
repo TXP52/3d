@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/apex.css?v=29" rel="stylesheet">
-  <script src="assets/js/apex.js?v=27"></script>
+  <link href="assets/css/apex.css?v=30" rel="stylesheet">
+  <script src="assets/js/apex.js?v=28"></script>
   <style>
     .o-tieu-de { max-width: 460px; }
     .o-tieu-de .chinh { display: block; line-height: 1.4; }
@@ -82,15 +82,20 @@
 
     /* ---------------- KPI ---------------- */
 
-    /* Backend chưa có khoá tổng hợp cho bài viết: đếm trên đúng danh sách trang đã nạp */
+    var TK = { kpi: {} };
+
+    function docSoLieu() {
+      TK = Apex.tk('tk-bai-viet') || { kpi: {} };
+    }
+
+    /* Bốn ô số do backend tính sẵn trong khoá 'tk-bai-viet' (0 request thêm), trang không đếm lại */
     function veKpi() {
-      var hien = BV.filter(function (b) { return b.hienThi; }).length;
-      var luot = BV.reduce(function (t, b) { return t + (b.luotXem || 0); }, 0);
+      var kpi = TK.kpi || {};
       Apex.fill('#kpi', [
-        { nhan: 'Tổng số bài', so: Apex.number(BV.length) + ' bài', icon: 'fa-newspaper', mau: 'bt-toi' },
-        { nhan: 'Đang hiện trên web', so: Apex.number(hien) + ' bài', icon: 'fa-eye', mau: 'bt-xanh' },
-        { nhan: 'Đang tắt', so: Apex.number(BV.length - hien) + ' bài', icon: 'fa-eye-slash', mau: 'bt-vang' },
-        { nhan: 'Tổng lượt đọc', so: Apex.number(luot) + ' lượt', icon: 'fa-chart-simple', mau: 'bt-tim' }
+        { nhan: 'Tổng số bài', so: Apex.number(kpi.tongSoBai || 0) + ' bài', icon: 'fa-newspaper', mau: 'bt-toi' },
+        { nhan: 'Đang hiện trên web', so: Apex.number(kpi.dangHien || 0) + ' bài', icon: 'fa-eye', mau: 'bt-xanh' },
+        { nhan: 'Đang tắt', so: Apex.number(kpi.dangTat || 0) + ' bài', icon: 'fa-eye-slash', mau: 'bt-vang' },
+        { nhan: 'Tổng lượt đọc', so: Apex.number(kpi.tongLuotDoc || 0) + ' lượt', icon: 'fa-chart-simple', mau: 'bt-tim' }
       ].map(function (k) {
         return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + k.nhan + '</span>' +
           '<span class="bieu-tuong ' + k.mau + '"><i class="fa-solid ' + k.icon + '"></i></span></div>' +
@@ -182,7 +187,7 @@
         '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaBaiViet(' + b.id + '))">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
-        (b.duongDan ?'<a class="nut nut-vien" target="_blank" rel="noopener" ' +
+        (b.duongDan ? '<a class="nut nut-vien" target="_blank" rel="noopener" ' +
           'href="' + Apex.esc(LINK_KHACH + encodeURIComponent(b.duongDan)) + '">' +
           '<i class="fa-solid fa-arrow-up-right-from-square"></i> Xem</a>' : '') +
         '<button class="nut nut-vien" type="button" onclick="doiHienThi(' + b.id + ',' + (b.hienThi ? 'true' : 'false') + ', this)">' +
@@ -302,9 +307,9 @@
         : Apex.themBaiViet(duLieu, 'Đã đăng bài viết'), loi);
     }
 
-    function veLaiTrang() { veKpi(); veBang(); }
-    // MỘT request: trang này chỉ cần danh sách bài viết. Apex vẽ khi dữ liệu về và sau mỗi lần ghi.
-    Apex.trang({ bo: ['bai-viet'], ve: veLaiTrang });
+    function veLaiTrang() { docSoLieu(); veKpi(); veBang(); }
+    // MỘT request: danh sách bài viết + số liệu tính sẵn. Apex vẽ khi dữ liệu về và sau mỗi lần ghi.
+    Apex.trang({ bo: ['bai-viet', 'tk-bai-viet'], ve: veLaiTrang });
   </script>
 </body>
 </html>
