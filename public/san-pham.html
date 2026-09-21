@@ -53,9 +53,105 @@
       background: var(--the); color: var(--do); cursor: pointer; font-size: 15px;
     }
     .nut-bo-dong:hover { border-color: var(--do); }
+    .nut-bo-dong:disabled { opacity: .35; cursor: not-allowed; border-color: var(--vien); }
     .mau-suy-ra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
     .tong-nhua { margin-top: 8px; font-size: 13.5px; color: var(--chu-mo); }
     .tong-nhua strong { color: var(--chu); }
+
+    /* Số âm (tồn kho âm vì shop nhận đặt trước khi in) hiện đỏ */
+    .so-am, .tom-tat-sua strong.so-am { color: var(--do); }
+    .bang td .phu { color: var(--chu-mo); font-size: 12px; }
+    .nhan-so-bt { margin-left: 4px; padding: 1px 8px; font-size: 11px; }
+
+    /* Bộ sưu tập: mỗi bộ một chip bấm chọn / bỏ */
+    .chon-bst { display: flex; flex-wrap: wrap; gap: 6px; }
+    .o-nhap .chip-bst {
+      display: inline-flex; align-items: center; gap: 6px; margin: 0;
+      padding: 5px 11px; border: 1px solid var(--vien); border-radius: 999px;
+      font-weight: 500; font-size: 13px; cursor: pointer; background: var(--the);
+    }
+    .o-nhap .chip-bst.dang-chon { border-color: var(--accent); background: var(--accent-nhat); color: var(--accent-dam); }
+    .o-nhap .chip-bst input { width: 15px; height: 15px; margin: 0; padding: 0; accent-color: var(--accent); }
+    .chip-bst .an { color: var(--chu-mo); font-size: 11.5px; }
+
+    /* Phân loại / biến thể. Sản phẩm chưa chia phân loại: form y như cũ (.chi-mot);
+       có biến thể: bảng biến thể rộng hết hộp (.chi-nhieu), mỗi biến thể một hàng */
+    .ht-than:not(.co-bt) .chi-nhieu { display: none; }
+    .ht-than.co-bt .chi-mot { display: none; }
+    .hang-them-bt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -4px 0 14px; }
+    .hang-them-bt .goi-y { margin: 0; color: var(--chu-mo); font-size: 12px; }
+    .khoi-bt { border-top: 1px solid var(--vien); padding-top: 14px; margin-top: 4px; }
+    .dau-khoi-bt { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .o-nhap .dau-khoi-bt label { margin: 0; font-size: 14px; }
+    .dau-bt, .bt-dong {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1.5fr) minmax(0, 1.1fr) 104px 80px minmax(0, 1.1fr) 116px 34px 34px;
+      gap: 8px; align-items: center;
+    }
+    .dau-bt {
+      font-size: 12px; font-weight: 600; color: var(--chu-mo);
+      text-transform: uppercase; letter-spacing: .3px; margin: 10px 0 6px; padding: 0 9px;
+    }
+    .bt { border: 1px solid var(--vien); border-radius: 10px; padding: 8px; margin-bottom: 8px; }
+    .bt.mo { border-color: var(--accent); }
+    .o-nhap .bt-dong input, .o-nhap .bt-dong select { margin: 0; padding: 7px 8px; }
+    .bt-anh {
+      position: relative; width: 40px; height: 40px; padding: 0; overflow: hidden;
+      border: 1px dashed var(--vien); border-radius: 8px; background: #f4f5f6;
+      color: var(--chu-mo); cursor: pointer; font-size: 15px;
+    }
+    .bt-anh img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bt-anh .so-anh {
+      position: absolute; right: 2px; bottom: 2px; padding: 0 4px; border-radius: 4px;
+      background: rgba(0, 0, 0, .6); color: #fff; font-size: 10px; line-height: 14px;
+    }
+    .bt-o-mau, .bt-o-so { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    /* Ô nhập nằm trong flex: không có min-width 0 thì ô số giữ bề ngang mặc định, tràn khỏi cột */
+    .o-nhap .bt-o-mau select, .o-nhap .bt-o-so input { min-width: 0; flex: 1 1 auto; }
+    .bt-cham-mau {
+      width: 14px; height: 14px; flex-shrink: 0; border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, .18); background: #e4e6e9;
+    }
+    .nhan-nho { display: none; font-size: 11.5px; font-weight: 600; color: var(--chu-mo); white-space: nowrap; }
+    .bt-nut-nhua, .bt-sao {
+      height: 34px; border: 1px solid var(--vien); border-radius: 8px; background: var(--the);
+      font-family: inherit; cursor: pointer;
+    }
+    .bt-nut-nhua {
+      padding: 0 8px; font-size: 12.5px; color: var(--chu);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .bt-nut-nhua:hover, .bt-anh:hover, .bt-sao:hover { border-color: var(--accent); }
+    .bt-sao { color: #c9ced6; font-size: 14px; }
+    .bt-sao.dang-chon { color: var(--vang); border-color: var(--vang); background: var(--vang-nhat); }
+    .bt-chi-tiet {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); gap: 16px;
+      margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--vien);
+    }
+    .bt-chi-tiet[hidden] { display: none; }
+    .bt-chi-tiet .o-nhap { margin-bottom: 10px; }
+    .bt-chi-tiet .bo-anh { margin-bottom: 10px; }
+    .nhan-phu { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+
+    /* Điện thoại: hàng biến thể gập thành vài dòng, mỗi ô số có nhãn nhỏ đứng trước */
+    @media (max-width: 760px) {
+      .dau-bt { display: none; }
+      .bt-dong {
+        grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 34px 34px;
+        grid-template-areas: "anh ten ten sao xoa" "mau mau gia gia gia" "ton ton tt tt tt" "nhua nhua nhua nhua nhua";
+      }
+      .bt-dong .bt-anh { grid-area: anh; }
+      .bt-dong .bt-ten { grid-area: ten; }
+      .bt-dong .bt-o-mau { grid-area: mau; }
+      .bt-dong .bt-o-gia { grid-area: gia; }
+      .bt-dong .bt-o-ton { grid-area: ton; }
+      .bt-dong .bt-tt { grid-area: tt; }
+      .bt-dong .bt-nut-nhua { grid-area: nhua; }
+      .bt-dong .bt-sao { grid-area: sao; }
+      .bt-dong .bt-xoa { grid-area: xoa; }
+      .nhan-nho { display: inline; }
+      .bt-chi-tiet { grid-template-columns: minmax(0, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -128,6 +224,20 @@
       (TK.theoSanPham || []).forEach(function (x) { TK_THEO_SP[x.id] = x; });
     }
 
+    /* Bản GỐC backend trả (khoá san-pham), tra theo id. Apex.products chỉ giữ các trường cũ;
+       biến thể, khoảng giá giaTu–giaDen và bộ sưu tập của sản phẩm đọc ở đây. */
+    var SP_GOC = {};
+    var BO_SUU_TAP = [];        // mọi bộ sưu tập chưa xoá (kể cả đang ẩn) — cho ô chọn trong form
+    var CO_BIEN_THE = true;     // backend có trả bienThe không; bản cũ thì form giữ y như trước
+
+    function docDuLieuGoc() {
+      var ds = Apex.tk('san-pham') || [];
+      SP_GOC = {};
+      ds.forEach(function (s) { SP_GOC[s.id] = s; });
+      CO_BIEN_THE = !ds.length || Array.isArray(ds[0].bienThe);
+      BO_SUU_TAP = Apex.tk('bo-suu-tap') || [];
+    }
+
     /* Nhãn mức tồn theo mucTon backend suy sẵn (≤ 0 hết, ≤ 5 sắp hết) — cùng kiểu Apex.badgeTon */
     var NHAN_MUC_TON = {
       het_hang: '<span class="badge badge-do">Hết hàng</span>',
@@ -144,6 +254,53 @@
       var a = p.gramMoiCaiMin || 0, b = p.gramMoiCaiMax || 0;
       if (!b) return '';
       return a === b ? Apex.number(a) + 'g' : Apex.number(a) + '–' + Apex.number(b) + 'g';
+    }
+
+    /* ---------------- Biến thể: tiện ích dùng chung cho bảng và form ---------------- */
+
+    /** Biến thể của sản phẩm (mặc định đứng đầu, backend xếp sẵn); rỗng nếu backend chưa có biến thể. */
+    function bienTheCua(p) {
+      var goc = p ? SP_GOC[p.dbId] : null;
+      return (goc && goc.bienThe) || [];
+    }
+
+    /** Biến thể "trơn": không tên, không màu, không giá / trạng thái / ảnh / mã riêng. */
+    function laBienTheTron(b) {
+      return !b.ten && !b.mauSacId && (b.gia === null || b.gia === undefined) &&
+        !b.trangThai && !b.maSku && !(b.danhSachAnh && b.danhSachAnh.length);
+    }
+
+    /** Chưa chia phân loại = nhiều nhất một biến thể và biến thể đó trơn -> form, bảng y như trước. */
+    function chuaChiaPhanLoai(ds) {
+      return ds.length === 0 || (ds.length === 1 && laBienTheTron(ds[0]));
+    }
+
+    function tenBienThe(b, i) {
+      return b.ten || (b.macDinh ? 'Mặc định' : 'Biến thể ' + (i + 1));
+    }
+
+    /** Số tồn kho, âm thì đỏ. */
+    function soTon(n, the) {
+      the = the || 'strong';
+      return '<' + the + (n < 0 ? ' class="so-am"' : '') + '>' + Apex.number(n) + '</' + the + '>';
+    }
+
+    /** Giá trên bảng: các biến thể cùng giá thì một số, khác nhau thì khoảng "50.000 – 100.000 ₫". */
+    function giaBanChu(p) {
+      var goc = SP_GOC[p.dbId];
+      var tu = goc && goc.giaTu != null ? goc.giaTu : (p.price || 0);
+      var den = goc && goc.giaDen != null ? goc.giaDen : tu;
+      return tu === den ? Apex.money(tu) : Apex.number(tu) + ' – ' + Apex.money(den);
+    }
+
+    /** Dòng nhỏ dưới tổng tồn kho: tồn từng biến thể (tối đa 3), biến thể tồn âm đỏ. */
+    function tonTungBienThe(ds) {
+      if (chuaChiaPhanLoai(ds)) return '';
+      var hien = ds.slice(0, 3).map(function (b, i) {
+        return Apex.esc(tenBienThe(b, i)) + ' ' + soTon(b.tonKho || 0, 'span');
+      });
+      if (ds.length > 3) hien.push('…');
+      return '<div class="phu">' + hien.join(' · ') + '</div>';
     }
 
     /* ---------------- KPI ---------------- */
@@ -200,6 +357,11 @@
         .map(function (x) {
           var p = x.p;
           var tkDong = TK_THEO_SP[p.dbId] || {};
+          var dsBt = bienTheCua(p);
+          // Đã chia phân loại thì kèm nhãn "n biến thể" dưới mã sản phẩm
+          var nhanBt = chuaChiaPhanLoai(dsBt) ? ''
+            : ' <span class="badge badge-xam nhan-so-bt"><i class="fa-solid fa-layer-group"></i>' +
+              dsBt.length + ' biến thể</span>';
           var hienThi = (p.cat === 'Đang bán')
             ? '<span class="badge badge-xanh"><span class="cham"></span> Đang bán</span>'
             : '<span class="badge badge-xam"><span class="cham"></span> Đang ẩn</span>';
@@ -207,13 +369,14 @@
             '<td><div class="o-ten"><img class="anh-sp" src="' + (Apex.anhDayDu(p.img) || Apex.anhSanPham(p.name)) + '" alt="" ' +
             'onerror="this.src=\'' + Apex.anhSanPham(p.name) + '\'" />' +
             '<div><div class="chinh">' + Apex.esc(p.name) + '</div>' +
-            '<div class="phu">Mã: ' + Apex.esc(p.sku) + '</div></div></div></td>' +
+            '<div class="phu">Mã: ' + Apex.esc(p.sku) + nhanBt + '</div></div></div></td>' +
             '<td>' + Apex.badgeDanhMuc(p.danhMucId) + '</td>' +
+            // Màu = màu khai của các biến thể + màu cuộn nhựa đã in (backend gộp sẵn)
             '<td>' + Apex.mauSanPham(p, 13) + '</td>' +
             '<td class="giua">' + Apex.badgeLoaiSanPham(p.loaiSanPham) + '</td>' +
             '<td class="giua">' + Apex.badgeTtSanPham(p.trangThai) + '</td>' +
             '<td class="giua">' + hienThi + '</td>' +
-            '<td class="phai"><strong>' + Apex.money(p.price || 0) + '</strong></td>' +
+            '<td class="phai"><strong>' + giaBanChu(p) + '</strong></td>' +
             '<td class="giua">' + (p.soLuong
               ? Apex.number(p.soLuong)
               : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
@@ -221,7 +384,9 @@
               ? '<strong>' + Apex.number(p.tongGramNhua) + 'g</strong>' +
                 (p.soLuong > 1 ? '<div class="phu">' + gramMoiCaiChu(p) + '/cái</div>' : '')
               : '<span style="color:var(--chu-mo)">—</span>') + '</td>' +
-            '<td class="giua">' + badgeMucTon(tkDong.mucTon) + ' <strong>' + Apex.number(p.stock || 0) + '</strong></td>' +
+            // Tồn kho = tổng các biến thể; có thể âm (nhận đặt trước khi in) -> số đỏ
+            '<td class="giua">' + badgeMucTon(tkDong.mucTon) + ' ' + soTon(p.stock || 0) +
+            tonTungBienThe(dsBt) + '</td>' +
             '<td class="phai">' + Apex.money(tkDong.giaTriTon) + '</td>' +
             '</tr>';
         }).join('');
@@ -235,14 +400,41 @@
     /* ---------------- Hộp thoại XEM + SỬA: bấm dòng nào mở dòng đó, sửa xong bấm Lưu ---------------- */
 
     var layAnh = null;
-    /* Cuộn nhựa -> số gram sản phẩm ĐANG mở đã trừ ở cuộn đó (xem moFormSanPham) */
+    /* Cuộn nhựa -> số gram sản phẩm ĐANG mở đã trừ ở cuộn đó (cộng mọi biến thể, xem moFormSanPham) */
     var GRAM_DA_TRU = {};
+
+    /* Biến thể trên form theo đúng thứ tự đang hiện: { k, id, macDinh }. k là khoá riêng của form
+       (biến thể mới chưa có id database); mọi số liệu khác đọc thẳng trên ô nhập lúc cần. */
+    var BT = [];
+    var SO_KHOA_BT = 0;
+    var LAY_ANH_BT = {};        // k -> hàm lấy danh sách ảnh riêng của biến thể
+    var TON_BAN_DAU = {};       // k -> tồn kho lúc mở form (tồn âm do đơn hàng thì lưu lại được)
+    var CHE_DO_NHIEU = false;   // false = form một biến thể y như cũ; true = bảng biến thể
+    /* Biến thể + bộ sưu tập đọc lại từ chính form ngay lúc mở: lúc lưu so với bản này để biết
+       chủ shop có đụng vào không — không đụng thì KHỎI gửi (cùng mẹo với vatTus bên dưới). */
+    var BT_BAN_DAU = [];
+    var BST_BAN_DAU = '';
+
+    function khoiBt(k) { return document.querySelector('.bt[data-k="' + k + '"]'); }
+    function khungNhuaCua(k) { return document.querySelector('.nhua-bt[data-k="' + k + '"]'); }
+    function dsKhungNhua() { return Array.prototype.slice.call(document.querySelectorAll('.nhua-bt')); }
 
     function moFormSanPham(i) {
       var p = (i === null || i === undefined) ? null : SP[i];
       var moi = !p;
-      var tongSl = p ? (p.soLuong || 1) : 1;
-      var nhieuMau = p ? !!p.nhieuMau : false;
+
+      var dsBt = bienTheCua(p);
+      if (!dsBt.length) {
+        // Sản phẩm mới (hoặc backend chưa có biến thể): một biến thể mặc định trơn mang đúng
+        // số liệu cũ của sản phẩm — backend cũng tự dựng y như vậy khi nhận form kiểu cũ
+        dsBt = [{
+          id: null, ten: null, macDinh: true, gia: null, trangThai: null, mauSacId: null,
+          tonKho: p ? (p.stock || 0) : 0, soLuong: p ? (p.soLuong || 1) : 1,
+          nhieuMau: p ? !!p.nhieuMau : false, vatTus: p ? (p.vatTus || []) : [], danhSachAnh: []
+        }];
+      }
+      CHE_DO_NHIEU = !chuaChiaPhanLoai(dsBt);
+      var tongTon = dsBt.reduce(function (s, b) { return s + (b.tonKho || 0); }, 0);
 
       var chonTt = Object.keys(Apex.ttSanPham).map(function (k) {
         var macDinh = p ? p.trangThai : 'san_hang';
@@ -262,8 +454,9 @@
       }).join('');
 
       /* Nhựa: một sản phẩm in được bằng nhiều cuộn nên đây là danh sách dòng.
-         GRAM_DA_TRU nhớ phần sản phẩm này ĐANG trừ ở mỗi cuộn, để ô "còn ...g"
-         cộng lại phần đó — nếu không thì sửa lại chính nó sẽ thấy thiếu nhựa. */
+         GRAM_DA_TRU nhớ phần sản phẩm này ĐANG trừ ở mỗi cuộn (mọi biến thể cộng lại — backend
+         cũng tính chênh lệch trên cả sản phẩm), để ô "còn ...g" cộng lại phần đó — nếu không
+         thì sửa lại chính nó sẽ thấy thiếu nhựa. */
       GRAM_DA_TRU = {};
       (p ? p.vatTus || [] : []).forEach(function (v) {
         // tongGram đã nhân sẵn số lượng — đây mới là phần kho đang giữ cho sản phẩm này.
@@ -278,7 +471,7 @@
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
-        '<div class="ht-than"><div class="ct-2cot">' +
+        '<div class="ht-than" id="than-form-sp"><div class="ct-2cot">' +
         // Cột trái: ảnh bìa to + chỗ thêm / bỏ / đổi thứ tự ảnh
         '<div class="cot-anh">' +
         '<img class="anh-chi-tiet" id="sp-anh-lon" alt="" src="' +
@@ -293,8 +486,10 @@
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-gia">Giá bán (VNĐ)</label>' +
         '<input type="number" id="f-gia" min="0" step="1000" value="' + (p ? (p.price || 0) : 0) + '" /></div>' +
-        '<div class="o-nhap"><label for="f-ton">Tồn kho</label>' +
-        '<input type="number" id="f-ton" min="0" step="1" value="' + (p ? (p.stock || 0) : 0) + '" /></div>' +
+        // Có biến thể thì ô này chỉ hiện TỔNG tồn các biến thể (sửa ở từng hàng biến thể)
+        '<div class="o-nhap"><label for="f-ton" id="nhan-f-ton">Tồn kho</label>' +
+        '<input type="number" id="f-ton" step="1"' + (!CHE_DO_NHIEU && dsBt[0].tonKho >= 0 ? ' min="0"' : '') +
+        ' value="' + (CHE_DO_NHIEU ? tongTon : (dsBt[0].tonKho || 0)) + '" /></div>' +
         '<div class="o-nhap"><label for="f-danh-muc">Danh mục</label>' +
         '<select id="f-danh-muc">' + chonDm + '</select>' +
         '</div>' +
@@ -309,31 +504,36 @@
         '<option value="false"' + (p && !p.dangBan ? ' selected' : '') + '>Đang ẩn</option>' +
         '</select></div>' +
         '</div>' +
-        '<div class="o-nhap"><label>Nhựa đã dùng</label>' +
-        // Nhiều màu: một ô số lượng chung. Một màu: số cái nhập ở từng dòng cuộn.
-        '<div class="hang-kieu-mau">' +
-        '<label class="o-tick"><input type="checkbox" id="f-nhieu-mau"' + (nhieuMau ? ' checked' : '') +
-        ' onchange="doiKieuMau()" /> Nhiều màu</label>' +
-        '<div class="o-sl-chung" id="o-sl-chung"' + (nhieuMau ? '' : ' style="display:none"') + '>' +
-        '<label for="f-so-luong">Số lượng</label>' +
-        '<input type="number" id="f-so-luong" min="1" step="1" value="' + tongSl + '" oninput="doiTongSoCai()" />' +
-        '</div></div>' +
-        '<div class="khung-nhua' + (nhieuMau ? ' nhieu-mau' : '') + '" id="khung-nhua">' +
-        '<div class="dau-nhua"><span class="cot-cuon">Cuộn nhựa</span><span class="cot-sl">Số cái</span>' +
-        '<span>Gram/cái</span><span>Thừa/cái</span><span></span></div>' +
-        '<div id="ds-nhua"></div>' +
-        '</div>' +
-        '<button type="button" class="nut nut-vien nut-nho" onclick="themDongNhua()">' +
-        '<i class="fa-solid fa-plus"></i> Thêm cuộn nhựa</button>' +
-        '<div class="mau-suy-ra" id="mau-suy-ra"></div>' +
-        '<div class="tong-nhua" id="tong-nhua"></div>' +
-        '</div>' +
+        htmlChonBoSuuTap(p) +
+        // Chưa chia phân loại: ô nhựa của biến thể duy nhất nằm đây, y như form cũ (datCheDo)
+        '<div class="o-nhap chi-mot" id="o-nhua-mot"><label>Nhựa đã dùng</label>' +
+        '<div id="cho-nhua-mot"></div></div>' +
+        (CO_BIEN_THE
+          ? '<div class="hang-them-bt chi-mot">' +
+            '<button type="button" class="nut nut-vien nut-nho" onclick="themBienThe()">' +
+            '<i class="fa-solid fa-layer-group"></i> Thêm biến thể</button>' +
+            '<span class="goi-y">Nhiều màu / kích cỡ: mỗi loại giá, tồn kho, ảnh và nhựa riêng.</span></div>'
+          : '') +
         '<div class="o-nhap"><label for="f-mota">Mô tả</label>' +
         '<textarea id="f-mota" rows="3">' +
         (p ? Apex.esc(p.moTa || '') : '') + '</textarea></div>' +
+        '</div></div>' +
+
+        // Bảng biến thể: rộng hết hộp, chỉ hiện khi sản phẩm đã chia phân loại
+        '<div class="o-nhap khoi-bt chi-nhieu">' +
+        '<div class="dau-khoi-bt"><label>Phân loại / Biến thể</label>' +
+        '<button type="button" class="nut nut-vien nut-nho" onclick="themBienThe()">' +
+        '<i class="fa-solid fa-plus"></i> Thêm biến thể</button></div>' +
+        '<div class="goi-y">Ô giá / trạng thái để trống thì theo sản phẩm. Biến thể <i class="fa-solid fa-star"></i> ' +
+        'mặc định đứng đầu và được chọn sẵn trên web. Bấm ảnh hoặc ô nhựa để sửa ảnh riêng, mã SKU, cuộn nhựa.</div>' +
+        '<div class="dau-bt"><span>Ảnh</span><span>Tên</span><span>Màu</span><span>Giá</span><span>Tồn kho</span>' +
+        '<span>Trạng thái</span><span>Nhựa</span><span title="Mặc định">★</span><span></span></div>' +
+        '<div id="ds-bt"></div>' +
+        '</div>' +
+
         '<div class="tom-tat-sua" id="tom-tat-sp"></div>' +
         '<div class="bao-loi" id="loi-form"></div>' +
-        '</div></div></div>' +
+        '</div>' +
 
         '<div class="ht-chan">' +
         (moi ? '' : '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaSanPham(' + p.dbId + ', ' +
@@ -354,99 +554,490 @@
         document.getElementById(id).addEventListener('input', veTomTatSp);
       });
 
-      var dsCu = p ? (p.vatTus || []) : [];
-      NHUA_BAN_DAU = chuKyNhua(dsCu);
-      if (dsCu.length) dsCu.forEach(function (v) { themDongNhua(v); });
-      else themDongNhua();
+      BT = [];
+      LAY_ANH_BT = {};
+      TON_BAN_DAU = {};
+      dsBt.forEach(function (b) { themKhoiBienThe(b); });
+      datCheDo(CHE_DO_NHIEU);
+      veSaoMacDinh();
+      capNhatConLai();
+      veTomTatSp();
+
+      BT_BAN_DAU = docBienTheTuForm();
+      BST_BAN_DAU = docBoSuuTap().join(',');
     }
 
-    /* Danh sách nhựa lúc mở form, để lúc lưu biết có đụng vào nhựa hay không.
+    /* ---------------- Bộ sưu tập (nhiều bộ cho một sản phẩm) ---------------- */
+
+    function htmlChonBoSuuTap(p) {
+      var dangCo = {};
+      ((p && SP_GOC[p.dbId] && SP_GOC[p.dbId].boSuuTap) || []).forEach(function (b) { dangCo[b.id] = true; });
+      var html = BO_SUU_TAP.map(function (b) {
+        var chon = !!dangCo[b.id];
+        return '<label class="chip-bst' + (chon ? ' dang-chon' : '') + '">' +
+          '<input type="checkbox" value="' + b.id + '"' + (chon ? ' checked' : '') +
+          ' onchange="this.parentNode.classList.toggle(\'dang-chon\', this.checked)" />' +
+          Apex.esc(b.ten) + (b.hienThi === false ? ' <span class="an">(đang ẩn)</span>' : '') + '</label>';
+      }).join('');
+      return '<div class="o-nhap"><label>Bộ sưu tập</label>' +
+        (html
+          ? '<div class="chon-bst" id="f-bst">' + html + '</div>'
+          : '<div class="goi-y">Chưa có bộ sưu tập nào — tạo ở trang <a href="bo-suu-tap.html">Bộ sưu tập</a>.</div>') +
+        '</div>';
+    }
+
+    /** id các bộ đang tích, theo thứ tự hiện trên form. */
+    function docBoSuuTap() {
+      return Array.prototype.map.call(document.querySelectorAll('#f-bst input:checked'), function (o) {
+        return parseInt(o.value, 10);
+      });
+    }
+
+    /* ---------------- Biến thể trên form ---------------- */
+
+    function optionMauBt(chonId, tenCu) {
+      var co = false;
+      var html = Apex.mauSac.filter(function (m) { return !m.daXoa; }).map(function (m) {
+        if (m.id === chonId) co = true;
+        return '<option value="' + m.id + '"' + (m.id === chonId ? ' selected' : '') + '>' +
+          Apex.esc(m.ten) + '</option>';
+      }).join('');
+      // Màu đã bị xoá khỏi bảng màu vẫn giữ trên biến thể đang dùng, khỏi rơi mất lúc lưu
+      if (chonId && !co) {
+        html += '<option value="' + chonId + '" selected>' + Apex.esc(tenCu || ('Màu #' + chonId)) + ' (đã xoá)</option>';
+      }
+      return '<option value="">— Không màu —</option>' + html;
+    }
+
+    function optionTtBt(chon) {
+      return '<option value="">Theo sản phẩm</option>' + Object.keys(Apex.ttSanPham).map(function (k) {
+        return '<option value="' + k + '"' + (k === chon ? ' selected' : '') + '>' + Apex.ttSanPham[k].ten + '</option>';
+      }).join('');
+    }
+
+    /** Ô ảnh nhỏ đầu hàng biến thể: ảnh đầu của biến thể, kèm số ảnh khi có nhiều. */
+    function htmlAnhNhoBt(ds) {
+      if (!ds || !ds.length) return '<i class="fa-regular fa-image"></i>';
+      return '<img src="' + Apex.esc(Apex.anhDayDu(ds[0])) + '" alt="" onerror="this.style.opacity=\'.25\'" />' +
+        (ds.length > 1 ? '<span class="so-anh">' + ds.length + '</span>' : '');
+    }
+
+    /** Thêm khối một biến thể (hàng + phần chi tiết ảnh / SKU / nhựa) vào cuối bảng. */
+    function themKhoiBienThe(b) {
+      var k = 'b' + (++SO_KHOA_BT);
+      BT.push({ k: k, id: b.id || null, macDinh: !!b.macDinh });
+      // Biến thể mới mở ra với tồn 0, nên gõ số âm vẫn bị chặn như trước
+      TON_BAN_DAU[k] = b.tonKho || 0;
+
+      var o = document.createElement('div');
+      o.className = 'bt';
+      o.setAttribute('data-k', k);
+      o.innerHTML =
+        '<div class="bt-dong">' +
+        '<button type="button" class="bt-anh" title="Ảnh riêng của biến thể" onclick="batChiTietBt(this)"></button>' +
+        '<input type="text" class="bt-ten" aria-label="Tên biến thể" placeholder="' +
+        (b.macDinh && !b.ten ? 'Tên (vd Đỏ, Size M)' : 'vd Đỏ, Size M') + '" value="' + Apex.esc(b.ten || '') + '" ' +
+        'oninput="this.removeAttribute(\'data-tu-mau\')" />' +
+        '<div class="bt-o-mau"><span class="bt-cham-mau"></span>' +
+        '<select class="bt-mau" aria-label="Màu biến thể" onchange="doiMauBt(this)">' +
+        optionMauBt(b.mauSacId || null, b.mau) + '</select></div>' +
+        '<div class="bt-o-so bt-o-gia"><span class="nhan-nho">Giá</span>' +
+        '<input type="number" class="bt-gia" min="0" step="1000" aria-label="Giá biến thể" placeholder="Theo SP" ' +
+        'value="' + (b.gia === null || b.gia === undefined ? '' : b.gia) + '" oninput="veTomTatSp()" /></div>' +
+        '<div class="bt-o-so bt-o-ton"><span class="nhan-nho">Tồn kho</span>' +
+        '<input type="number" class="bt-ton' + ((b.tonKho || 0) < 0 ? ' so-am' : '') + '" step="1" aria-label="Tồn kho biến thể" ' +
+        'value="' + (b.tonKho || 0) + '" oninput="doiTonBt(this)" /></div>' +
+        '<select class="bt-tt" aria-label="Trạng thái biến thể">' + optionTtBt(b.trangThai || '') + '</select>' +
+        '<button type="button" class="bt-nut-nhua" title="Cuộn nhựa của biến thể" onclick="batChiTietBt(this)"></button>' +
+        '<button type="button" class="bt-sao" onclick="chonMacDinh(this)"><i class="fa-solid fa-star"></i></button>' +
+        '<button type="button" class="nut-bo-dong bt-xoa" title="Bỏ biến thể này" onclick="xoaBienThe(this)">' +
+        '<i class="fa-solid fa-xmark"></i></button>' +
+        '</div>' +
+        '<div class="bt-chi-tiet" hidden>' +
+        '<div><div class="nhan-phu">Ảnh riêng của biến thể</div>' + Apex.htmlBoAnh('bt-anh-' + k) +
+        '<div class="o-nhap"><label for="bt-sku-' + k + '">Mã SKU</label>' +
+        '<input type="text" class="bt-sku" id="bt-sku-' + k + '" value="' + Apex.esc(b.maSku || '') + '" /></div></div>' +
+        '<div class="o-nhap bt-cho-nhua"><label>Nhựa đã dùng</label></div>' +
+        '</div>';
+      document.getElementById('ds-bt').appendChild(o);
+      veChamMau(o);
+
+      LAY_ANH_BT[k] = Apex.ganBoAnh('bt-anh-' + k, b.danhSachAnh || [], function (ds) {
+        var nut = o.querySelector('.bt-anh');
+        if (nut) nut.innerHTML = htmlAnhNhoBt(ds);
+      });
+
+      var kn = taoKhungNhua(k, b);
+      o.querySelector('.bt-cho-nhua').appendChild(kn);
+      var dsCu = b.vatTus || [];
+      if (dsCu.length) dsCu.forEach(function (v) { themDongNhua(kn, v); });
+      else themDongNhua(kn);
+      return o;
+    }
+
+    /**
+     * Đổi giữa form một biến thể (y như trước khi có biến thể) và bảng biến thể.
+     * Ô nhựa của biến thể đầu CHUYỂN chỗ (giữ nguyên các dòng đang gõ dở), không dựng lại.
+     */
+    function datCheDo(nhieu) {
+      CHE_DO_NHIEU = nhieu;
+      document.getElementById('than-form-sp').classList.toggle('co-bt', nhieu);
+      BT.forEach(function (b, i) {
+        var kn = khungNhuaCua(b.k);
+        var cho = (!nhieu && i === 0) ? document.getElementById('cho-nhua-mot')
+          : khoiBt(b.k).querySelector('.bt-cho-nhua');
+        if (kn && kn.parentNode !== cho) cho.appendChild(kn);
+      });
+      var ton = document.getElementById('f-ton');
+      ton.disabled = nhieu;
+      if (nhieu) ton.removeAttribute('min');   // tổng có thể âm khi một biến thể đang âm
+      document.getElementById('nhan-f-ton').textContent = nhieu ? 'Tồn kho (tổng các biến thể)' : 'Tồn kho';
+    }
+
+    /** Nút "Thêm biến thể". Lần đầu thì chuyển sang bảng: ô Tồn kho chung thành tồn của biến thể đầu. */
+    function themBienThe() {
+      if (!CHE_DO_NHIEU) {
+        var dau = khoiBt(BT[0].k);
+        dau.querySelector('.bt-ton').value = parseInt(document.getElementById('f-ton').value, 10) || 0;
+        doiTonBt(dau.querySelector('.bt-ton'));
+        datCheDo(true);
+      }
+      var o = themKhoiBienThe({ id: null, ten: null, macDinh: false, gia: null, trangThai: null,
+        tonKho: 0, soLuong: 1, nhieuMau: false, vatTus: [], danhSachAnh: [] });
+      veSaoMacDinh();
+      capNhatConLai();
+      veTomTatSp();
+      o.querySelector('.bt-ten').focus();
+    }
+
+    /** Bỏ một biến thể khỏi form. Biến thể đã lưu thì hỏi lại: lưu xong nó bị xoá, nhựa được hoàn về cuộn. */
+    function xoaBienThe(nut) {
+      if (BT.length <= 1) return;
+      var o = nut.closest('.bt'), k = o.getAttribute('data-k');
+      var vt = -1;
+      BT.forEach(function (b, i) { if (b.k === k) vt = i; });
+      if (vt < 0) return;
+      var ten = o.querySelector('.bt-ten').value.trim() || tenBienThe(BT[vt], vt);
+      if (BT[vt].id && !confirm('Bỏ biến thể "' + ten + '"? Bấm Lưu xong biến thể này bị xoá, ' +
+          'nhựa của nó được hoàn lại vào cuộn.')) return;
+      var bo = BT.splice(vt, 1)[0];
+      // Bỏ biến thể mặc định thì dòng đầu còn lại lên thay (backend cũng chọn y như vậy)
+      if (bo.macDinh) BT[0].macDinh = true;
+      delete LAY_ANH_BT[k];
+      delete TON_BAN_DAU[k];
+      o.parentNode.removeChild(o);
+      veSaoMacDinh();
+      capNhatConLai();
+      veTomTatSp();
+    }
+
+    /** ★: đúng một biến thể mặc định — hiện đầu tiên và được chọn sẵn trên web khách. */
+    function chonMacDinh(nut) {
+      var k = nut.closest('.bt').getAttribute('data-k');
+      BT.forEach(function (b) { b.macDinh = b.k === k; });
+      veSaoMacDinh();
+    }
+
+    function veSaoMacDinh() {
+      var mot = BT.length <= 1;
+      BT.forEach(function (b) {
+        var o = khoiBt(b.k);
+        var sao = o.querySelector('.bt-sao');
+        sao.classList.toggle('dang-chon', b.macDinh);
+        sao.title = b.macDinh ? 'Biến thể mặc định: đứng đầu, được chọn sẵn trên web'
+          : 'Đặt làm biến thể mặc định';
+        // Sản phẩm phải còn ít nhất một biến thể
+        var xoa = o.querySelector('.bt-xoa');
+        xoa.disabled = mot;
+        xoa.title = mot ? 'Sản phẩm phải có ít nhất một biến thể' : 'Bỏ biến thể này';
+      });
+    }
+
+    /** Bấm ảnh nhỏ hoặc ô nhựa của một hàng: mở / gập phần ảnh riêng, mã SKU, cuộn nhựa. */
+    function batChiTietBt(nut) {
+      var o = nut.closest('.bt');
+      var ct = o.querySelector('.bt-chi-tiet');
+      ct.hidden = !ct.hidden;
+      o.classList.toggle('mo', !ct.hidden);
+    }
+
+    function veChamMau(o) {
+      var s = o.querySelector('.bt-mau');
+      var m = s.value ? Apex.timMau(parseInt(s.value, 10)) : null;
+      var tenMau = s.value ? s.options[s.selectedIndex].text : '';
+      o.querySelector('.bt-cham-mau').style.background =
+        (m ? Apex.maMauCua(m.maMau, m.ten) : Apex.maMauCua('', tenMau)) || '#e4e6e9';
+    }
+
+    /**
+     * Đổi màu biến thể: ô tên đang trống (hoặc đang là tên màu tự điền lần trước) thì điền tên màu.
+     * Biến thể một màu chỉ in được bằng cuộn đúng màu -> lọc lại ô chọn cuộn.
+     */
+    function doiMauBt(s) {
+      var o = s.closest('.bt');
+      veChamMau(o);
+      var ten = o.querySelector('.bt-ten');
+      var tenMau = s.value ? s.options[s.selectedIndex].text.replace(/ \(đã xoá\)$/, '') : '';
+      if (!ten.value.trim() || ten.getAttribute('data-tu-mau') === ten.value) {
+        ten.value = tenMau;
+        ten.setAttribute('data-tu-mau', tenMau);
+      }
+      capNhatConLai();
+    }
+
+    function doiTonBt(o) {
+      o.classList.toggle('so-am', (parseInt(o.value, 10) || 0) < 0);
+      veTomTatSp();
+    }
+
+    /** Tồn kho của một biến thể trên form: form một biến thể thì chính là ô Tồn kho chung. */
+    function docTonBt(k) {
+      var o = CHE_DO_NHIEU ? khoiBt(k).querySelector('.bt-ton') : document.getElementById('f-ton');
+      return parseInt(o.value, 10);
+    }
+
+    /**
+     * Đọc mọi biến thể trên form thành đúng dạng body bienThe của PUT /api/san-pham (thuTu =
+     * thứ tự đang hiện). Nhiều màu: mọi dòng nhựa = số lượng chung (backend cũng tự chuẩn hoá).
+     * Số chưa hợp lệ để NaN — luuForm báo lỗi trước khi gửi.
+     */
+    function docBienTheTuForm() {
+      return BT.map(function (b, i) {
+        var o = khoiBt(b.k), kn = khungNhuaCua(b.k);
+        var nhieu = laNhieuMau(kn), sl = tongSoCaiTrenForm(kn);
+        var nhua = docDongNhua(kn);
+        if (nhieu) nhua.forEach(function (d) { d.soLuong = sl; });
+        var gia = o.querySelector('.bt-gia').value.trim();
+        return {
+          k: b.k,           // khoá dòng trên form (không gửi lên), để tra TON_BAN_DAU
+          id: b.id,
+          ten: o.querySelector('.bt-ten').value.trim() || null,
+          mauSacId: parseInt(o.querySelector('.bt-mau').value, 10) || null,
+          maSku: o.querySelector('.bt-sku').value.trim() || null,
+          gia: gia === '' ? null : parseInt(gia, 10),
+          tonKho: docTonBt(b.k),
+          soLuong: sl,
+          nhieuMau: nhieu,
+          trangThai: o.querySelector('.bt-tt').value || null,
+          danhSachAnh: LAY_ANH_BT[b.k] ? LAY_ANH_BT[b.k]() : [],
+          macDinh: b.macDinh,
+          thuTu: i,
+          vatTus: nhua
+        };
+      });
+    }
+
+    /* Hai phần của một biến thể: phần RIÊNG (chỉ gửi được qua bienThe) và phần ô form cũ
+       chở được (tồn kho / số cái / nhiều màu / nhựa — backend đổ vào biến thể MẶC ĐỊNH). */
+    function chuKyRieng(b) {
+      return JSON.stringify([b.id, b.ten, b.mauSacId, b.maSku, b.gia, b.trangThai, b.danhSachAnh, b.macDinh]);
+    }
+    function chuKyChung(b) {
+      return JSON.stringify([b.tonKho, b.soLuong, b.nhieuMau]) + '|' + chuKyNhua(b.vatTus);
+    }
+
+    /* Danh sách nhựa rút gọn thành chuỗi, để lúc lưu biết có đụng vào nhựa hay không.
        Không đụng thì KHỎI gửi vatTus: backend khỏi đọc lại bảng san_pham_vat_tu,
        bớt một lượt đi-về Supabase (~250 ms) cho lượt sửa tên/giá/ảnh thông thường. */
-    var NHUA_BAN_DAU = '';
     function chuKyNhua(ds) {
       return (ds || []).map(function (v) {
         return [v.vatTuId, v.soLuong, v.gramNhua, v.gramThua].join(':');
       }).join('|');
     }
 
-    /* ---------------- Danh sách cuộn nhựa trong form ---------------- */
+    /* ---------------- Danh sách cuộn nhựa của từng biến thể ---------------- */
 
-    /** Cuộn này còn bao nhiêu gram nếu trả lại phần sản phẩm đang sửa đã trừ. */
-    function conLaiChoForm(v) {
-      return (v.conLaiGram || 0) + (GRAM_DA_TRU[v.id] || 0);
+    /** Khung nhựa của một biến thể: tick nhiều màu, số lượng chung, các dòng cuộn, dòng tổng. */
+    function taoKhungNhua(k, b) {
+      var nhieu = !!b.nhieuMau;
+      var kn = document.createElement('div');
+      kn.className = 'nhua-bt';
+      kn.setAttribute('data-k', k);
+      kn.innerHTML =
+        // Nhiều màu: một ô số lượng chung. Một màu: số cái nhập ở từng dòng cuộn.
+        '<div class="hang-kieu-mau">' +
+        '<label class="o-tick"><input type="checkbox" class="nhua-nhieu-mau"' + (nhieu ? ' checked' : '') +
+        ' onchange="doiKieuMau(this)" /> Nhiều màu</label>' +
+        '<div class="o-sl-chung"' + (nhieu ? '' : ' style="display:none"') + '>' +
+        '<label for="sl-chung-' + k + '">Số lượng</label>' +
+        '<input type="number" class="nhua-sl-chung" id="sl-chung-' + k + '" min="1" step="1" value="' +
+        (b.soLuong || 1) + '" oninput="doiTongSoCai(this)" />' +
+        '</div></div>' +
+        '<div class="khung-nhua' + (nhieu ? ' nhieu-mau' : '') + '">' +
+        '<div class="dau-nhua"><span class="cot-cuon">Cuộn nhựa</span><span class="cot-sl">Số cái</span>' +
+        '<span>Gram/cái</span><span>Thừa/cái</span><span></span></div>' +
+        '<div class="ds-nhua"></div>' +
+        '</div>' +
+        '<button type="button" class="nut nut-vien nut-nho" onclick="themDongNhua(this)">' +
+        '<i class="fa-solid fa-plus"></i> Thêm cuộn nhựa</button>' +
+        '<div class="mau-suy-ra"></div>' +
+        '<div class="tong-nhua"></div>';
+      return kn;
     }
 
-    function laNhieuMau() {
-      var o = document.getElementById('f-nhieu-mau');
+    function laNhieuMau(kn) {
+      var o = kn ? kn.querySelector('.nhua-nhieu-mau') : null;
       return !!(o && o.checked);
     }
 
-    /** Tổng số cái: nhiều màu = ô số lượng chung; một màu = cộng số cái từng cuộn. */
-    function tongSoCaiTrenForm() {
-      if (laNhieuMau()) {
-        var o = document.getElementById('f-so-luong');
+    /** Tổng số cái của biến thể: nhiều màu = ô số lượng chung; một màu = cộng số cái từng cuộn. */
+    function tongSoCaiTrenForm(kn) {
+      if (laNhieuMau(kn)) {
+        var o = kn.querySelector('.nhua-sl-chung');
         return Math.max(1, parseInt(o ? o.value : 1, 10) || 1);
       }
-      var ds = docDongNhua();
+      var ds = docDongNhua(kn);
       return ds.length ? ds.reduce(function (s, d) { return s + d.soLuong; }, 0) : 1;
     }
 
     /** Nhiều màu: mọi dòng lấy đúng số lượng chung (ô số cái từng dòng đang giấu). */
-    function doiTongSoCai() {
-      if (laNhieuMau()) {
-        var sl = tongSoCaiTrenForm();
-        Array.prototype.forEach.call(document.querySelectorAll('#ds-nhua .nhua-sl'), function (i) {
-          i.value = sl;
-        });
+    function doiTongSoCai(x) {
+      var kn = x.closest('.nhua-bt');
+      if (laNhieuMau(kn)) {
+        var sl = tongSoCaiTrenForm(kn);
+        Array.prototype.forEach.call(kn.querySelectorAll('.nhua-sl'), function (i) { i.value = sl; });
       }
-      veTongNhua();
+      veTongNhua(kn);
     }
 
     /** Bật/tắt "Nhiều màu". Sang nhiều màu thì lấy số cái lớn nhất đang có làm số lượng chung. */
-    function doiKieuMau() {
-      var nhieu = laNhieuMau();
-      document.getElementById('khung-nhua').classList.toggle('nhieu-mau', nhieu);
-      document.getElementById('o-sl-chung').style.display = nhieu ? '' : 'none';
+    function doiKieuMau(x) {
+      var kn = x.closest('.nhua-bt');
+      var nhieu = laNhieuMau(kn);
+      kn.querySelector('.khung-nhua').classList.toggle('nhieu-mau', nhieu);
+      kn.querySelector('.o-sl-chung').style.display = nhieu ? '' : 'none';
       if (nhieu) {
         var lonNhat = 1;
-        Array.prototype.forEach.call(document.querySelectorAll('#ds-nhua .nhua-sl'), function (i) {
+        Array.prototype.forEach.call(kn.querySelectorAll('.nhua-sl'), function (i) {
           lonNhat = Math.max(lonNhat, parseInt(i.value, 10) || 1);
         });
-        document.getElementById('f-so-luong').value = lonNhat;
+        kn.querySelector('.nhua-sl-chung').value = lonNhat;
       }
-      doiTongSoCai();
+      doiTongSoCai(kn);
     }
 
-    /** Tóm tắt cuối hộp, tính ngay khi gõ: giá trị tồn, nhựa đã trừ kho, tiền nhựa. */
+    /** Gram mỗi biến thể trên form đang dùng ở từng cuộn: k -> { vatTuId: gram }. */
+    function gramTheoBienThe() {
+      var ra = {};
+      dsKhungNhua().forEach(function (kn) {
+        var m = {}, nhieu = laNhieuMau(kn), sl = tongSoCaiTrenForm(kn);
+        docDongNhua(kn).forEach(function (d) {
+          m[d.vatTuId] = (m[d.vatTuId] || 0) + (d.gramNhua + d.gramThua) * (nhieu ? sl : d.soLuong);
+        });
+        ra[kn.getAttribute('data-k')] = m;
+      });
+      return ra;
+    }
+
+    /** Gram các biến thể KHÁC k đang giữ ở từng cuộn. */
+    function gramBienTheKhac(tatCa, k) {
+      var ra = {};
+      Object.keys(tatCa).forEach(function (kk) {
+        if (kk === k) return;
+        Object.keys(tatCa[kk]).forEach(function (id) { ra[id] = (ra[id] || 0) + tatCa[kk][id]; });
+      });
+      return ra;
+    }
+
+    /**
+     * Biến thể này còn lấy được bao nhiêu gram ở cuộn: phần cuộn còn trống, cộng phần sản phẩm
+     * đang giữ (trả lại khi sửa), trừ phần các biến thể khác trên form đang dùng.
+     * Chưa chia phân loại thì không có biến thể khác -> y hệt con số trước đây.
+     */
+    function conLaiChoForm(v, dungNgoai) {
+      return (v.conLaiGram || 0) + (GRAM_DA_TRU[v.id] || 0) - ((dungNgoai || {})[v.id] || 0);
+    }
+
+    /** Màu khai của biến thể (id) — null khi không chọn màu. */
+    function mauCuaBienThe(k) {
+      var o = khoiBt(k);
+      var s = o ? o.querySelector('.bt-mau') : null;
+      return s && s.value ? parseInt(s.value, 10) : null;
+    }
+
+    function optionCuonNhua(chonId, kn, dungNgoai) {
+      var k = kn.getAttribute('data-k');
+      var mauBt = mauCuaBienThe(k);
+      // Biến thể một màu đã chọn màu chỉ in bằng cuộn đúng màu đó (cuộn chưa gán màu vẫn được).
+      // Cuộn đang chọn sẵn thì giữ lại kèm chữ "khác màu", để khỏi rơi mất dòng nhựa đã lưu.
+      var locMau = !!mauBt && !laNhieuMau(kn);
+      if (dungNgoai === undefined) dungNgoai = gramBienTheKhac(gramTheoBienThe(), k);
+      return '<option value="">— Chọn cuộn nhựa —</option>' + Apex.cuonNhua().filter(function (v) {
+        return !locMau || !v.mauSacId || v.mauSacId === mauBt || v.id === chonId;
+      }).map(function (v) {
+        var khacMau = locMau && v.mauSacId && v.mauSacId !== mauBt;
+        return '<option value="' + v.id + '"' + (v.id === chonId ? ' selected' : '') + '>' +
+          Apex.esc(v.ten) + (v.mau ? ' · ' + Apex.esc(v.mau) : '') +
+          ' — còn ' + Apex.number(conLaiChoForm(v, dungNgoai)) + 'g' + (khacMau ? ' (khác màu)' : '') + '</option>';
+      }).join('');
+    }
+
+    /** Vẽ lại ô chọn cuộn của mọi biến thể: số "còn ...g" và bộ lọc màu đổi theo từng lần gõ. */
+    function capNhatConLai() {
+      var tatCa = gramTheoBienThe();
+      dsKhungNhua().forEach(function (kn) {
+        var dung = gramBienTheKhac(tatCa, kn.getAttribute('data-k'));
+        Array.prototype.forEach.call(kn.querySelectorAll('.nhua-cuon'), function (s) {
+          s.innerHTML = optionCuonNhua(parseInt(s.value, 10) || null, kn, dung);
+        });
+      });
+    }
+
+    /** Tóm tắt cuối hộp, tính ngay khi gõ: (số biến thể, tổng tồn), giá trị tồn, nhựa đã trừ kho, tiền nhựa. */
     function veTomTatSp() {
       var o = document.getElementById('tom-tat-sp');
       if (!o) return;
-      var gia = parseInt(document.getElementById('f-gia').value, 10) || 0;
-      var ton = parseInt(document.getElementById('f-ton').value, 10) || 0;
-      var nhieu = laNhieuMau(), sl = tongSoCaiTrenForm(), gram = 0, tien = 0;
-      docDongNhua().forEach(function (d) {
-        var v = Apex.timVatTu(d.vatTuId);
-        var g = (d.gramNhua + d.gramThua) * (nhieu ? sl : d.soLuong);
-        gram += g;
-        tien += g * (v ? (v.donGiaMoiGram || 0) : 0);
+      var giaSp = parseInt(document.getElementById('f-gia').value, 10) || 0;
+      var tongTon = 0, giaTri = 0, gram = 0, tien = 0;
+      BT.forEach(function (b) {
+        var khoi = khoiBt(b.k), kn = khungNhuaCua(b.k);
+        if (!khoi || !kn) return;
+        // Giá biến thể để trống = giá sản phẩm
+        var giaBt = parseInt(khoi.querySelector('.bt-gia').value, 10);
+        var ton = docTonBt(b.k) || 0;
+        tongTon += ton;
+        giaTri += (isNaN(giaBt) ? giaSp : giaBt) * ton;
+        var nhieu = laNhieuMau(kn), sl = tongSoCaiTrenForm(kn);
+        docDongNhua(kn).forEach(function (d) {
+          var v = Apex.timVatTu(d.vatTuId);
+          var g = (d.gramNhua + d.gramThua) * (nhieu ? sl : d.soLuong);
+          gram += g;
+          tien += g * (v ? (v.donGiaMoiGram || 0) : 0);
+        });
       });
-      o.innerHTML = 'Giá trị tồn <strong>' + Apex.money(gia * ton) + '</strong>' +
+      if (CHE_DO_NHIEU) document.getElementById('f-ton').value = tongTon;
+      o.innerHTML = (CHE_DO_NHIEU
+          ? '<strong>' + BT.length + '</strong> biến thể · Tồn kho ' + soTon(tongTon) + ' · ' : '') +
+        'Giá trị tồn <strong>' + Apex.money(giaTri) + '</strong>' +
         (gram ? ' · Nhựa đã trừ kho <strong>' + Apex.number(gram) + 'g</strong>' +
                 ' · Tiền nhựa <strong>' + Apex.money(Math.round(tien)) + '</strong>' : '');
     }
 
-    /** Dòng tổng dưới danh sách nhựa. */
-    function veTongNhua() {
+    /** Chữ trên ô "Nhựa" ở hàng biến thể: số cuộn và số gram của riêng biến thể đó. */
+    function veNutNhua(kn) {
+      var o = khoiBt(kn.getAttribute('data-k'));
+      var nut = o ? o.querySelector('.bt-nut-nhua') : null;
+      if (!nut) return;
+      var ds = docDongNhua(kn), nhieu = laNhieuMau(kn), sl = tongSoCaiTrenForm(kn);
+      var gram = ds.reduce(function (s, d) { return s + (d.gramNhua + d.gramThua) * (nhieu ? sl : d.soLuong); }, 0);
+      nut.innerHTML = ds.length
+        ? '<i class="fa-solid fa-circle-half-stroke"></i> ' + ds.length + ' cuộn · ' + Apex.number(gram) + 'g'
+        : '<i class="fa-solid fa-plus"></i> Nhựa';
+    }
+
+    /** Dòng tổng dưới danh sách nhựa của một biến thể. */
+    function veTongNhua(x) {
+      var kn = x.closest('.nhua-bt');
       veTomTatSp();
-      var o = document.getElementById('tong-nhua');
-      if (!o) return;
-      var ds = docDongNhua();
+      veNutNhua(kn);
+      capNhatConLai();
+      var o = kn.querySelector('.tong-nhua');
+      var ds = docDongNhua(kn);
       if (!ds.length) { o.innerHTML = ''; return; }
       var tong = 0, phep;
-      if (laNhieuMau()) {
+      if (laNhieuMau(kn)) {
         // Mỗi cái ăn tất cả các cuộn: cộng gram mọi cuộn rồi nhân số lượng chung
-        var sl = tongSoCaiTrenForm();
+        var sl = tongSoCaiTrenForm(kn);
         var moiCai = ds.reduce(function (s, d) { return s + d.gramNhua + d.gramThua; }, 0);
         tong = moiCai * sl;
         phep = Apex.number(moiCai) + 'g/cái × ' + Apex.number(sl);
@@ -457,61 +1048,56 @@
           return Apex.number(mc) + 'g × ' + Apex.number(d.soLuong);
         }).join(' + ');
       }
-      o.innerHTML = 'Tổng <strong>' + Apex.number(tongSoCaiTrenForm()) + ' cái</strong> · trừ vào kho: ' +
+      o.innerHTML = 'Tổng <strong>' + Apex.number(tongSoCaiTrenForm(kn)) + ' cái</strong> · trừ vào kho: ' +
         Apex.esc(phep) + ' = <strong>' + Apex.number(tong) + 'g</strong>';
     }
 
-    function optionCuonNhua(chonId) {
-      return '<option value="">— Chọn cuộn nhựa —</option>' + Apex.cuonNhua().map(function (v) {
-        return '<option value="' + v.id + '"' + (v.id === chonId ? ' selected' : '') + '>' +
-          Apex.esc(v.ten) + (v.mau ? ' · ' + Apex.esc(v.mau) : '') +
-          ' — còn ' + Apex.number(conLaiChoForm(v)) + 'g</option>';
-      }).join('');
-    }
-
-    function themDongNhua(v) {
+    /** kn: khung nhựa của biến thể, hoặc nút "Thêm cuộn nhựa" nằm trong khung đó. */
+    function themDongNhua(x, v) {
+      var kn = x.closest('.nhua-bt');
       var o = document.createElement('div');
       o.className = 'dong-nhua';
       o.innerHTML =
-        '<select class="nhua-cuon" onchange="veMauSuyRa()">' + optionCuonNhua(v ? v.vatTuId : null) + '</select>' +
-        '<input type="number" class="nhua-sl cot-sl" min="1" step="1" oninput="veTongNhua()" ' +
+        '<select class="nhua-cuon" onchange="veMauSuyRa(this)">' + optionCuonNhua(v ? v.vatTuId : null, kn) + '</select>' +
+        '<input type="number" class="nhua-sl cot-sl" min="1" step="1" oninput="veTongNhua(this)" ' +
         // Nhiều màu: dòng mới theo số lượng chung (ô này đang giấu); một màu: mặc định 1 cái
-        'value="' + (v ? (v.soLuong || 1) : (laNhieuMau() ? tongSoCaiTrenForm() : 1)) + '" />' +
-        '<input type="number" class="nhua-gram" min="0" step="1" oninput="veTongNhua()" ' +
+        'value="' + (v ? (v.soLuong || 1) : (laNhieuMau(kn) ? tongSoCaiTrenForm(kn) : 1)) + '" />' +
+        '<input type="number" class="nhua-gram" min="0" step="1" oninput="veTongNhua(this)" ' +
         'value="' + (v ? (v.gramNhua || 0) : 0) + '" />' +
-        '<input type="number" class="nhua-thua" min="0" step="1" oninput="veTongNhua()" ' +
+        '<input type="number" class="nhua-thua" min="0" step="1" oninput="veTongNhua(this)" ' +
         'value="' + (v ? (v.gramThua || 0) : 0) + '" />' +
         '<button type="button" class="nut-bo-dong" title="Bỏ dòng này" onclick="boDongNhua(this)">' +
         '<i class="fa-solid fa-xmark"></i></button>';
-      document.getElementById('ds-nhua').appendChild(o);
-      veMauSuyRa();
+      kn.querySelector('.ds-nhua').appendChild(o);
+      veMauSuyRa(kn);
     }
 
     function boDongNhua(nut) {
+      var kn = nut.closest('.nhua-bt');
       var dong = nut.closest('.dong-nhua');
       if (dong) dong.remove();
-      veMauSuyRa();
+      veMauSuyRa(kn);
     }
 
-    /** Màu sản phẩm = màu của các cuộn đang chọn. Không có ô chọn màu riêng nên
-        không thể khai màu khác với nhựa thật sự dùng. */
-    function veMauSuyRa() {
-      var o = document.getElementById('mau-suy-ra');
-      if (!o) return;
+    /** Màu suy từ các cuộn đang chọn của biến thể — không khai được màu khác với nhựa thật sự dùng. */
+    function veMauSuyRa(x) {
+      var kn = x.closest('.nhua-bt');
+      var o = kn.querySelector('.mau-suy-ra');
       var daCo = {}, html = '';
-      docDongNhua().forEach(function (d) {
+      docDongNhua(kn).forEach(function (d) {
         var v = Apex.timVatTu(d.vatTuId);
         if (!v || !v.mau || daCo[v.mau]) return;
         daCo[v.mau] = true;
         html += '<span class="badge badge-xam">' + Apex.oMau(v.maMau, v.mau, 13) + Apex.esc(v.mau) + '</span>';
       });
       o.innerHTML = html;
-      veTongNhua();
+      veTongNhua(kn);
     }
 
-    /** Đọc các dòng nhựa trên form; bỏ qua dòng chưa chọn cuộn. */
-    function docDongNhua() {
-      return Array.prototype.map.call(document.querySelectorAll('#ds-nhua .dong-nhua'), function (o) {
+    /** Đọc các dòng nhựa của một biến thể; bỏ qua dòng chưa chọn cuộn. */
+    function docDongNhua(kn) {
+      if (!kn) return [];
+      return Array.prototype.map.call(kn.querySelectorAll('.dong-nhua'), function (o) {
         return {
           vatTuId: parseInt(o.querySelector('.nhua-cuon').value, 10) || null,
           soLuong: Math.max(1, parseInt(o.querySelector('.nhua-sl').value, 10) || 1),
@@ -521,36 +1107,86 @@
       }).filter(function (d) { return d.vatTuId; });
     }
 
+    /** Có dòng nào đã gõ gram mà quên chọn cuộn không. */
+    function coDongBoSot(kn) {
+      return Array.prototype.some.call(kn.querySelectorAll('.dong-nhua'), function (o) {
+        return !o.querySelector('.nhua-cuon').value &&
+               ((parseInt(o.querySelector('.nhua-gram').value, 10) || 0) > 0 ||
+                (parseInt(o.querySelector('.nhua-thua').value, 10) || 0) > 0);
+      });
+    }
+
+    /* ---------------- Lưu ---------------- */
+
+    /**
+     * Kiểm tra biến thể trên form. Trả câu lỗi, hoặc '' khi hợp lệ.
+     * Tồn kho âm do đơn hàng trừ (shop nhận đặt trước khi in) vẫn lưu lại được; chỉ không cho GÕ số âm mới.
+     */
+    function kiemTraBienThe(ds) {
+      var daCoTen = {};
+      for (var i = 0; i < ds.length; i++) {
+        var b = ds[i], k = BT[i].k;
+        var ten = b.ten || '';
+        var nhan = CHE_DO_NHIEU ? ' (biến thể "' + (ten || tenBienThe(b, i)) + '")' : '';
+        if (!CHE_DO_NHIEU) {
+          if (isNaN(b.tonKho) || (b.tonKho < 0 && b.tonKho !== TON_BAN_DAU[k])) return 'Tồn kho không hợp lệ.';
+        } else {
+          if (ds.length > 1 && !ten) {
+            return 'Biến thể thứ ' + (i + 1) + ' chưa có tên — đặt tên (vd Đỏ, Size M) để khách phân biệt.';
+          }
+          var khoa = ten.toLowerCase();
+          if (ten && daCoTen[khoa]) return 'Hai biến thể cùng tên "' + ten + '".';
+          daCoTen[khoa] = true;
+          if (b.gia !== null && (isNaN(b.gia) || b.gia < 0)) return 'Giá của biến thể "' + (ten || tenBienThe(b, i)) + '" không hợp lệ.';
+          if (isNaN(b.tonKho) || (b.tonKho < 0 && b.tonKho !== TON_BAN_DAU[k])) {
+            return 'Tồn kho của biến thể "' + (ten || tenBienThe(b, i)) + '" không hợp lệ.';
+          }
+        }
+        if (coDongBoSot(khungNhuaCua(k))) return 'Có dòng đã nhập gram nhưng chưa chọn cuộn nhựa.' + nhan;
+      }
+      return '';
+    }
+
     function luuForm(dbId, nut) {
       var loi = document.getElementById('loi-form');
       var ten = document.getElementById('f-ten').value.trim();
       if (!ten) { loi.textContent = 'Vui lòng nhập tên sản phẩm.'; return; }
 
       var gia = parseInt(document.getElementById('f-gia').value, 10);
-      var ton = parseInt(document.getElementById('f-ton').value, 10);
       if (isNaN(gia) || gia < 0) { loi.textContent = 'Giá bán không hợp lệ.'; return; }
-      if (isNaN(ton) || ton < 0) { loi.textContent = 'Tồn kho không hợp lệ.'; return; }
 
-      var dsNhua = docDongNhua();
-      var boSot = Array.prototype.some.call(document.querySelectorAll('#ds-nhua .dong-nhua'), function (o) {
-        return !o.querySelector('.nhua-cuon').value &&
-               ((parseInt(o.querySelector('.nhua-gram').value, 10) || 0) > 0 ||
-                (parseInt(o.querySelector('.nhua-thua').value, 10) || 0) > 0);
+      var dsBt = docBienTheTuForm();
+      var loiBt = kiemTraBienThe(dsBt);
+      if (loiBt) { loi.textContent = loiBt; return; }
+
+      // Biến thể MẶC ĐỊNH: mấy ô form cũ (tonKho / soLuong / nhieuMau / vatTus) chở số của nó
+      var vtMd = 0;
+      dsBt.forEach(function (b, i) { if (b.macDinh) vtMd = i; });
+      var md = dsBt[vtMd];
+
+      /* bienThe CHỈ gửi khi chủ shop thật sự đụng vào phân loại: thêm / bỏ / đổi tên, màu, giá,
+         trạng thái, ảnh, mã, mặc định — hay đổi tồn kho / nhựa của biến thể KHÔNG mặc định
+         (ô form cũ chỉ chở được biến thể mặc định). Còn lại gửi y như form cũ: backend khỏi so
+         từng biến thể, và sản phẩm chưa chia phân loại lưu đúng như trước khi có biến thể. */
+      var goc = BT_BAN_DAU;
+      var doiRieng = dsBt.length !== goc.length || dsBt.some(function (b, i) {
+        return chuKyRieng(b) !== chuKyRieng(goc[i]);
       });
-      if (boSot) { loi.textContent = 'Có dòng đã nhập gram nhưng chưa chọn cuộn nhựa.'; return; }
-
-      var nhieuMau = laNhieuMau();
-      var tongSl = tongSoCaiTrenForm();
-      // Nhiều màu: mọi dòng đúng bằng số lượng chung (backend cũng tự chuẩn hoá lại)
-      if (nhieuMau) dsNhua.forEach(function (d) { d.soLuong = tongSl; });
+      var doiBtPhu = !doiRieng && dsBt.some(function (b, i) {
+        return !b.macDinh && chuKyChung(b) !== chuKyChung(goc[i]);
+      });
+      var guiBienThe = CO_BIEN_THE && (dbId ? (doiRieng || doiBtPhu) : !chuaChiaPhanLoai(dsBt));
 
       loi.textContent = '';
       var duLieu = {
-        soLuong: tongSl,
-        nhieuMau: nhieuMau,
+        soLuong: md.soLuong,
+        nhieuMau: md.nhieuMau,
         ten: ten,
         gia: gia,
-        tonKho: ton,
+        tonKho: md.tonKho,
+        // Số tồn LÚC MỞ FORM: backend chỉ cộng phần chủ shop vừa gõ thêm/bớt, nên hàng khách
+        // mua trong lúc form đang mở không bị lượt lưu này "trả lại" kho
+        tonKhoGoc: TON_BAN_DAU[md.k],
         trangThai: document.getElementById('f-tt').value,
         loaiSanPham: document.getElementById('f-loai').value,
         danhMucId: document.getElementById('f-danh-muc').value
@@ -560,8 +1196,24 @@
         // Tất cả ảnh theo thứ tự; backend lấy ảnh đầu làm ảnh bìa
         danhSachAnh: layAnh ? layAnh() : []
       };
-      // Có sửa dòng nhựa (hoặc thêm sản phẩm mới) thì mới gửi vatTus lên
-      if (!dbId || chuKyNhua(dsNhua) !== NHUA_BAN_DAU) duLieu.vatTus = dsNhua;
+      if (guiBienThe) {
+        // TOÀN BỘ danh sách sau khi sửa: biến thể vắng mặt bị xoá, dòng không id là biến thể mới
+        duLieu.bienThe = dsBt.map(function (b) {
+          var d = {
+            ten: b.ten, mauSacId: b.mauSacId, maSku: b.maSku, gia: b.gia, tonKho: b.tonKho,
+            soLuong: b.soLuong, nhieuMau: b.nhieuMau, trangThai: b.trangThai,
+            danhSachAnh: b.danhSachAnh, macDinh: b.macDinh, thuTu: b.thuTu, vatTus: b.vatTus
+          };
+          if (b.id) { d.id = b.id; d.tonKhoGoc = TON_BAN_DAU[b.k]; }
+          return d;
+        });
+      } else if (!dbId || chuKyNhua(md.vatTus) !== chuKyNhua(goc[vtMd].vatTus)) {
+        // Có sửa dòng nhựa (hoặc thêm sản phẩm mới) thì mới gửi vatTus lên
+        duLieu.vatTus = md.vatTus;
+      }
+      // Bộ sưu tập: gửi là THAY cả bộ, nên chỉ gửi khi có tích / bỏ tích
+      var bst = docBoSuuTap();
+      if (document.getElementById('f-bst') && bst.join(',') !== BST_BAN_DAU) duLieu.boSuuTap = bst;
 
       // Lưu xong Apex tự đóng hộp, nạp lại các khoá của trang (có vat-tu vì số gram vừa bị
       // trừ khỏi cuộn nhựa) rồi hiện toast. Backend từ chối (vd "Cuộn X chỉ còn 120g") thì
@@ -569,11 +1221,12 @@
       Apex.dangLuu(nut, function () { return Apex.luuSanPham(dbId, duLieu); }, loi);
     }
 
-    function veLaiTrang() { docThongKe(); veKpi(); veLocDanhMuc(); veLocTrangThai(); veBang(); }
+    function veLaiTrang() { docThongKe(); docDuLieuGoc(); veKpi(); veLocDanhMuc(); veLocTrangThai(); veBang(); }
 
-    /* Một request cho cả trang: sản phẩm, danh mục (bộ lọc, huy hiệu, form), vật tư (ô chọn
-       cuộn nhựa) và số liệu tk-san-pham. Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
-    Apex.trang({ bo: ['san-pham', 'danh-muc', 'vat-tu', 'tk-san-pham'], ve: veLaiTrang });
+    /* Một request cho cả trang: sản phẩm (kèm biến thể), danh mục (bộ lọc, huy hiệu, form),
+       vật tư (ô chọn cuộn nhựa), bảng màu (màu biến thể), bộ sưu tập (ô chọn trong form) và
+       số liệu tk-san-pham. Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+    Apex.trang({ bo: ['san-pham', 'danh-muc', 'vat-tu', 'mau-sac', 'bo-suu-tap', 'tk-san-pham'], ve: veLaiTrang });
   </script>
 </body>
 </html>

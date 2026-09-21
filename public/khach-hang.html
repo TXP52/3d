@@ -28,6 +28,14 @@
     tr:hover .nut-hang { border-color: var(--accent); color: var(--accent-dam); }
     /* Câu gợi ý đứng ngoài một ô nhập (apex.css chỉ tô cho .o-nhap .goi-y) */
     .ht-than > .goi-y { color: var(--chu-mo); font-size: 12px; margin: -6px 0 10px 0; }
+    /* Trang này có 5 thẻ KPI: hạ bề rộng tối thiểu để màn laptop 1366px vẫn xếp một hàng
+       (điện thoại giữ lưới 2 cột / 1 cột của apex.css) */
+    @media (min-width: 769px) {
+      #kpi { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    }
+    #kpi .so { overflow-wrap: anywhere; }   /* số tiền quá dài thì xuống dòng chứ không tràn khỏi thẻ */
+    /* Ô email bị khoá (tài khoản khách tự đăng ký): nhìn là biết không sửa được */
+    .o-nhap input[readonly] { background: var(--nen); color: var(--chu-mo); cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -78,15 +86,27 @@
     /* Danh sách khách của lần nạp gần nhất — moForm(i) tra theo chỉ số trong mảng này */
     var KHACH = [];
 
-    /* Thẻ KPI; k = null (chưa có quyền xem) thì hiện gạch ngang chứ không hiện "0 khách" dễ tưởng thật */
+    /* Số của một thẻ KPI: k = null (chưa có quyền xem) hoặc backend chưa trả khoá đó thì hiện
+       gạch ngang chứ không hiện "0" dễ tưởng thật */
+    function soKpi(k, khoa) {
+      return k && k[khoa] != null ? Apex.number(k[khoa]) : '—';
+    }
+
+    /* daDangKy = tài khoản CÓ mật khẩu (tự đăng nhập được); danhBa = khách chủ shop nhập tay
+       (chưa có mật khẩu). Trước đây một thẻ "Tài khoản đã đăng ký" đếm lẫn cả hai. */
     function veKpi(k) {
       Apex.fill('#kpi', [
         { nhan: 'Tổng khách hàng', so: k ? Apex.number(k.tongKhach) + ' khách' : '—', icon: 'fa-users', mau: 'bt-xanh' },
-        { nhan: 'Tài khoản đã đăng ký', so: k ? Apex.number(k.daDangKy) : '—', icon: 'fa-user-check', mau: 'bt-vang' },
-        { nhan: 'Khách vãng lai', so: k ? Apex.number(k.vangLai) : '—', icon: 'fa-user-clock', mau: 'bt-toi' },
+        { nhan: 'Tài khoản đăng ký', so: soKpi(k, 'daDangKy'), icon: 'fa-user-check', mau: 'bt-vang',
+          goiY: 'Tài khoản có mật khẩu, tự đăng nhập được' },
+        { nhan: 'Khách shop nhập', so: soKpi(k, 'danhBa'), icon: 'fa-address-book', mau: 'bt-tim',
+          goiY: 'Khách chủ shop nhập tay vào danh bạ, chưa có mật khẩu nên chưa đăng nhập được' },
+        { nhan: 'Khách vãng lai', so: soKpi(k, 'vangLai'), icon: 'fa-user-clock', mau: 'bt-toi',
+          goiY: 'Khách đã đặt đơn nhưng chưa có trong danh bạ' },
         { nhan: 'Tổng chi tiêu', so: k ? Apex.money(k.tongChiTieu) : '—', icon: 'fa-wallet', mau: 'bt-do' }
       ].map(function (o) {
-        return '<div class="kpi"><div class="dong-dau"><span class="nhan">' + o.nhan + '</span>' +
+        return '<div class="kpi"' + (o.goiY ? ' title="' + Apex.esc(o.goiY) + '"' : '') + '>' +
+          '<div class="dong-dau"><span class="nhan">' + o.nhan + '</span>' +
           '<span class="bieu-tuong ' + o.mau + '"><i class="fa-solid ' + o.icon + '"></i></span></div>' +
           '<div class="so">' + o.so + '</div></div>';
       }).join(''));
@@ -158,13 +178,17 @@
     function moForm(i) {
       var c = (i === null || i === undefined) ? null : KHACH[i];
       var sua = !!(c && suaDuoc(c));           // có dòng trong nguoi_dung -> sửa / xoá được
+      // Tài khoản khách tự đăng ký (có mật khẩu): email là tên đăng nhập, đổi / xoá là khách
+      // không vào được nữa -> khoá ô email, và luuForm không gửi khoá email (backend cũng từ chối).
+      var khoaEmail = !!(sua && c.coMatKhau === true);
       var tieuDe = !c ? 'Thêm khách hàng' : (sua ? 'Sửa khách hàng' : 'Thêm khách vào danh bạ');
 
       var html =
         '<div class="ht-dau">' +
         '<div><h3>' + tieuDe + '</h3>' +
         (c ? '<div class="phu">' + Apex.esc(c.ten || '') +
-             (sua ? '' : ' · khách lẻ, ' + Apex.number(c.soDon || 0) + ' đơn đã mua') + '</div>' : '') +
+             (sua ? (khoaEmail ? ' · khách tự đăng ký tài khoản' : '')
+                  : ' · khách lẻ, ' + Apex.number(c.soDon || 0) + ' đơn đã mua') + '</div>' : '') +
         '</div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
@@ -173,19 +197,25 @@
         '<div class="o-nhap"><label for="f-ho-ten">Họ và tên *</label>' +
         '<input type="text" id="f-ho-ten" value="' + (c ? Apex.esc(c.ten || '') : '') + '" /></div>' +
         '<div class="luoi-nhap-2">' +
-        '<div class="o-nhap"><label for="f-sdt">Số điện thoại</label>' +
-        '<input type="text" id="f-sdt" value="' + (c ? Apex.esc(c.soDienThoai || '') : '') + '" /></div>' +
+        '<div class="o-nhap"><label for="f-sdt">Số điện thoại *</label>' +
+        '<input type="text" id="f-sdt" inputmode="tel" aria-required="true" value="' +
+        (c ? Apex.esc(c.soDienThoai || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-email">Email</label>' +
         '<input type="email" id="f-email" value="' + (c ? Apex.esc(c.email || '') : '') + '" ' +
-        'placeholder="Bỏ trống cũng được" /></div>' +
+        (khoaEmail ? 'readonly aria-readonly="true" aria-describedby="f-email-goi-y" />' +
+                     '<div class="goi-y" id="f-email-goi-y">Email đăng nhập của khách, không sửa được.</div>'
+                   : 'placeholder="Bỏ trống cũng được" />') +
+        '</div>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ</label>' +
         '<input type="text" id="f-dia-chi" value="' + (c ? Apex.esc(c.diaChi || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
         '<input type="text" id="f-ghi-chu" value="' + (c ? Apex.esc(c.ghiChu || '') : '') + '" ' +
         'placeholder="Khách quen, hay mua móc khoá..." /></div>' +
-        '<div class="goi-y">Khách nhập ở đây chưa có mật khẩu nên chưa tự đăng nhập được — ' +
-        'chỉ để nhớ liên hệ và gắn vào đơn gõ tay.</div>' +
+        // Câu này chỉ đúng với khách shop nhập tay; tài khoản tự đăng ký thì đã có mật khẩu
+        (khoaEmail ? '' :
+          '<div class="goi-y">Khách nhập ở đây chưa có mật khẩu nên chưa tự đăng nhập được — ' +
+          'chỉ để nhớ liên hệ và gắn vào đơn gõ tay.</div>') +
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
 
@@ -204,17 +234,24 @@
 
     function luuForm(id, nut) {
       var loi = document.getElementById('loi-form');
-      var hoTen = document.getElementById('f-ho-ten').value.trim();
+      var oTen = document.getElementById('f-ho-ten');
+      var oSdt = document.getElementById('f-sdt');
+      var oEmail = document.getElementById('f-email');
+      var hoTen = oTen.value.trim();
+      var sdt = oSdt.value.trim();
       // Cùng câu chữ với backend để một lỗi không có hai kiểu báo
-      if (!hoTen) { loi.textContent = 'Vui lòng nhập họ và tên'; return; }
+      if (!hoTen) { loi.textContent = 'Vui lòng nhập họ và tên'; oTen.focus(); return; }
+      if (!sdt) { loi.textContent = 'Vui lòng nhập số điện thoại.'; oSdt.focus(); return; }
 
       var duLieu = {
         hoTen: hoTen,
-        soDienThoai: document.getElementById('f-sdt').value.trim(),
-        email: document.getElementById('f-email').value.trim(),
+        soDienThoai: sdt,
         diaChi: document.getElementById('f-dia-chi').value.trim(),
         ghiChu: document.getElementById('f-ghi-chu').value.trim()
       };
+      // Ô email khoá (tài khoản có mật khẩu) thì KHÔNG gửi khoá email: PUT khoá nào không gửi thì
+      // backend để yên, nên email đăng nhập của khách không bị đổi / xoá nhầm.
+      if (!oEmail.readOnly) duLieu.email = oEmail.value.trim();
 
       // Ghi xong Apex đóng hộp, nạp lại khoá 'khach-hang' (backend đã nạp lại bộ nhớ đệm ND)
       // rồi hiện toast; backend từ chối (email trùng...) thì câu đó hiện ngay trong ô lỗi.

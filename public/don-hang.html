@@ -343,26 +343,35 @@
           var ten = b.ten || 'Mặc định';
           if (b.mau) ten += ' · ' + b.mau;
           ten += ' · tồn ' + Apex.number(b.tonKho || 0);
+          // Phân loại hết hàng web khách không đặt được, nhưng shop in theo đơn nên vẫn bán tay được
+          if (b.trangThaiHienThi === 'het_hang') ten += ' · hết hàng';
           return '<option value="' + b.id + '"' + (String(b.id) === String(dangChon) ? ' selected' : '') + '>' +
             Apex.esc(ten) + '</option>';
         }).join('') + '</select>';
+    }
+
+    /** Ô phân loại khi dòng chưa chọn sản phẩm. */
+    function htmlChuaChonSp() {
+      return '<select class="mon-bt" aria-label="Phân loại" disabled>' +
+        '<option value="">Chọn sản phẩm trước</option></select>';
     }
 
     /** Một dòng món: chọn sản phẩm -> phân loại -> số lượng -> đơn giá (sửa được). */
     function htmlDongMon() {
       var chonSp = '<option value="">— Chọn sản phẩm —</option>' +
         SP_THO.map(function (s) {
-          return '<option value="' + s.id + '">' + Apex.esc(s.ten) + '</option>';
+          // Hàng mẫu / đang ẩn web khách không đặt được, đơn tay vẫn bán — ghi rõ cho khỏi chọn nhầm
+          var ghi = s.loaiSanPham === 'mau' ? ' (hàng mẫu)' : (s.dangBan ? '' : ' (đang ẩn)');
+          return '<option value="' + s.id + '">' + Apex.esc(s.ten + ghi) + '</option>';
         }).join('') +
         '<option value="tu-go">— Món tự gõ —</option>';
 
       return '<div class="dong-mon-tay">' +
         '<select class="mon-sp" aria-label="Sản phẩm" onchange="doiSanPham(this)">' + chonSp + '</select>' +
-        '<select class="mon-bt" aria-label="Phân loại" disabled>' +
-        '<option value="">Chọn sản phẩm trước</option></select>' +
+        htmlChuaChonSp() +
         '<input type="number" class="mon-sl" aria-label="Số lượng" min="1" step="1" value="1" oninput="tinhTongMon()" />' +
         '<input type="number" class="mon-gia" aria-label="Đơn giá" min="0" step="1000" ' +
-        'data-tu-dong="1" placeholder="Giá web" oninput="this.setAttribute(\'data-tu-dong\', \'0\'); tinhTongMon();" />' +
+        'data-tu-dong="1" placeholder="Giá web" oninput="suaGia(this)" onblur="xoaTrangGia(this)" />' +
         '<button type="button" class="nut-bo-dong" title="Bỏ món này" onclick="boDongMon(this)">' +
         '<i class="fa-solid fa-xmark"></i></button>' +
         '</div>';
@@ -398,15 +407,39 @@
         return;
       }
 
+      // Giá gõ tay cho món trước không áp sang món khác: đổi món là quay về giá web
+      oGia.setAttribute('data-tu-dong', '1');
+      oGia.placeholder = 'Giá web';
+      if (!oChon.value) {
+        oBt.outerHTML = htmlChuaChonSp();
+        oGia.value = '';
+        tinhTongMon();
+        return;
+      }
       var ds = bienTheCua(oChon.value);
       oBt.outerHTML = htmlChonBienThe(oChon.value, ds.length ? ds[0].id : '');
-      oGia.placeholder = 'Giá web';
       dienGiaTuDong(dong);
     }
 
     /** Đổi phân loại: giá tự điền theo phân loại mới, trừ khi chủ shop đã gõ giá riêng. */
     function doiBienThe(oChon) {
       dienGiaTuDong(oChon.closest('.dong-mon-tay'));
+    }
+
+    /** Chủ shop gõ vào ô giá = giá riêng của dòng này (backend không tự tính lại nữa). */
+    function suaGia(oGia) {
+      oGia.setAttribute('data-tu-dong', '0');
+      tinhTongMon();
+    }
+
+    /* Xoá trắng ô giá của món có trong shop = bỏ giá riêng, quay về giá web. Món tự gõ
+       thì không có giá web nào để quay về, ô trống nghĩa là 0₫ nên để nguyên. */
+    function xoaTrangGia(oGia) {
+      var dong = oGia.closest('.dong-mon-tay');
+      var oSp = dong && dong.querySelector('.mon-sp');
+      if (oGia.value !== '' || !oSp || !oSp.value || oSp.value === 'tu-go') return;
+      oGia.setAttribute('data-tu-dong', '1');
+      dienGiaTuDong(dong);
     }
 
     /* Giá niêm yết của phân loại đang chọn. Ô giá còn data-tu-dong="1" nghĩa là chủ shop
@@ -428,6 +461,10 @@
     function tinhTongMon() {
       var tong = 0, soMon = 0;
       document.querySelectorAll('#ds-mon-tay .dong-mon-tay').forEach(function (d) {
+        var oSp = d.querySelector('.mon-sp');
+        if (!oSp.value) return;   // dòng chưa chọn món: lúc lưu cũng bỏ qua
+        // Món tự gõ chưa có tên thì lúc lưu cũng bỏ qua, đừng cộng vào tạm tính
+        if (oSp.value === 'tu-go' && !d.querySelector('.mon-bt').value.trim()) return;
         var sl = parseInt(d.querySelector('.mon-sl').value, 10) || 0;
         var gia = parseInt(d.querySelector('.mon-gia').value, 10) || 0;
         if (sl > 0) { tong += sl * gia; soMon++; }
