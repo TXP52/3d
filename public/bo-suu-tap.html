@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=28"></script>
+  <script src="assets/js/apex.js?v=30"></script>
   <style>
     /* Đường dẫn bộ sưu tập trên web khách (/bo-suu-tap.html?duong-dan=...) */
     .duong-dan {
@@ -69,7 +69,6 @@
           <div class="the-dau">
             <div>
               <h3>Tất cả bộ sưu tập</h3>
-              <div class="phu">Một sản phẩm nằm được trong nhiều bộ — khác với danh mục (mỗi sản phẩm một danh mục).</div>
             </div>
             <button class="nut nut-chinh" type="button" onclick="moForm(null)">
               <i class="fa-solid fa-plus"></i> Thêm
@@ -144,7 +143,7 @@
             : '<span class="badge badge-xam"><span class="cham"></span> Đang ẩn</span>') + '</td>' +
           '</tr>';
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">' +
-        'Chưa có bộ sưu tập nào — bấm "Thêm" để gom vài sản phẩm thành một bộ trên web khách.</td></tr>');
+        'Chưa có bộ sưu tập nào.</td></tr>');
     }
 
     /* ---------------- Chọn sản phẩm cho bộ ----------------
@@ -192,7 +191,7 @@
           '<button type="button" class="bo" onclick="boSanPham(' + i + ')" title="Bỏ khỏi bộ">' +
           '<i class="fa-solid fa-xmark"></i></button>' +
           '</div>';
-      }).join('') || '<div class="trong">Chưa chọn sản phẩm nào — bấm ở cột bên trái.</div>');
+      }).join('') || '<div class="trong">Chưa chọn sản phẩm nào.</div>');
       var dem = document.getElementById('dem-sp');
       if (dem) dem.textContent = SP_CHON.length ? '(' + SP_CHON.length + ')' : '';
     }
@@ -238,8 +237,7 @@
 
         '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
         '<input type="text" id="f-duong-dan" value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" ' +
-        'placeholder="Bỏ trống thì tự sinh từ tên" />' +
-        '<div class="goi-y">Địa chỉ bộ này trên web khách; trùng với bộ khác thì backend tự thêm -2, -3…</div></div>' +
+        'placeholder="Bỏ trống thì tự sinh từ tên" /></div>' +
 
         '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
         '<input type="text" id="f-mo-ta" value="' + (b ? Apex.esc(b.moTa || '') : '') + '" ' +
@@ -266,8 +264,7 @@
         '<div class="ds-chon" id="kho-sp"></div></div>' +
         '<div class="cot-chon"><div class="tieu-de-cot">Đã chọn <span id="dem-sp"></span></div>' +
         '<div class="ds-chon" id="bo-sp"></div></div>' +
-        '</div>' +
-        '<div class="goi-y">Thứ tự trên xuống ở cột phải chính là thứ tự sản phẩm hiện trong bộ.</div></div>' +
+        '</div></div>' +
 
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +

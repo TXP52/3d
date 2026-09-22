@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=28"></script>
+  <script src="assets/js/apex.js?v=30"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -485,7 +485,7 @@
       var bao = document.getElementById('bao-khach');
       if (!c) {
         document.getElementById('f-nguoi-dung-id').value = '';
-        bao.textContent = 'Khách mới thì bỏ qua ô này, gõ thẳng tên và số điện thoại bên dưới.';
+        bao.textContent = '';
         return;
       }
       document.getElementById('f-ten-khach').value = c.ten || '';
@@ -493,9 +493,7 @@
       document.getElementById('f-dia-chi').value = c.diaChi || '';
       // Khách lẻ (chưa có dòng trong danh bạ) thì không nối được đơn vào tài khoản nào
       document.getElementById('f-nguoi-dung-id').value = c.laTaiKhoan && c.nguoiDungId ? c.nguoiDungId : '';
-      bao.textContent = c.laTaiKhoan
-        ? 'Đơn sẽ được nối vào khách KH-' + c.nguoiDungId + ' trong danh bạ.'
-        : 'Khách lẻ — đơn ghi theo tên và số điện thoại, không nối vào danh bạ.';
+      bao.textContent = c.laTaiKhoan ? 'Khách trong danh bạ (KH-' + c.nguoiDungId + ')' : 'Khách lẻ';
     }
 
     function moFormDon() {
@@ -516,8 +514,7 @@
 
       var html =
         '<div class="ht-dau">' +
-        '<div><h3>Tạo đơn hàng</h3>' +
-        '<div class="phu">Đơn gõ tay (Facebook, Zalo, tại shop) — vẫn trừ kho như đơn trên web</div></div>' +
+        '<div><h3>Tạo đơn hàng</h3></div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
@@ -529,11 +526,7 @@
         Object.keys(KHACH_THEO_NHAN).map(function (n) {
           return '<option value="' + Apex.esc(n) + '"></option>';
         }).join('') + '</datalist>' +
-        '<div class="goi-y" id="bao-khach">' +
-        (KHACH.length
-          ? 'Khách mới thì bỏ qua ô này, gõ thẳng tên và số điện thoại bên dưới.'
-          : 'Chưa có khách nào trong danh bạ (hoặc chưa đăng nhập quản trị).') +
-        '</div></div>' +
+        '<div class="goi-y" id="bao-khach"></div></div>' +
         '<input type="hidden" id="f-nguoi-dung-id" value="" />' +
 
         '<div class="luoi-nhap-2">' +
@@ -553,9 +546,7 @@
         '<div id="ds-mon-tay"></div>' +
         '<button type="button" class="nut nut-vien nut-nho" onclick="themDongMon()">' +
         '<i class="fa-solid fa-plus"></i> Thêm món</button>' +
-        '<div class="tong-mon" id="tong-mon"></div>' +
-        '<div class="goi-y">Để nguyên ô đơn giá = bán đúng giá web (đã trừ khuyến mãi sản phẩm); ' +
-        'gõ số khác là giá riêng chủ shop bớt cho khách.</div></div>' +
+        '<div class="tong-mon" id="tong-mon"></div></div>' +
 
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-kenh">Kênh bán</label>' +
@@ -574,7 +565,6 @@
         '<div class="o-nhap"><label class="o-tick" for="f-da-tt">' +
         '<input type="checkbox" id="f-da-tt" /> Khách đã trả tiền rồi</label></div>' +
 
-        '<div class="goi-y">Đơn tạo thẳng ở trạng thái "Đã huỷ" thì không trừ kho.</div>' +
         '<div class="bao-loi" id="loi-tao-don"></div>' +
         '</div>' +
 

@@ -252,7 +252,8 @@ window.Apex = (function () {
 
   var chuyenSanPham = function (s) {
     return {
-      dbId: s.id, sku: 'SP-' + s.id, name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
+      // Mã chủ shop đặt (backend cũ chưa có maSanPham thì vẫn là SP-<id> như trước)
+      dbId: s.id, sku: s.maSanPham || ('SP-' + s.id), name: s.ten, cat: s.dangBan ? 'Đang bán' : 'Đang ẩn',
       // Không đặt giá vốn ở đây. Bản cũ để cost = 70% giá bán, tức là bịa ra
       // một con số vốn rồi tính lãi trên đó. Vốn thật nằm ở trang Quản lý vốn,
       // tính từ tiền mua vật tư và số gram nhựa đã dùng.
@@ -1478,4 +1479,205 @@ window.Apex = (function () {
     bieuDoCot: bieuDoCot,
     bieuDoTron: bieuDoTron
   };
+})();
+
+/* ================================================================
+   DROPDOWN CÓ Ô TÌM THEO TÊN — cho MỌI <select> của trang quản trị
+   (bộ lọc, ô chọn trong form, kể cả select vẽ sau bằng JS).
+
+   Bấm vào select thì mở bảng chọn riêng: ô tìm ở trên, danh sách bên
+   dưới, gõ tới đâu lọc tới đó (không phân biệt hoa thường, bỏ dấu:
+   gõ "moc khoa" vẫn ra "Móc khoá"). <select> gốc vẫn là nơi giữ giá
+   trị: chọn xong thì gán value và bắn sự kiện change / input như người
+   dùng tự chọn, nên onchange sẵn có của từng trang chạy y như cũ.
+   Select ít lựa chọn (<= 4), select nhiều dòng, select bị khoá, hoặc có
+   data-khong-tim thì để nguyên dropdown của trình duyệt.
+   ================================================================ */
+(function () {
+  var IT_NHAT = 5;
+  var bang = null, oTim = null, dsEl = null, selDangMo = null, dongSang = -1, dsDong = [];
+
+  var boDau = function (s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+  };
+
+  var dungDuoc = function (sel) {
+    return sel && sel.tagName === 'SELECT' && !sel.multiple && !sel.disabled &&
+      !(sel.size > 1) && !sel.hasAttribute('data-khong-tim') && sel.options.length >= IT_NHAT;
+  };
+
+  var themCss = function () {
+    if (document.getElementById('css-chon-tim')) return;
+    var st = document.createElement('style');
+    st.id = 'css-chon-tim';
+    st.textContent =
+      '.chon-tim{position:fixed;z-index:350;background:var(--the,#fff);color:var(--chu,#1c2024);' +
+      'border:1px solid var(--vien,#e4e6e9);border-radius:var(--radius-nho,10px);' +
+      'box-shadow:0 12px 32px rgba(0,0,0,.16);display:flex;flex-direction:column;overflow:hidden;font-size:13.5px}' +
+      '.chon-tim .ct-o{padding:8px;border-bottom:1px solid var(--vien,#e4e6e9);position:relative}' +
+      '.chon-tim .ct-o i{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--chu-mo,#6b7280);font-size:12px}' +
+      '.chon-tim input{width:100%;box-sizing:border-box;padding:8px 10px 8px 30px;border:1px solid var(--vien,#e4e6e9);' +
+      'border-radius:8px;font:inherit;background:var(--nen,#f7f8f9);color:inherit;outline:none}' +
+      '.chon-tim input:focus{border-color:var(--accent,#10b981);background:var(--the,#fff)}' +
+      '.chon-tim .ct-ds{overflow-y:auto;padding:4px;overscroll-behavior:contain}' +
+      '.chon-tim .ct-dong{padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.chon-tim .ct-dong.sang{background:var(--nen,#f1f3f5)}' +
+      '.chon-tim .ct-dong.dang-chon{font-weight:600;color:var(--accent-dam,#059669)}' +
+      '.chon-tim .ct-dong.khoa{opacity:.45;cursor:not-allowed}' +
+      '.chon-tim .ct-nhom{padding:8px 10px 4px;font-size:11.5px;font-weight:700;color:var(--chu-mo,#6b7280);text-transform:uppercase;letter-spacing:.3px}' +
+      '.chon-tim .ct-trong{padding:12px 10px;color:var(--chu-mo,#6b7280);text-align:center}';
+    document.head.appendChild(st);
+  };
+
+  var dong = function (traFocus) {
+    if (!bang) return;
+    bang.remove();
+    bang = null;
+    var sel = selDangMo;
+    selDangMo = null;
+    if (traFocus && sel) sel.focus();
+  };
+
+  var datSang = function (i) {
+    if (dongSang >= 0 && dsDong[dongSang]) dsDong[dongSang].classList.remove('sang');
+    dongSang = i;
+    var el = dsDong[i];
+    if (!el) return;
+    el.classList.add('sang');
+    var top = el.offsetTop, day = top + el.offsetHeight;
+    if (top < dsEl.scrollTop) dsEl.scrollTop = top - 4;
+    else if (day > dsEl.scrollTop + dsEl.clientHeight) dsEl.scrollTop = day - dsEl.clientHeight + 4;
+  };
+
+  var chon = function (el) {
+    if (!el || el.classList.contains('khoa')) return;
+    var sel = selDangMo, i = +el.getAttribute('data-i');
+    dong(true);
+    if (!sel || sel.selectedIndex === i) return;
+    sel.selectedIndex = i;
+    sel.dispatchEvent(new Event('input', { bubbles: true }));
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  var veDanhSach = function () {
+    var sel = selDangMo, tu = boDau(oTim.value), html = '', nhomDaIn = null;
+    dsDong = [];
+    Array.prototype.forEach.call(sel.options, function (op, i) {
+      if (op.hidden) return;
+      var chu = op.text;
+      if (tu && boDau(chu).indexOf(tu) < 0) return;
+      var nhom = op.parentNode && op.parentNode.tagName === 'OPTGROUP' ? op.parentNode.label : null;
+      if (nhom && nhom !== nhomDaIn) html += '<div class="ct-nhom">' + Apex.esc(nhom) + '</div>';
+      nhomDaIn = nhom;
+      html += '<div class="ct-dong' + (i === sel.selectedIndex ? ' dang-chon' : '') +
+        (op.disabled ? ' khoa' : '') + '" data-i="' + i + '" title="' + Apex.esc(chu) + '">' +
+        (Apex.esc(chu) || '&nbsp;') + '</div>';
+    });
+    dsEl.innerHTML = html || '<div class="ct-trong">Không có mục nào khớp</div>';
+    dsDong = Array.prototype.slice.call(dsEl.querySelectorAll('.ct-dong'));
+    dongSang = -1;
+    // Sáng sẵn dòng đang chọn (lúc chưa gõ gì) hoặc dòng khớp đầu tiên
+    var k = -1;
+    dsDong.some(function (d, j) { if (d.classList.contains('dang-chon')) { k = j; return true; } return false; });
+    if (tu || k < 0) dsDong.some(function (d, j) { if (!d.classList.contains('khoa')) { k = j; return true; } return false; });
+    if (k >= 0) datSang(k);
+  };
+
+  var datViTri = function () {
+    var r = selDangMo.getBoundingClientRect();
+    var rong = Math.max(r.width, 240);
+    var trai = Math.min(r.left, window.innerWidth - rong - 8);
+    var duoi = window.innerHeight - r.bottom - 12, tren = r.top - 12;
+    var moLen = duoi < 220 && tren > duoi;
+    var cao = Math.min(360, Math.max(160, moLen ? tren : duoi));
+    bang.style.left = Math.max(8, trai) + 'px';
+    bang.style.width = rong + 'px';
+    bang.style.maxHeight = cao + 'px';
+    bang.style.top = moLen ? '' : (r.bottom + 4) + 'px';
+    bang.style.bottom = moLen ? (window.innerHeight - r.top + 4) + 'px' : '';
+  };
+
+  var mo = function (sel) {
+    dong(false);
+    themCss();
+    selDangMo = sel;
+    bang = document.createElement('div');
+    bang.className = 'chon-tim';
+    bang.innerHTML = '<div class="ct-o"><i class="fa-solid fa-magnifying-glass"></i>' +
+      '<input type="text" placeholder="Tìm theo tên…" autocomplete="off" spellcheck="false"></div>' +
+      '<div class="ct-ds"></div>';
+    document.body.appendChild(bang);
+    oTim = bang.querySelector('input');
+    dsEl = bang.querySelector('.ct-ds');
+    datViTri();
+    veDanhSach();
+    oTim.focus();
+
+    oTim.addEventListener('input', veDanhSach);
+    oTim.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!dsDong.length) return;
+        var b = e.key === 'ArrowDown' ? 1 : -1, i = dongSang;
+        for (var n = 0; n < dsDong.length; n++) {
+          i = (i + b + dsDong.length) % dsDong.length;
+          if (!dsDong[i].classList.contains('khoa')) break;
+        }
+        datSang(i);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        chon(dsDong[dongSang]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();       // Esc chỉ đóng bảng chọn, không đóng luôn hộp thoại phía sau
+        dong(true);
+      } else if (e.key === 'Tab') {
+        dong(false);
+      }
+    });
+    // mousedown thay vì click: chọn xong trước khi ô tìm mất focus
+    dsEl.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      chon(e.target.closest('.ct-dong'));
+    });
+    dsEl.addEventListener('mousemove', function (e) {
+      var d = e.target.closest('.ct-dong');
+      var i = dsDong.indexOf(d);
+      if (i >= 0 && i !== dongSang && !d.classList.contains('khoa')) datSang(i);
+    });
+  };
+
+  // Chặn dropdown của trình duyệt ngay từ mousedown (click thì nó đã mở mất rồi)
+  document.addEventListener('mousedown', function (e) {
+    if (bang && bang.contains(e.target)) return;
+    var sel = e.target.closest && e.target.closest('select');
+    if (bang && sel === selDangMo) { e.preventDefault(); dong(true); return; }
+    if (bang) dong(false);
+    if (e.button !== 0 || !dungDuoc(sel)) return;
+    e.preventDefault();
+    sel.focus();
+    mo(sel);
+  }, true);
+
+  // Bàn phím: Enter / Space / Alt+↓ / F4 trên select thì mở bảng; gõ chữ thì mở bảng và
+  // đưa luôn chữ đó vào ô tìm
+  document.addEventListener('keydown', function (e) {
+    var sel = e.target;
+    if (bang || !dungDuoc(sel) || e.ctrlKey || e.metaKey) return;
+    var moBang = e.key === 'Enter' || e.key === ' ' || e.key === 'F4' || (e.altKey && e.key === 'ArrowDown');
+    var chu = !e.altKey && e.key.length === 1 && e.key !== ' ';
+    if (!moBang && !chu) return;
+    e.preventDefault();
+    mo(sel);
+    if (chu) { oTim.value = e.key; veDanhSach(); }
+  }, true);
+
+  // Cuộn trang / đổi cỡ cửa sổ: bảng đang mở bám theo select (cuộn bên trong danh sách thì thôi)
+  window.addEventListener('scroll', function (e) {
+    if (!bang || (e.target && e.target.nodeType === 1 && bang.contains(e.target))) return;
+    if (!document.body.contains(selDangMo)) { dong(false); return; }
+    datViTri();
+  }, true);
+  window.addEventListener('resize', function () { if (bang) dong(false); });
 })();

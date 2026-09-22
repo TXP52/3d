@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=28"></script>
+  <script src="assets/js/apex.js?v=30"></script>
   <style>
     .chu-cai {
       width: 36px; height: 36px; flex: 0 0 36px;
@@ -202,8 +202,7 @@
         (c ? Apex.esc(c.soDienThoai || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-email">Email</label>' +
         '<input type="email" id="f-email" value="' + (c ? Apex.esc(c.email || '') : '') + '" ' +
-        (khoaEmail ? 'readonly aria-readonly="true" aria-describedby="f-email-goi-y" />' +
-                     '<div class="goi-y" id="f-email-goi-y">Email đăng nhập của khách, không sửa được.</div>'
+        (khoaEmail ? 'readonly aria-readonly="true" title="Email đăng nhập của khách" />'
                    : 'placeholder="Bỏ trống cũng được" />') +
         '</div>' +
         '</div>' +
@@ -212,10 +211,6 @@
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
         '<input type="text" id="f-ghi-chu" value="' + (c ? Apex.esc(c.ghiChu || '') : '') + '" ' +
         'placeholder="Khách quen, hay mua móc khoá..." /></div>' +
-        // Câu này chỉ đúng với khách shop nhập tay; tài khoản tự đăng ký thì đã có mật khẩu
-        (khoaEmail ? '' :
-          '<div class="goi-y">Khách nhập ở đây chưa có mật khẩu nên chưa tự đăng nhập được — ' +
-          'chỉ để nhớ liên hệ và gắn vào đơn gõ tay.</div>') +
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
 

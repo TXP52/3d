@@ -9,16 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=28"></script>
+  <script src="assets/js/apex.js?v=30"></script>
   <!-- echarts (~1 MB) tải SAU apex.js và defer: dữ liệu được gọi ngay, biểu đồ vẽ khi echarts xong -->
   <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     .dong-tong td { font-weight: 700; background: #f6f7f8; }
-    .hang-gia { margin-top: 18px; }
-    .hang-gia .nhan-gia { color: var(--chu-mo); font-size: 13px; font-weight: 500; }
-    .hang-gia .so-gia { font-size: 20px; font-weight: 700; margin-top: 2px; }
-    .hang-gia .so-gia.lon { font-size: 28px; color: var(--accent-dam); }
     .hang-ap-dung { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+    .the-tong.gia-gram { margin-top: 18px; }
+
+    /* Thời gian in của mẫu = giờ + phút (cùng kiểu ô ở trang Sản phẩm) */
+    .o-gio-phut { display: flex; align-items: center; gap: 6px; }
+    .o-nhap .o-gio-phut input { flex: 1 1 0; min-width: 0; }
+    .o-gio-phut span { font-size: 13px; color: var(--chu-mo); white-space: nowrap; }
     .hang-ap-dung .o-nhap { flex: 1; min-width: 160px; margin: 0; }
 
     .luoi-chia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 16px; }
@@ -36,6 +38,13 @@
     .the-tong .o-tong .so-tong { font-size: 19px; font-weight: 700; margin-top: 3px; }
     .the-tong .o-tong.chinh .so-tong { color: var(--accent-dam); font-size: 24px; }
     .the-tong .o-tong .cong-thuc { color: var(--chu-mo); font-size: 12px; margin-top: 2px; }
+
+    /* Chi phí chạy máy: năm định mức bên trái, tiền mỗi giờ in bên phải */
+    .hang-nut-cp { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .nguon-cp { margin-top: 16px; font-size: 12.5px; color: var(--chu-mo); }
+    .nguon-cp summary { cursor: pointer; font-weight: 600; }
+    .nguon-cp ul { margin: 8px 0 0 18px; line-height: 1.65; }
+    .nguon-cp a { color: var(--accent-dam); word-break: break-all; }
   </style>
 </head>
 <body>
@@ -107,6 +116,9 @@
           </div>
         </div>
 
+        <!-- Chi phí chạy máy mỗi giờ in (vẽ lại bằng veChiPhiMay()) -->
+        <div id="khu-chi-phi-may"></div>
+
         <!-- PHẦN 5 + 6: Giá bán theo gram (vẽ lại bằng veLai()) -->
         <div id="khu-gia"></div>
 
@@ -134,7 +146,7 @@
       // Giữ trong biến: trình duyệt chặn localStorage thì vẫn áp dụng được cho lần xem này
       var TI_LE_LAI = docTiLeLai();
 
-      /** Danh sách mẫu in [{ ten, gram }] lưu ở trình duyệt. Chưa nhập thì trống. */
+      /** Danh sách mẫu in [{ ten, gram, phut? }] lưu ở trình duyệt (mẫu cũ chưa có phut). Chưa nhập thì trống. */
       function docMauIn() {
         try {
           var ds = JSON.parse(localStorage.getItem(KHOA_MAU_IN));
@@ -153,8 +165,7 @@
         var laiLo = von.laiLo || 0;
         var dsKpi = [
           {
-            nhan: 'Tổng chi phí', so: Apex.money(cp.tongChiPhi), icon: 'fa-coins', mau: 'bt-do',
-            phu: '<div class="thay-doi" style="color:var(--chu-mo);">Vật tư + nhựa đã dùng</div>'
+            nhan: 'Tổng chi phí', so: Apex.money(cp.tongChiPhi), icon: 'fa-coins', mau: 'bt-do', phu: ''
           },
           {
             nhan: 'Vốn mua vật tư', so: Apex.money(cp.tienMuaVatTu), icon: 'fa-boxes-stacked', mau: 'bt-toi',
@@ -276,7 +287,7 @@
 
         /* Nhựa đã dùng theo cuộn: backend lọc sẵn các cuộn nhựa, đúng thứ tự kho */
         Apex.fill('#bang-nhua', (von.cuonNhua || []).map(function (v) {
-          return '<tr class="hang-bam" onclick="moFormGram(' + v.id + ')" title="Bấm để nhập số gram đã dùng">' +
+          return '<tr class="hang-bam" onclick="moFormGram(' + v.id + ')">' +
             '<td><div class="o-ten"><img class="anh-sp" src="' + Apex.anhSanPham(v.ten) + '" alt="" />' +
             '<div><div class="chinh">' + Apex.esc(v.ten) + '</div>' +
             (v.mau ? '<div class="phu">' + Apex.nhanMau(v, 14) + '</div>' : '') +
@@ -294,25 +305,256 @@
         return ((Apex.tk('von') || {}).cuonNhua || []).filter(function (x) { return x.id === id; })[0] || null;
       }
 
+      /* ---------- Chi phí chạy máy ----------
+         Tiền máy mỗi giờ in = khấu hao máy + điện + bảo trì, backend tính sẵn (khoá 'chi-phi-may')
+         từ máy in trong kho và bốn định mức đầu ở bảng cai_dat; trang Sản phẩm nhân số này với giờ in
+         của từng biến thể ra tiền máy / giá vốn một cái. Sửa định mức -> PUT /quan-tri/chi-phi-may.
+         Ô để trống (hoặc gõ đúng số mặc định) = xoá định mức riêng, quay về số mặc định.
+         Định mức thứ năm (nhựa in được mỗi giờ) không đổi tiền mỗi giờ: backend dùng nó chia tiền
+         máy ra mỗi gram cho giá bán đề xuất khi chưa đủ sản phẩm có giờ in để tự tính trung bình. */
+      var O_CHI_PHI = [
+        { khoa: 'tuoiThoGio', id: 'cp-tuoi-tho', nhan: 'Tuổi thọ máy (giờ in)', ten: 'Tuổi thọ máy', buoc: 'any' },
+        { khoa: 'congSuatW', id: 'cp-cong-suat', nhan: 'Công suất trung bình (W)', ten: 'Công suất máy', buoc: 'any' },
+        // Tiền: backend làm tròn tới đồng lúc lưu, trang làm tròn y vậy
+        { khoa: 'giaDienKwh', id: 'cp-gia-dien', nhan: 'Giá điện (₫/kWh)', ten: 'Giá điện', buoc: '1', tien: true },
+        { khoa: 'baoTriMoiGio', id: 'cp-bao-tri', nhan: 'Bảo trì (₫/giờ in)', ten: 'Chi phí bảo trì', buoc: '1', tien: true },
+        { khoa: 'gramMoiGio', id: 'cp-gram-gio', nhan: 'Nhựa in được mỗi giờ (g)', ten: 'Nhựa in được mỗi giờ', buoc: 'any' }
+      ];
+
+      /** Một ô số của thẻ bên phải — cùng kiểu ô tổng của phần Chia tiền. */
+      function oTong(nhan, so, congThuc, chinh) {
+        return '<div class="o-tong' + (chinh ? ' chinh' : '') + '">' +
+          '<div class="nhan-tong">' + nhan + '</div>' +
+          '<div class="so-tong">' + so + '</div>' +
+          (congThuc ? '<div class="cong-thuc">' + congThuc + '</div>' : '') + '</div>';
+      }
+
+      /** Định mức đang được sửa khác số mặc định (backend: khác macDinh = định mức riêng). */
+      function laDinhMucRieng(cp, khoa) {
+        var md = cp.macDinh || {};
+        return md[khoa] != null && cp[khoa] !== md[khoa];
+      }
+
+      /** Bốn ô tiền mỗi giờ: khấu hao, điện, bảo trì, tổng (tổng = cộng ba dòng đã làm tròn). */
+      function veSoChiPhiMay(s) {
+        Apex.fill('#so-chi-phi-may',
+          oTong('Khấu hao máy / giờ', Apex.money(s.khauHaoMoiGio),
+            s.soMayIn
+              ? Apex.money(s.giaMayTrungBinh) + ' ÷ ' + Apex.number(s.tuoiThoGio) + ' giờ' +
+                (s.soMayIn > 1 ? ' · trung bình ' + Apex.number(s.soMayIn) + ' máy' : '')
+              : 'Chưa có máy in trong kho') +
+          oTong('Điện / giờ', Apex.money(s.dienMoiGio),
+            Apex.number(s.congSuatW) + ' W × ' + Apex.money(s.giaDienKwh) + '/kWh') +
+          oTong('Bảo trì / giờ', Apex.money(s.baoTriMoiGio), '') +
+          oTong('Tổng / giờ in', Apex.money(s.tongMoiGio),
+            Apex.number(s.khauHaoMoiGio) + ' + ' + Apex.number(s.dienMoiGio) + ' + ' + Apex.number(s.baoTriMoiGio), true));
+      }
+
+      /** "https://wiki.bambulab.com/en/..." -> "wiki.bambulab.com" cho dòng nguồn gọn. */
+      function tenMien(u) { return String(u).replace(/^https?:\/\//i, '').split(/[/?#]/)[0]; }
+
+      /** Nguồn của các số mặc định (backend gửi kèm), gập lại sẵn. */
+      function htmlNguon(ds) {
+        if (!ds || !ds.length) return '';
+        return '<details class="nguon-cp"><summary>Nguồn số mặc định (' + ds.length + ')</summary><ul>' +
+          ds.map(function (n) {
+            var link = /^https?:\/\//i.test(n.link || '') ? n.link : '';
+            return '<li>' + Apex.esc(n.noiDung) + (link
+              ? ' — <a href="' + Apex.esc(link) + '" target="_blank" rel="noopener noreferrer">' +
+                Apex.esc(tenMien(link)) + '</a>'
+              : '') + '</li>';
+          }).join('') + '</ul></details>';
+      }
+
+      function veChiPhiMay() {
+        var khu = document.getElementById('khu-chi-phi-may');
+        var cp = Apex.tk('chi-phi-may');
+        // Backend cũ chưa có khoá này thì không vẽ thẻ (khỏi hiện số 0 như thật)
+        if (!cp || typeof cp.tongMoiGio !== 'number') { khu.innerHTML = ''; return; }
+        var md = cp.macDinh || {};
+        var coRieng = O_CHI_PHI.some(function (o) { return laDinhMucRieng(cp, o.khoa); });
+        // Đủ sản phẩm có giờ in thì backend tự tính nhựa in được mỗi giờ từ dữ liệu: ô định mức đó
+        // không còn tác dụng nên khoá lại, hiện đúng số đang dùng (khỏi sửa mà giá không đổi)
+        var von = Apex.tk('von') || {};
+        var gramTuDuLieu = von.nguonGramMoiGio === 'du-lieu';
+
+        khu.innerHTML =
+          '<div class="the">' +
+          '<div class="the-dau"><div><h3>Chi phí chạy máy</h3></div></div>' +
+          '<div class="the-than">' +
+          '<div class="luoi-2-deu">' +
+          '<div>' +
+          // Backend cũ chưa có định mức nào (không có số mặc định) thì không vẽ ô đó
+          '<div class="luoi-nhap-2">' + O_CHI_PHI.filter(function (o) { return md[o.khoa] != null; }).map(function (o) {
+            var khoa = o.khoa === 'gramMoiGio' && gramTuDuLieu;
+            var giaTri = khoa ? von.gramMoiGio : cp[o.khoa];
+            return '<div class="o-nhap"><label for="' + o.id + '">' + o.nhan + '</label>' +
+              '<input type="number" id="' + o.id + '" min="0" step="' + o.buoc + '" value="' +
+              Apex.esc(giaTri == null ? '' : giaTri) + '" placeholder="' +
+              Apex.esc('Mặc định ' + Apex.number(md[o.khoa])) + '"' +
+              (khoa ? ' disabled title="' + Apex.esc('Trung bình ' + Apex.number(von.soBienTheCoGioIn) +
+                      ' biến thể có giờ in') + '"' : '') +
+              ' oninput="xemTruocChiPhiMay()" /></div>';
+          }).join('') + '</div>' +
+          '<div class="bao-loi" id="loi-chi-phi-may"></div>' +
+          '<div class="hang-nut-cp">' +
+          (coRieng
+            ? '<button class="nut nut-vien" type="button" onclick="veMacDinhChiPhiMay(this)">' +
+              '<i class="fa-solid fa-rotate-left"></i> Về mặc định</button>'
+            : '') +
+          '<button class="nut nut-chinh" type="button" onclick="luuChiPhiMay(this)">' +
+          '<i class="fa-solid fa-floppy-disk"></i> Lưu</button>' +
+          '</div>' +
+          '</div>' +
+          '<div class="the-tong" id="so-chi-phi-may"></div>' +
+          '</div>' +
+          htmlNguon(cp.nguon) +
+          '</div></div>';
+        veSoChiPhiMay(cp);
+      }
+
+      /**
+       * Số đang gõ trong một ô định mức: '' = để trống (theo mặc định), NaN = không hợp lệ.
+       * Tiền làm tròn tới đồng như backend.
+       */
+      function docDinhMuc(o) {
+        var e = document.getElementById(o.id);
+        if (!e) return '';
+        if (e.validity && e.validity.badInput) return NaN;
+        var chu = e.value.trim();
+        if (chu === '') return '';
+        var so = Number(chu);
+        if (o.tien) so = Math.round(so);
+        return so > 0 && so <= 1e9 ? so : NaN;
+      }
+
+      /**
+       * Gõ tới đâu tính thử tới đó, cùng công thức ChiPhiMayService.tinh (giá máy trung bình lấy
+       * số đã làm tròn backend gửi — nhiều máy khác giá thì có thể lệch 1₫; lưu xong là số backend).
+       * Ô đang gõ dở / sai thì giữ số đang dùng cho dòng đó.
+       */
+      window.xemTruocChiPhiMay = function () {
+        var cp = Apex.tk('chi-phi-may');
+        if (!cp) return;
+        var md = cp.macDinh || {};
+        var dm = {};
+        O_CHI_PHI.forEach(function (o) {
+          var so = docDinhMuc(o);
+          dm[o.khoa] = so === '' ? md[o.khoa] : (isNaN(so) ? cp[o.khoa] : so);
+        });
+        var khauHao = cp.soMayIn ? Math.round(cp.giaMayTrungBinh / dm.tuoiThoGio) : 0;
+        var dien = Math.round(dm.congSuatW / 1000 * dm.giaDienKwh);
+        var baoTri = Math.round(dm.baoTriMoiGio);
+        veSoChiPhiMay({
+          soMayIn: cp.soMayIn, giaMayTrungBinh: cp.giaMayTrungBinh,
+          tuoiThoGio: dm.tuoiThoGio, congSuatW: dm.congSuatW, giaDienKwh: dm.giaDienKwh,
+          khauHaoMoiGio: khauHao, dienMoiGio: dien, baoTriMoiGio: baoTri, tongMoiGio: khauHao + dien + baoTri
+        });
+      };
+
+      /** Gửi PUT rồi nạp lại trang (backend đã tính lại số mỗi giờ; tiền máy sản phẩm tính lúc đọc). */
+      function guiChiPhiMay(nut, body) {
+        var loi = document.getElementById('loi-chi-phi-may');
+        Apex.dangLuu(nut, function () {
+          return Apex.ghi('PUT', '/quan-tri/chi-phi-may', body).then(function (kq) {
+            return Apex.capNhatXong('Đã lưu chi phí chạy máy').then(function () { return kq; });
+          });
+        }, loi);
+      }
+
+      /**
+       * Chỉ gửi định mức có đổi. Để trống hoặc gõ đúng số mặc định -> null (xoá định mức riêng);
+       * số khác -> số đó. Câu lỗi cùng chữ với backend.
+       */
+      window.luuChiPhiMay = function (nut) {
+        var cp = Apex.tk('chi-phi-may') || {};
+        var md = cp.macDinh || {};
+        var loi = document.getElementById('loi-chi-phi-may');
+        var body = {}, coDoi = false;
+        for (var i = 0; i < O_CHI_PHI.length; i++) {
+          var o = O_CHI_PHI[i];
+          var oNhap = document.getElementById(o.id);
+          if (oNhap && oNhap.disabled) continue;      // ô đang khoá (số tự tính) thì không gửi
+          var so = docDinhMuc(o);
+          if (typeof so === 'number' && isNaN(so)) {
+            loi.textContent = o.ten + ' phải là số dương.';
+            document.getElementById(o.id).focus();
+            return;
+          }
+          var gui = (so === '' || so === md[o.khoa]) ? null : so;
+          var doi = gui === null ? laDinhMucRieng(cp, o.khoa) : gui !== cp[o.khoa];
+          if (doi) { body[o.khoa] = gui; coDoi = true; }
+        }
+        loi.textContent = '';
+        if (!coDoi) { Apex.baoNhanh('Không có gì thay đổi'); return; }
+        guiChiPhiMay(nut, body);
+      };
+
+      /** Xoá mọi định mức riêng, quay về các số mặc định. */
+      window.veMacDinhChiPhiMay = function (nut) {
+        var cp = Apex.tk('chi-phi-may') || {};
+        var body = {};
+        O_CHI_PHI.forEach(function (o) { if (laDinhMucRieng(cp, o.khoa)) body[o.khoa] = null; });
+        if (!Object.keys(body).length) return;
+        if (!confirm('Đưa các định mức đã sửa về số mặc định?')) return;
+        guiChiPhiMay(nut, body);
+      };
+
       /* ---------- PHẦN 5 + 6: Giá bán theo gram ---------- */
-      /* Giá dự kiến các mẫu in: backend tính (POST /quan-tri/von/gia-mau-in — CHỈ TÍNH, không lưu)
-         theo giá nhựa trung bình trong kho và tỉ lệ lãi đang dùng, làm tròn tới 500đ.
-         Nhớ kết quả lần gần nhất theo đúng dữ liệu đã gửi: vẽ lại sau khi ghi nhận gram mà
-         giá nhựa, tỉ lệ lãi và danh sách mẫu không đổi thì khỏi hỏi lại. */
-      var GIA_MAU_IN = null;   // { khoa, ds: [{ ten, gram, tienNhua, giaBan, lai }] }
+      /* Giá bán đề xuất theo gram = (giá vốn nhựa + tiền máy mỗi gram) × (1 + tỉ lệ lãi) — backend
+         tính sẵn trong khoá 'von'. Tiền máy mỗi gram = tiền máy mỗi giờ ÷ nhựa in được mỗi giờ
+         (tự tính trung bình từ giờ in của sản phẩm, chưa đủ thì theo định mức ở thẻ Chi phí chạy máy).
+         Giá dự kiến các mẫu in: backend tính (POST /quan-tri/von/gia-mau-in — CHỈ TÍNH, không lưu)
+         tiền nhựa + tiền máy theo thời gian in (không nhập thì backend ước theo gram), làm tròn 500đ.
+         Nhớ kết quả lần gần nhất theo đúng dữ liệu đã gửi: vẽ lại sau khi ghi nhận gram mà giá
+         nhựa, chi phí máy, tỉ lệ lãi và danh sách mẫu không đổi thì khỏi hỏi lại. */
+      var GIA_MAU_IN = null;   // { khoa, ds: [{ ten, gram, phut, phutUocTinh, tienNhua, tienMay, giaVon, giaBan, lai }] }
       var LUOT_GIA = 0;        // lần hỏi mới nhất; kết quả lần cũ về muộn thì bỏ
 
+      /** 90 -> "1 giờ 30 phút", 45 -> "45 phút", 120 -> "2 giờ" (cùng cách viết trang Sản phẩm). */
+      function chuThoiGian(phut) {
+        phut = Math.max(0, Math.round(phut || 0));
+        var g = Math.floor(phut / 60), p = phut % 60;
+        if (!g) return Apex.number(p) + ' phút';
+        return Apex.number(g) + ' giờ' + (p ? ' ' + p + ' phút' : '');
+      }
+
+      /** Phần giờ / phần phút để điền vào hai ô của form mẫu; bằng 0 (hoặc chưa nhập) thì để trống. */
+      function soGio(phut) { var g = Math.floor((phut || 0) / 60); return g ? g : ''; }
+      function soPhut(phut) { var p = (phut || 0) % 60; return p ? p : ''; }
+
+      /**
+       * Hai ô giờ + phút -> số phút in (nguyên). Ô trống = 0; giờ lẻ (1,5) được.
+       * Số âm hoặc gõ không ra số -> NaN.
+       */
+      function phutTuHaiO(oGio, oPhut) {
+        if (!oGio || !oPhut) return 0;
+        if ((oGio.validity && oGio.validity.badInput) || (oPhut.validity && oPhut.validity.badInput)) return NaN;
+        var g = oGio.value.trim(), p = oPhut.value.trim();
+        var gio = g === '' ? 0 : parseFloat(g), phut = p === '' ? 0 : parseFloat(p);
+        if (isNaN(gio) || isNaN(phut) || gio < 0 || phut < 0) return NaN;
+        return Math.round(gio * 60 + phut);
+      }
+
+      /** Hàng bảng mẫu in. dangTinh: chưa có số của backend — chỉ hiện tên, gram, giờ đã nhập. */
       function hangMauIn(ds, dangTinh) {
         var cho = '<span style="color:var(--chu-mo);">…</span>';
         return ds.map(function (m, i) {
-          return '<tr class="hang-bam" onclick="moFormMau(' + i + ')" title="Bấm để sửa hoặc xoá mẫu">' +
+          // Backend cũ chưa trả phut / tienMay thì hiện "—" chứ không hiện 0 như thật
+          var gio = dangTinh
+            ? (m.phut > 0 ? chuThoiGian(m.phut) : cho)
+            : (m.phut == null ? '—' : (m.phutUocTinh ? '~' : '') + chuThoiGian(m.phut));
+          var may = m.tienMay == null ? '—' : Apex.money(m.tienMay);
+          return '<tr class="hang-bam" onclick="moFormMau(' + i + ')">' +
             '<td><strong>' + Apex.esc(m.ten) + '</strong></td>' +
             '<td class="giua">' + Apex.number(m.gram || 0) + 'g</td>' +
+            '<td class="giua"' + (!dangTinh && m.phutUocTinh ? ' style="color:var(--chu-mo);"' : '') + '>' + gio + '</td>' +
             '<td class="phai">' + (dangTinh ? cho : Apex.money(m.tienNhua)) + '</td>' +
+            '<td class="phai">' + (dangTinh ? cho : may) + '</td>' +
             '<td class="phai" style="font-weight:700;color:var(--accent-dam);">' + (dangTinh ? cho : Apex.money(m.giaBan)) + '</td>' +
             '<td class="phai" style="color:var(--accent-dam);">' + (dangTinh ? cho : Apex.money(m.lai)) + '</td>' +
             '</tr>';
-        }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
+        }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--chu-mo);padding:28px;">Chưa có mẫu sản phẩm in nào.</td></tr>';
       }
 
       function tinhGiaMauIn(ds, tiLe, von) {
@@ -320,7 +562,8 @@
         if (!o) return;
         if (!ds.length) { o.innerHTML = hangMauIn([]); return; }
 
-        var khoa = JSON.stringify([tiLe, (von.chiPhi || {}).giaNhuaTrungBinhMoiGram, ds]);
+        var khoa = JSON.stringify([tiLe, (von.chiPhi || {}).giaNhuaTrungBinhMoiGram,
+          von.chiPhiMayMoiGio, von.gramMoiGio, ds]);
         if (GIA_MAU_IN && GIA_MAU_IN.khoa === khoa) { o.innerHTML = hangMauIn(GIA_MAU_IN.ds); return; }
 
         o.innerHTML = hangMauIn(ds, true);   // hiện tên + gram trước, số tiền "…" trong lúc tính
@@ -333,9 +576,18 @@
         }, function (e) {
           if (luot !== LUOT_GIA) return;
           var bang = document.getElementById('bang-mau-in');
-          if (bang) bang.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--do);padding:28px;">' +
+          if (bang) bang.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--do);padding:28px;">' +
             'Chưa tính được giá mẫu in: ' + Apex.esc(e.message) + '</td></tr>';
         });
+      }
+
+      /** Dòng cơ sở của tiền máy mỗi gram: "4.630 ₫/giờ ÷ 25 g/giờ" (+ nguồn nếu tự tính từ sản phẩm). */
+      function coSoTienMay(von) {
+        var chu = Apex.money(von.chiPhiMayMoiGio) + '/giờ ÷ ' + Apex.number(von.gramMoiGio) + ' g/giờ';
+        if (von.nguonGramMoiGio === 'du-lieu') {
+          chu += ' · trung bình ' + Apex.number(von.soBienTheCoGioIn) + ' biến thể';
+        }
+        return chu;
       }
 
       window.veLai = function () {
@@ -343,6 +595,11 @@
         var tiLe = von.tiLeLai != null ? von.tiLeLai : TI_LE_LAI;
         var giaVon = von.giaVonMoiGram || 0;
         var giaBan = von.giaBanMoiGram || 0;
+        // Backend cũ chưa tính tiền máy theo gram thì chỉ hiện phần nhựa như trước
+        var coMay = typeof von.tienMayMoiGram === 'number';
+        var tienMay = coMay ? von.tienMayMoiGram : 0;
+        var giaVonTong = coMay ? von.giaVonTongMoiGram : giaVon;
+        var dg = function (n) { return Apex.number(n || 0) + ' đ/gram'; };
 
         var html =
           '<div class="the">' +
@@ -354,10 +611,15 @@
                   '<input type="number" id="ti-le-lai" min="0" step="5" value="' + Apex.esc(tiLe) + '" /></div>' +
                   '<button class="nut nut-chinh" onclick="apDungTiLe(this)">Áp dụng</button>' +
                 '</div>' +
-                '<div class="hang-gia"><div class="nhan-gia">Giá vốn nhựa</div>' +
-                '<div class="so-gia">' + Apex.number(giaVon) + ' đ/gram</div></div>' +
-                '<div class="hang-gia"><div class="nhan-gia">GIÁ BÁN ĐỀ XUẤT</div>' +
-                '<div class="so-gia lon">' + Apex.number(giaBan) + ' đ/gram</div></div>' +
+                '<div class="the-tong gia-gram">' +
+                  oTong('Giá vốn nhựa', dg(giaVon), '') +
+                  (coMay
+                    ? oTong('Tiền máy', dg(tienMay), coSoTienMay(von)) +
+                      oTong('Giá vốn tổng', dg(giaVonTong), Apex.number(giaVon) + ' + ' + Apex.number(tienMay))
+                    : '') +
+                  oTong('Giá bán đề xuất', dg(giaBan),
+                    Apex.number(giaVonTong) + ' × ' + Apex.number(100 + Number(tiLe)) + '%', true) +
+                '</div>' +
               '</div>' +
               '<div><div class="khung-bieu-do" id="bd-gia"></div></div>' +
             '</div></div>' +
@@ -371,14 +633,20 @@
             '<button class="nut nut-vien nut-nho" onclick="themMauIn()">Thêm</button></div>' +
             '<div class="the-than khong-dem bang-cuon">' +
               '<table class="bang"><thead><tr>' +
-                '<th>Sản phẩm</th><th class="giua">Khối lượng</th><th class="phai">Tiền nhựa</th>' +
+                '<th>Sản phẩm</th><th class="giua">Khối lượng</th><th class="giua">Thời gian in</th>' +
+                '<th class="phai">Tiền nhựa</th><th class="phai">Tiền máy</th>' +
                 '<th class="phai">Giá bán đề xuất</th><th class="phai">Lãi dự kiến</th>' +
               '</tr></thead><tbody id="bang-mau-in"></tbody></table>' +
             '</div>' +
           '</div>';
 
         Apex.fill('#khu-gia', html);
-        Apex.bieuDoCot('bd-gia', ['Giá vốn/gram', 'Giá bán/gram'], [giaVon, giaBan], 'Đồng / gram');
+        if (coMay) {
+          Apex.bieuDoCot('bd-gia', ['Nhựa', 'Máy', 'Giá vốn', 'Giá bán'],
+            [giaVon, tienMay, giaVonTong, giaBan], 'Đồng / gram');
+        } else {
+          Apex.bieuDoCot('bd-gia', ['Giá vốn/gram', 'Giá bán/gram'], [giaVon, giaBan], 'Đồng / gram');
+        }
         tinhGiaMauIn(ds, tiLe, von);
       };
 
@@ -461,6 +729,13 @@
           (m ? Apex.esc(m.ten) : '') + '" /></div>' +
           '<div class="o-nhap"><label for="f-gram-mau">T\u1ed1n bao nhi\u00eau gram nh\u1ef1a? *</label>' +
           '<input type="number" id="f-gram-mau" min="1" step="1" value="' + (m ? (m.gram || 10) : 10) + '" /></div>' +
+          // Kh\u00f4ng b\u1eaft bu\u1ed9c: \u0111\u1ec3 tr\u1ed1ng th\u00ec backend \u01b0\u1edbc theo s\u1ed1 gram
+          '<div class="o-nhap"><label for="f-gio-mau">Th\u1eddi gian in</label>' +
+          '<div class="o-gio-phut">' +
+          '<input type="number" id="f-gio-mau" min="0" step="1" aria-label="S\u1ed1 gi\u1edd in" value="' + soGio(m && m.phut) + '" />' +
+          '<span>gi\u1edd</span>' +
+          '<input type="number" id="f-phut-mau" min="0" step="1" aria-label="S\u1ed1 ph\u00fat in" value="' + soPhut(m && m.phut) + '" />' +
+          '<span>ph\u00fat</span></div></div>' +
           '<div class="bao-loi" id="loi-mau"></div>' +
           '</div>' +
 
@@ -481,10 +756,15 @@
         if (!ten) { loi.textContent = 'Vui l\u00f2ng nh\u1eadp t\u00ean m\u1eabu.'; return; }
         var gram = parseInt(document.getElementById('f-gram-mau').value, 10);
         if (isNaN(gram) || gram <= 0) { loi.textContent = 'S\u1ed1 gram ph\u1ea3i l\u1edbn h\u01a1n 0.'; return; }
+        var phut = phutTuHaiO(document.getElementById('f-gio-mau'), document.getElementById('f-phut-mau'));
+        if (isNaN(phut)) { loi.textContent = 'Th\u1eddi gian in kh\u00f4ng h\u1ee3p l\u1ec7.'; return; }
 
+        // Kh\u00f4ng nh\u1eadp gi\u1edd in (0) th\u00ec kh\u00f4ng l\u01b0u phut: backend \u01b0\u1edbc theo gram, nh\u01b0 m\u1eabu c\u0169
+        var mau = { ten: ten, gram: gram };
+        if (phut > 0) mau.phut = phut;
         var ds = docMauIn();
-        if (i === null || i === undefined) ds.push({ ten: ten, gram: gram });
-        else ds[i] = { ten: ten, gram: gram };
+        if (i === null || i === undefined) ds.push(mau);
+        else ds[i] = mau;
         ghiMauIn(ds);
         Apex.dongHopThoai();
         veLai();
@@ -500,12 +780,13 @@
         veLai();
       };
 
-      window.veLaiTrang = function () { veKpi(); veChiPhi(); veLai(); };
+      window.veLaiTrang = function () { veKpi(); veChiPhi(); veChiPhiMay(); veLai(); };
 
-      /* Một request cho cả trang. Tỉ lệ lãi gửi kèm mỗi lần nạp (đọc lại ở thời điểm gửi) để
-         backend tính luôn giá bán/gram; Apex gọi veLaiTrang khi dữ liệu về và sau mỗi lần ghi. */
+      /* Một request cho cả trang (vốn + chi phí chạy máy). Tỉ lệ lãi gửi kèm mỗi lần nạp (đọc lại
+         ở thời điểm gửi) để backend tính luôn giá bán/gram; Apex gọi veLaiTrang khi dữ liệu về và
+         sau mỗi lần ghi. */
       Apex.trang({
-        bo: ['von'],
+        bo: ['von', 'chi-phi-may'],
         thamSo: function () { return { tiLeLai: TI_LE_LAI }; },
         ve: veLaiTrang
       });
