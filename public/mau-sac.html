@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     .o-mau-lon {
       width: 34px; height: 34px; border-radius: 9px;
@@ -158,7 +158,7 @@
         '<div class="o-nhap"><label for="f-ma">Mã màu (hex)</label>' +
         '<div class="hang-hex">' +
         '<span class="o-xem-hex" id="f-ma-xem" style="background:' + hex + '"></span>' +
-        '<input type="text" id="f-ma" maxlength="7" placeholder="#RRGGBB" spellcheck="false" ' +
+        '<input type="text" id="f-ma" maxlength="7" spellcheck="false" ' +
         'autocomplete="off" oninput="xemTruocHex()" value="' + hex + '" /></div></div>' +
         '<div class="o-nhap"><label for="f-thu-tu">Thứ tự hiển thị</label>' +
         '<input type="number" id="f-thu-tu" min="0" step="1" value="' + (m ? (m.thuTu || 0) : (MS.length + 1)) + '" />' +

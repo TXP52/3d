@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     /* Đường dẫn bộ sưu tập trên web khách (/bo-suu-tap.html?duong-dan=...) */
     .duong-dan {
@@ -29,7 +29,15 @@
       font-size: 12px; font-weight: 600; color: var(--chu-mo);
       text-transform: uppercase; letter-spacing: .3px; margin-bottom: 8px;
     }
-    .cot-chon input.tim-sp { margin-bottom: 8px; }
+    /* Ô tìm: không còn chữ mờ bên trong, nên vẽ kính lúp ở mép trái cho biết đây là ô tìm */
+    .cot-chon input.tim-sp {
+      margin-bottom: 8px;
+      padding-left: 30px;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 9px center;
+      background-size: 14px 14px;
+    }
     .ds-chon { display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; }
     .the-sp {
       display: flex; align-items: center; gap: 8px; min-width: 0;
@@ -232,16 +240,13 @@
 
         '<div class="ht-than">' +
         '<div class="o-nhap"><label for="f-ten">Tên bộ sưu tập *</label>' +
-        '<input type="text" id="f-ten" value="' + (b ? Apex.esc(b.ten) : '') + '" ' +
-        'placeholder="Quà tặng Noel, Móc khoá anime..." /></div>' +
+        '<input type="text" id="f-ten" value="' + (b ? Apex.esc(b.ten) : '') + '" /></div>' +
 
         '<div class="o-nhap"><label for="f-duong-dan">Đường dẫn</label>' +
-        '<input type="text" id="f-duong-dan" value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" ' +
-        'placeholder="Bỏ trống thì tự sinh từ tên" /></div>' +
+        '<input type="text" id="f-duong-dan" value="' + (b ? Apex.esc(b.duongDan || '') : '') + '" /></div>' +
 
         '<div class="o-nhap"><label for="f-mo-ta">Mô tả</label>' +
-        '<input type="text" id="f-mo-ta" value="' + (b ? Apex.esc(b.moTa || '') : '') + '" ' +
-        'placeholder="Một câu ngắn hiện dưới tên bộ" /></div>' +
+        '<input type="text" id="f-mo-ta" value="' + (b ? Apex.esc(b.moTa || '') : '') + '" /></div>' +
 
         Apex.htmlOTaiAnh('bst-anh', anhHienTai, 'Ảnh bìa') +
 
@@ -259,7 +264,7 @@
         '<div class="o-nhap"><label>Sản phẩm trong bộ</label>' +
         '<div class="khung-chon">' +
         '<div class="cot-chon"><div class="tieu-de-cot">Sản phẩm trong shop</div>' +
-        '<input type="text" class="tim-sp" id="tim-sp" placeholder="Tìm theo tên..." ' +
+        '<input type="text" class="tim-sp" id="tim-sp" aria-label="Tìm sản phẩm theo tên" ' +
         'oninput="veKhoSanPham()" autocomplete="off" />' +
         '<div class="ds-chon" id="kho-sp"></div></div>' +
         '<div class="cot-chon"><div class="tieu-de-cot">Đã chọn <span id="dem-sp"></span></div>' +

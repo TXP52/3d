@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -116,9 +116,12 @@
 
     /* Kênh bán — cùng bộ khoá với DonHang.KENH_HOP_LE bên backend */
     var KENH = {
-      website:  { ten: 'Website',  mau: 'badge-duong', icon: 'fa-solid fa-globe' },
       facebook: { ten: 'Facebook', mau: 'badge-tim',   icon: 'fa-brands fa-facebook' },
       zalo:     { ten: 'Zalo',     mau: 'badge-xanh',  icon: 'fa-solid fa-comment-dots' },
+      shopee:   { ten: 'Shopee',   mau: 'badge-cam',   icon: 'fa-solid fa-bag-shopping' },
+      tiktok:   { ten: 'TikTok',   mau: 'badge-xam',   icon: 'fa-brands fa-tiktok' },
+      threads:  { ten: 'Threads',  mau: 'badge-xam',   icon: 'fa-brands fa-threads' },
+      website:  { ten: 'Website',  mau: 'badge-duong', icon: 'fa-solid fa-globe' },
       tai_shop: { ten: 'Tại shop', mau: 'badge-cam',   icon: 'fa-solid fa-store' },
       khac:     { ten: 'Khác',     mau: 'badge-xam',   icon: 'fa-solid fa-ellipsis' }
     };
@@ -254,6 +257,11 @@
                      '<span style="color:var(--accent-dam);">&minus; ' + Apex.money(o.tienGiam) + '</span>')
               : '')
           : '') +
+        // Hai khoản ngoài tiền hàng của đơn gõ tay
+        (o.phuThu > 0 ? dong('Khác', '+ ' + Apex.money(o.phuThu)) : '') +
+        (o.phi > 0
+          ? dong('Phí', '<span style="color:var(--do);">&minus; ' + Apex.money(o.phi) + '</span>')
+          : '') +
         dong('Tổng tiền', '<strong>' + Apex.money(o.total) + '</strong>') +
         '</div>' +
         '<div style="margin-top:16px;font-weight:600;">Sản phẩm đã đặt</div>' + mon +
@@ -371,7 +379,7 @@
         htmlChuaChonSp() +
         '<input type="number" class="mon-sl" aria-label="Số lượng" min="1" step="1" value="1" oninput="tinhTongMon()" />' +
         '<input type="number" class="mon-gia" aria-label="Đơn giá" min="0" step="1000" ' +
-        'data-tu-dong="1" placeholder="Giá web" oninput="suaGia(this)" onblur="xoaTrangGia(this)" />' +
+        'data-tu-dong="1" oninput="suaGia(this)" onblur="xoaTrangGia(this)" />' +
         '<button type="button" class="nut-bo-dong" title="Bỏ món này" onclick="boDongMon(this)">' +
         '<i class="fa-solid fa-xmark"></i></button>' +
         '</div>';
@@ -399,17 +407,15 @@
       if (oChon.value === 'tu-go') {
         // Món ngoài bảng sản phẩm (in theo yêu cầu, phụ kiện lẻ): gõ tên và giá tay
         oBt.outerHTML = '<input type="text" class="mon-bt mon-ten" aria-label="Tên món" ' +
-          'placeholder="Tên món tự gõ" oninput="tinhTongMon()" />';
+          'oninput="tinhTongMon()" />';
         oGia.setAttribute('data-tu-dong', '0');
         oGia.value = '';
-        oGia.placeholder = 'Giá bán';
         tinhTongMon();
         return;
       }
 
       // Giá gõ tay cho món trước không áp sang món khác: đổi món là quay về giá web
       oGia.setAttribute('data-tu-dong', '1');
-      oGia.placeholder = 'Giá web';
       if (!oChon.value) {
         oBt.outerHTML = htmlChuaChonSp();
         oGia.value = '';
@@ -470,12 +476,20 @@
         if (sl > 0) { tong += sl * gia; soMon++; }
       });
       var o = document.getElementById('tong-mon');
-      if (o) {
-        o.innerHTML = soMon
-          ? 'Tạm tính ' + soMon + ' món: <strong>' + Apex.money(tong) + '</strong> ' +
-            '<span style="font-size:12.5px;">(chưa trừ khuyến mãi — backend tính lại lúc lưu)</span>'
-          : 'Chưa chọn món nào.';
-      }
+      if (!o) return;
+      // Hai khoản ngoài tiền hàng, đúng công thức backend: tổng = hàng + khác - phí (không âm)
+      var soO = function (id) {
+        var e = document.getElementById(id);
+        return e ? Math.max(0, parseInt(e.value, 10) || 0) : 0;
+      };
+      var phuThu = soO('f-phu-thu'), phi = soO('f-phi');
+      var tongCong = Math.max(0, tong + phuThu - phi);
+      if (!soMon) { o.innerHTML = 'Chưa chọn món nào.'; return; }
+      o.innerHTML = 'Tạm tính ' + soMon + ' món: <strong>' + Apex.money(tong) + '</strong>' +
+        (phuThu ? ' + khác <strong>' + Apex.money(phuThu) + '</strong>' : '') +
+        (phi ? ' − phí <strong>' + Apex.money(phi) + '</strong>' : '') +
+        ((phuThu || phi) ? ' = <strong>' + Apex.money(tongCong) + '</strong>' : '') +
+        ' <span style="font-size:12.5px;">(chưa trừ khuyến mãi — backend tính lại lúc lưu)</span>';
     }
 
     /** Gõ tên khách trùng một người trong danh bạ thì điền sẵn số điện thoại, địa chỉ và nối đơn. */
@@ -519,9 +533,9 @@
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
         '<div class="ht-than">' +
-        '<div class="o-nhap"><label for="f-tim-khach">Khách quen trong danh bạ</label>' +
+        '<div class="o-nhap"><label for="f-tim-khach">Khách hàng</label>' +
         '<input type="text" id="f-tim-khach" list="ds-khach-cu" autocomplete="off" ' +
-        'placeholder="Gõ tên hoặc số điện thoại để chọn nhanh" oninput="chonKhachCu()" />' +
+        'oninput="chonKhachCu()" />' +
         '<datalist id="ds-khach-cu">' +
         Object.keys(KHACH_THEO_NHAN).map(function (n) {
           return '<option value="' + Apex.esc(n) + '"></option>';
@@ -535,17 +549,25 @@
         '<div class="o-nhap"><label for="f-sdt">Số điện thoại *</label>' +
         '<input type="text" id="f-sdt" /></div>' +
         '</div>' +
-        '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ giao</label>' +
-        '<input type="text" id="f-dia-chi" placeholder="Khách lấy tại shop thì để trống" /></div>' +
+        '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ giao *</label>' +
+        '<input type="text" id="f-dia-chi" /></div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
-        '<input type="text" id="f-ghi-chu" placeholder="Giao giờ hành chính, gói quà..." /></div>' +
+        '<input type="text" id="f-ghi-chu" /></div>' +
 
-        '<div class="o-nhap"><label>Món trong đơn *</label>' +
+        '<div class="o-nhap">' +
         '<div class="dau-mon-tay"><span>Sản phẩm</span><span>Phân loại</span><span>SL</span>' +
         '<span>Đơn giá</span><span></span></div>' +
         '<div id="ds-mon-tay"></div>' +
         '<button type="button" class="nut nut-vien nut-nho" onclick="themDongMon()">' +
         '<i class="fa-solid fa-plus"></i> Thêm món</button>' +
+        // Hai khoản ngoài tiền hàng: "Khác" cộng vào tổng (ship khách trả, gói quà),
+        // "Phí" trừ khỏi tổng (phí sàn Shopee / TikTok, phí ship shop chịu)
+        '<div class="luoi-nhap-2" style="margin-top:12px;">' +
+        '<div class="o-nhap"><label for="f-phu-thu">Khác (cộng vào tổng)</label>' +
+        '<input type="number" id="f-phu-thu" min="0" step="1000" value="0" oninput="tinhTongMon()" /></div>' +
+        '<div class="o-nhap"><label for="f-phi">Phí sàn, phí ship… (trừ khỏi tổng)</label>' +
+        '<input type="number" id="f-phi" min="0" step="1000" value="0" oninput="tinhTongMon()" /></div>' +
+        '</div>' +
         '<div class="tong-mon" id="tong-mon"></div></div>' +
 
         '<div class="luoi-nhap-2">' +
@@ -556,7 +578,7 @@
         '<div class="o-nhap"><label for="f-phuong-thuc">Cách thanh toán</label>' +
         '<select id="f-phuong-thuc">' + chonPt + '</select></div>' +
         '<div class="o-nhap"><label for="f-ma-km">Mã khuyến mãi</label>' +
-        '<input type="text" id="f-ma-km" list="ds-ma-km" placeholder="Bỏ trống nếu không dùng mã" />' +
+        '<input type="text" id="f-ma-km" list="ds-ma-km" />' +
         '<datalist id="ds-ma-km">' + maDangChay.map(function (k) {
           return '<option value="' + Apex.esc(k.ma) + '">' + Apex.esc(k.ten || '') + '</option>';
         }).join('') + '</datalist></div>' +
@@ -613,8 +635,10 @@
       var tenKhach = document.getElementById('f-ten-khach').value.trim();
       var sdt = document.getElementById('f-sdt').value.trim();
       // Cùng câu chữ với backend để chủ shop không thấy hai kiểu báo cho một lỗi
+      var diaChi = document.getElementById('f-dia-chi').value.trim();
       if (!tenKhach) { loi.textContent = 'Vui lòng nhập họ và tên'; return; }
       if (!sdt) { loi.textContent = 'Vui lòng nhập số điện thoại'; return; }
+      if (!diaChi) { loi.textContent = 'Vui lòng nhập địa chỉ'; return; }
 
       var matHang = docMatHang();
       if (!matHang.length) { loi.textContent = 'Đơn phải có ít nhất một món'; return; }
@@ -625,13 +649,20 @@
         }
       }
 
+      var soO = function (id) {
+        var e = document.getElementById(id);
+        return e ? Math.max(0, parseInt(e.value, 10) || 0) : 0;
+      };
       var nguoiDungId = parseInt(document.getElementById('f-nguoi-dung-id').value, 10);
       var duLieu = {
         tenKhach: tenKhach,
         soDienThoai: sdt,
-        diaChi: document.getElementById('f-dia-chi').value.trim(),
+        diaChi: diaChi,
         ghiChu: document.getElementById('f-ghi-chu').value.trim(),
         kenh: document.getElementById('f-kenh').value,
+        // Khác: cộng vào tổng; Phí: trừ khỏi tổng (backend tính lại theo đúng công thức này)
+        phuThu: soO('f-phu-thu'),
+        phi: soO('f-phi'),
         trangThai: document.getElementById('f-tt-don').value,
         maKhuyenMai: document.getElementById('f-ma-km').value.trim(),
         thanhToan: {

@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <!-- echarts (~1 MB) tải SAU apex.js và defer: dữ liệu được gọi ngay, biểu đồ vẽ khi echarts xong -->
   <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
@@ -390,8 +390,7 @@
             var giaTri = khoa ? von.gramMoiGio : cp[o.khoa];
             return '<div class="o-nhap"><label for="' + o.id + '">' + o.nhan + '</label>' +
               '<input type="number" id="' + o.id + '" min="0" step="' + o.buoc + '" value="' +
-              Apex.esc(giaTri == null ? '' : giaTri) + '" placeholder="' +
-              Apex.esc('Mặc định ' + Apex.number(md[o.khoa])) + '"' +
+              Apex.esc(giaTri == null ? '' : giaTri) + '"' +
               (khoa ? ' disabled title="' + Apex.esc('Trung bình ' + Apex.number(von.soBienTheCoGioIn) +
                       ' biến thể có giờ in') + '"' : '') +
               ' oninput="xemTruocChiPhiMay()" /></div>';

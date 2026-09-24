@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     /* Một sản phẩm in được bằng nhiều cuộn nhựa -> danh sách dòng thêm/bớt được */
     .dau-nhua, .dong-nhua {
@@ -278,25 +278,6 @@
     }
 
     /* ---------------- Mã sản phẩm, thời gian in, tiền máy ---------------- */
-
-    /**
-     * Mã backend sẽ tự sinh nếu ô mã để trống: SP-<số lớn nhất trong các mã dạng SP-<số> của
-     * sản phẩm chưa xoá + 1> — cùng cách đếm với SanPhamController (không phân biệt hoa thường,
-     * phần số tối đa 18 chữ số). Chỉ để hiện trong ô gợi ý; lúc lưu backend mới là nơi sinh mã.
-     */
-    function maTuSinhKeTiep() {
-      var lon = null;   // BigInt khi trình duyệt có (18 chữ số vượt Number), không thì Number
-      var coBig = typeof BigInt === 'function';
-      (Apex.tk('san-pham') || []).forEach(function (s) {
-        if (s.daXoa) return;
-        var m = /^SP-(\d{1,18})$/i.exec(String(s.maSanPham || ('SP-' + s.id)));
-        if (!m) return;
-        var so = coBig ? BigInt(m[1]) : parseInt(m[1], 10);
-        if (lon === null || so > lon) lon = so;
-      });
-      if (lon === null) return 'SP-1';
-      return 'SP-' + String(coBig ? lon + BigInt(1) : lon + 1);
-    }
 
     /** Tiền máy mỗi giờ in (khoá chi-phi-may, backend tính); backend cũ chưa có khoá này thì null. */
     function tienMayMoiGio() {
@@ -576,7 +557,7 @@
         (p ? Apex.esc(p.name) : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-ma">Mã sản phẩm</label>' +
         '<input type="text" id="f-ma" maxlength="40" autocomplete="off" spellcheck="false" value="' +
-        Apex.esc(maDangCo) + '" placeholder="' + Apex.esc('Để trống: tự sinh ' + maTuSinhKeTiep()) + '" /></div>' +
+        Apex.esc(maDangCo) + '" /></div>' +
         '</div>' +
         '<div class="luoi-nhap-2">' +
         '<div class="o-nhap"><label for="f-gia">Giá bán (VNĐ)</label>' +
@@ -588,9 +569,9 @@
         // Chưa chia phân loại: giờ in của biến thể duy nhất; có biến thể thì mỗi hàng một cột "Giờ in"
         '<div class="o-nhap chi-mot"><label for="f-gio-in">Thời gian in / cái</label>' +
         '<div class="o-gio-phut">' +
-        '<input type="number" id="f-gio-in" min="0" step="1" placeholder="0" aria-label="Số giờ in một cái" value="' +
+        '<input type="number" id="f-gio-in" min="0" step="1" aria-label="Số giờ in một cái" value="' +
         soGio(phutMot) + '" /><span>giờ</span>' +
-        '<input type="number" id="f-phut-in" min="0" step="1" placeholder="0" aria-label="Số phút in một cái" value="' +
+        '<input type="number" id="f-phut-in" min="0" step="1" aria-label="Số phút in một cái" value="' +
         soPhut(phutMot) + '" /><span>phút</span></div></div>' +
         '<div class="o-nhap"><label for="f-danh-muc">Danh mục</label>' +
         '<select id="f-danh-muc">' + chonDm + '</select>' +
@@ -810,23 +791,23 @@
       o.innerHTML =
         '<div class="bt-dong">' +
         '<button type="button" class="bt-anh" title="Ảnh riêng của biến thể" onclick="batChiTietBt(this)"></button>' +
-        '<input type="text" class="bt-ten" aria-label="Tên biến thể" placeholder="' +
-        (b.macDinh && !b.ten ? 'Tên (vd Đỏ, Size M)' : 'vd Đỏ, Size M') + '" value="' + Apex.esc(b.ten || '') + '" ' +
+        '<input type="text" class="bt-ten" aria-label="Tên biến thể" value="' + Apex.esc(b.ten || '') + '" ' +
         'oninput="this.removeAttribute(\'data-tu-mau\');doiTenAnhBt(\'' + k + '\')" />' +
         '<div class="bt-o-mau"><span class="bt-cham-mau"></span>' +
         '<select class="bt-mau" aria-label="Màu biến thể" onchange="doiMauBt(this)">' +
         optionMauBt(b.mauSacId || null, b.mau) + '</select></div>' +
         '<div class="bt-o-so bt-o-gia"><span class="nhan-nho">Giá</span>' +
-        '<input type="number" class="bt-gia" min="0" step="1000" aria-label="Giá biến thể" placeholder="Theo SP" ' +
+        '<input type="number" class="bt-gia" min="0" step="1000" aria-label="Giá biến thể" ' +
         'value="' + (b.gia === null || b.gia === undefined ? '' : b.gia) + '" oninput="veTomTatSp()" /></div>' +
         '<div class="bt-o-so bt-o-ton"><span class="nhan-nho">Tồn kho</span>' +
         '<input type="number" class="bt-ton' + ((b.tonKho || 0) < 0 ? ' so-am' : '') + '" step="1" aria-label="Tồn kho biến thể" ' +
         'value="' + (b.tonKho || 0) + '" oninput="doiTonBt(this)" /></div>' +
         // Thời gian in MỘT cái của biến thể: giờ | phút (ô trống = 0)
-        '<div class="bt-o-so bt-o-gio"><span class="nhan-nho">Giờ in</span>' +
-        '<input type="number" class="bt-gio" min="0" step="1" placeholder="giờ" aria-label="Số giờ in một cái" ' +
+        // Nhãn ghi rõ ô nào là giờ, ô nào là phút (hai ô số giống hệt nhau, không còn chữ mờ bên trong)
+        '<div class="bt-o-so bt-o-gio"><span class="nhan-nho">Giờ · phút in</span>' +
+        '<input type="number" class="bt-gio" min="0" step="1" aria-label="Số giờ in một cái" ' +
         'value="' + soGio(b.thoiGianInPhut) + '" oninput="veTomTatSp()" />' +
-        '<input type="number" class="bt-phut" min="0" step="1" placeholder="phút" aria-label="Số phút in một cái" ' +
+        '<input type="number" class="bt-phut" min="0" step="1" aria-label="Số phút in một cái" ' +
         'value="' + soPhut(b.thoiGianInPhut) + '" oninput="veTomTatSp()" /></div>' +
         '<select class="bt-tt" aria-label="Trạng thái biến thể">' + optionTtBt(b.trangThai || '') + '</select>' +
         '<button type="button" class="bt-nut-nhua" title="Cuộn nhựa của biến thể" onclick="batChiTietBt(this)"></button>' +

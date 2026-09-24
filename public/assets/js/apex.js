@@ -242,8 +242,11 @@ window.Apex = (function () {
       total: d.tongTien || 0, status: TT_MAP[d.trangThai] || d.trangThai,
       maKhuyenMai: d.maKhuyenMai || '', tienGiam: d.tienGiam || 0, tamTinh: d.tamTinh || d.tongTien || 0,
       tienGiamSanPham: d.tienGiamSanPham || 0, tienHangGoc: d.tienHangGoc || d.tongTien || 0,
+      // Khoản cộng thêm / phí của đơn gõ tay (đơn web luôn 0)
+      phuThu: d.phuThu || 0, phi: d.phi || 0,
       payment: tt ? (PT_MAP[tt.phuongThuc] || 'COD') + (tt.trangThai === 'da_thanh_toan' ? ' (đã TT)' : '') : 'COD',
-      channel: 'Website',
+      // Kênh bán backend đã dịch sẵn (đơn cũ chưa có kênh thì là website)
+      channel: d.kenhTen || 'Website',
       chiTiet: (d.chiTiet || []).map(function (c) {
         return { ten: c.tenSanPham, soLuong: c.soLuong, donGia: c.donGia, donGiaGoc: c.donGiaGoc || c.donGia };
       })
@@ -832,7 +835,7 @@ window.Apex = (function () {
       '<label class="nut-tai-anh" for="' + idGoc + '-file"><i class="fa-solid fa-images"></i> Thêm ảnh</label>' +
       '<input type="file" id="' + idGoc + '-file" accept="image/*" multiple />' +
       '<div class="dan-link-anh">' +
-      '<input type="url" id="' + idGoc + '-link" aria-label="Link ảnh từ web khác" placeholder="https://..." />' +
+      '<input type="url" id="' + idGoc + '-link" aria-label="Link ảnh từ web khác" />' +
       '<button type="button" class="nut nut-vien nut-nho" id="' + idGoc + '-them-link">Thêm link</button>' +
       '</div></div>' +
       '<div class="trang-thai-anh" id="' + idGoc + '-bao"></div>' +
@@ -1605,7 +1608,7 @@ window.Apex = (function () {
     bang = document.createElement('div');
     bang.className = 'chon-tim';
     bang.innerHTML = '<div class="ct-o"><i class="fa-solid fa-magnifying-glass"></i>' +
-      '<input type="text" placeholder="Tìm theo tên…" autocomplete="off" spellcheck="false"></div>' +
+      '<input type="text" aria-label="Tìm theo tên" autocomplete="off" spellcheck="false"></div>' +
       '<div class="ct-ds"></div>';
     document.body.appendChild(bang);
     oTim = bang.querySelector('input');

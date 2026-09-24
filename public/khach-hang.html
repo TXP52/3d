@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     .chu-cai {
       width: 36px; height: 36px; flex: 0 0 36px;
@@ -63,7 +63,7 @@
               <thead>
                 <tr>
                   <th>Khách hàng</th>
-                  <th>Email</th>
+                  <th>Địa chỉ</th>
                   <th>Điện thoại</th>
                   <th>Nhóm</th>
                   <th class="giua">Số đơn</th>
@@ -112,11 +112,10 @@
       }).join(''));
     }
 
-    /* Màu huy hiệu theo nhóm backend trả (quan_tri / khach_hang / khach_le) */
+    /* Màu huy hiệu theo nhóm backend trả (khach_hang / khach_le) */
     function badgeNhom(c) {
       var lop = 'badge-xam';
-      if (c.nhom === 'quan_tri') lop = 'badge-do';
-      else if (c.nhom === 'khach_hang') lop = 'badge-duong';
+      if (c.nhom === 'khach_hang') lop = 'badge-duong';
       return '<span class="badge ' + lop + '"><span class="cham"></span>' + Apex.esc(c.nhomTen || 'Khách lẻ') + '</span>';
     }
 
@@ -146,7 +145,9 @@
         return;
       }
 
-      KHACH = kh.khach || [];
+      // Tài khoản quản trị không phải khách: không hiện ở bảng (backend mới cũng đã bỏ
+      // khỏi danh sách lẫn KPI — lọc thêm ở đây để backend cũ cũng không lòi ra dòng đó)
+      KHACH = (kh.khach || []).filter(function (c) { return c.nhom !== 'quan_tri'; });
       veKpi(kh.kpi || {});
       Apex.fill('#bang-khach', KHACH.map(function (c, i) {
         var bam = suaDuoc(c) || themDuoc(c);
@@ -154,10 +155,11 @@
           (c.ghiChu ? (c.nguoiDungId ? ' · ' : '') + Apex.esc(c.ghiChu) : '');
         return '<tr' + (bam ? ' class="hang-bam" onclick="moForm(' + i + ')" title="Bấm để ' +
             (suaDuoc(c) ? 'sửa khách' : 'thêm khách vào danh bạ') + '"' : '') + '>' +
+          // Mã KH (và ghi chú) xuống DÒNG DƯỚI tên: div chứ không phải span, span nằm cùng dòng
           '<td><div class="o-ten"><span class="chu-cai">' + chuCai(c.ten) + '</span>' +
-            '<span><span class="chinh">' + Apex.esc(c.ten || 'Không rõ') + '</span>' +
-            '<span class="phu">' + phu + '</span></span></div></td>' +
-          '<td>' + Apex.esc(c.email || '—') + '</td>' +
+            '<div><div class="chinh">' + Apex.esc(c.ten || 'Không rõ') + '</div>' +
+            '<div class="phu">' + phu + '</div></div></div></td>' +
+          '<td>' + Apex.esc(c.diaChi || '—') + '</td>' +
           '<td>' + Apex.esc(c.soDienThoai || '—') + '</td>' +
           '<td>' + badgeNhom(c) + '</td>' +
           '<td class="giua">' + Apex.number(c.soDon || 0) + '</td>' +
@@ -202,15 +204,13 @@
         (c ? Apex.esc(c.soDienThoai || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-email">Email</label>' +
         '<input type="email" id="f-email" value="' + (c ? Apex.esc(c.email || '') : '') + '" ' +
-        (khoaEmail ? 'readonly aria-readonly="true" title="Email đăng nhập của khách" />'
-                   : 'placeholder="Bỏ trống cũng được" />') +
+        (khoaEmail ? 'readonly aria-readonly="true" title="Email đăng nhập của khách" />' : '/>') +
         '</div>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-dia-chi">Địa chỉ</label>' +
         '<input type="text" id="f-dia-chi" value="' + (c ? Apex.esc(c.diaChi || '') : '') + '" /></div>' +
         '<div class="o-nhap"><label for="f-ghi-chu">Ghi chú</label>' +
-        '<input type="text" id="f-ghi-chu" value="' + (c ? Apex.esc(c.ghiChu || '') : '') + '" ' +
-        'placeholder="Khách quen, hay mua móc khoá..." /></div>' +
+        '<input type="text" id="f-ghi-chu" value="' + (c ? Apex.esc(c.ghiChu || '') : '') + '" /></div>' +
         '<div class="bao-loi" id="loi-form"></div>' +
         '</div>' +
 

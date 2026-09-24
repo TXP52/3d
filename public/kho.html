@@ -9,12 +9,36 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=30"></script>
+  <script src="assets/js/apex.js?v=32"></script>
   <style>
     .dong-het { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--vien); }
     .dong-het:last-child { border-bottom: none; }
     .dong-het .ten-vt { font-weight: 600; font-size: 14px; }
     .dong-het .phu-vt { color: var(--chu-mo); font-size: 12.5px; margin-top: 2px; }
+
+    /* ---- Bảng đợt nhập trong form vật tư: mỗi đợt một ngày, một giá, một nơi mua ---- */
+    .dau-lo, .dong-lo {
+      display: grid;
+      grid-template-columns: 140px 90px 120px minmax(0, 1fr) 32px;
+      gap: 8px; align-items: center;
+    }
+    .dau-lo {
+      color: var(--chu-mo); font-size: 11.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .3px; padding: 0 2px 6px 2px;
+    }
+    .dong-lo { margin-bottom: 8px; }
+    .dong-lo input, .dong-lo select { width: 100%; box-sizing: border-box; }
+    .tong-lo { color: var(--chu-mo); font-size: 12.5px; margin-top: 4px; }
+    .tong-lo strong { color: var(--chu); }
+    @media (max-width: 700px) {
+      /* Điện thoại: mỗi đợt xếp dọc, nút bỏ đợt nằm cuối */
+      .dau-lo { display: none; }
+      .dong-lo {
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid var(--vien); border-radius: 10px; padding: 8px; margin-bottom: 10px;
+      }
+      .dong-lo > *:nth-child(4) { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 <body>
@@ -154,7 +178,12 @@
             '<div class="phu">' + Apex.esc(Apex.tenLoaiVatTu(v)) + '</div></div></div></td>' +
             '<td class="giua">' + Apex.badgeTtVatTu(v) + '</td>' +
             '<td>' + Apex.nhanMau(v, 15) + '</td>' +
-            '<td class="phai">' + Apex.money(v.gia) + '</td>' +
+            // Nhiều đợt nhập, mỗi đợt một giá: số hiện ở đây là giá BÌNH QUÂN
+            '<td class="phai">' + Apex.money(v.gia) +
+            ((v.soDotNhap || 0) > 1
+              ? '<div style="color:var(--chu-mo);font-size:11.5px;margin-top:2px;" ' +
+                'title="Giá bình quân của ' + v.soDotNhap + ' đợt nhập">TB ' + v.soDotNhap + ' đợt</div>'
+              : '') + '</td>' +
             '<td class="giua"><strong>' + Apex.number(v.soLuong || 0) + '</strong></td>' +
             '<td class="phai">' + Apex.money(v.tongTienMua || 0) + '</td>' +
             '<td class="giua"><div><strong>' + Apex.number(daDung) + '</strong> ' + dv + '</div>' +
@@ -236,10 +265,6 @@
         'border:1px solid rgba(0,0,0,.18);flex-shrink:0;background:#e4e6e9;"></span>' +
         '<select id="f-mau" style="flex:1;min-width:0;" onchange="doiMauVatTu()">' + chonMau + '</select></div>' +
         '</div>' +
-        '<div class="o-nhap"><label for="f-gia">Giá mua 1 đơn vị (VNĐ)</label>' +
-        '<input type="number" id="f-gia" min="0" step="1000" value="' + (v ? (v.gia || 0) : 0) + '" /></div>' +
-        '<div class="o-nhap"><label for="f-sl">Số lượng</label>' +
-        '<input type="number" id="f-sl" min="1" step="1" value="' + (v ? (v.soLuong || 1) : 1) + '" /></div>' +
         // Ô khối lượng chỉ có nghĩa với nhựa; loại khác thì doiDonViTheoLoai() giấu đi
         '<div class="o-nhap" id="o-gram"><label for="f-gram">Khối lượng 1 đơn vị (gram)</label>' +
         '<input type="number" id="f-gram" min="0" step="50" value="' + (v ? (v.khoiLuongGram || 0) : 1000) + '" />' +
@@ -249,7 +274,16 @@
         (moi ? '' :
           '<div class="o-nhap"><label for="f-dung" id="nhan-da-dung">Đã dùng</label>' +
           '<input type="number" id="f-dung" min="0" step="1" value="' + (v.daDungGram || 0) + '" /></div>') +
-        '<div class="o-nhap"><label for="f-ncc">Nhà cung cấp</label><select id="f-ncc">' + chonNcc + '</select>' +
+        // Các đợt nhập: mua nhiều lần, mỗi lần một giá. Số lượng và giá của vật tư
+        // cộng từ đây (giá là bình quân), không gõ rời nữa.
+        '<div class="o-nhap"><label>Đợt nhập hàng</label>' +
+        '<div class="dau-lo"><span>Ngày nhập</span><span>Số lượng</span><span>Đơn giá</span>' +
+        '<span>Nơi mua</span><span></span></div>' +
+        '<div id="ds-lo"></div>' +
+        '<button type="button" class="nut nut-vien nut-nho" onclick="themDongLo()">' +
+        '<i class="fa-solid fa-plus"></i> Thêm đợt nhập</button>' +
+        '<div class="tong-lo" id="tong-lo"></div></div>' +
+        '<div class="o-nhap"><label for="f-ncc">Nhà cung cấp chính</label><select id="f-ncc">' + chonNcc + '</select>' +
         '</div>' +
         '<div class="o-nhap"><label for="f-ghichu">Ghi chú</label>' +
         '<textarea id="f-ghichu" rows="2">' +
@@ -269,12 +303,91 @@
 
       Apex.moHopThoai(html, 'rong-lon');
       layAnh = Apex.ganOTaiAnh('vt-anh', anhHienTai);
-      ['f-gia', 'f-sl', 'f-gram', 'f-dung'].forEach(function (id) {
+      ['f-gram', 'f-dung'].forEach(function (id) {
         var e = document.getElementById(id);
         if (e) e.addEventListener('input', veTomTatVt);
       });
+      // Vật tư cũ (backend chưa trả loNhap) coi như một đợt đúng bằng giá / số lượng đang lưu
+      var dsLo = (v && v.loNhap && v.loNhap.length) ? v.loNhap
+        : (v ? [{ ngayNhap: (v.createdAt || '').slice(0, 10), soLuong: v.soLuong || 1,
+                  gia: v.gia || 0, nhaCungCapId: v.nhaCungCapId || null }]
+             : [{ ngayNhap: '', soLuong: 1, gia: 0, nhaCungCapId: null }]);
+      dsLo.forEach(themDongLo);
       doiMauVatTu();
       doiDonViTheoLoai();
+    }
+
+    /* ---------------- Đợt nhập hàng ---------------- */
+
+    /** Hôm nay dạng 2026-09-24 (ô <input type="date"> chỉ nhận dạng này). */
+    function homNay() {
+      var d = new Date();
+      var hai = function (n) { return (n < 10 ? '0' : '') + n; };
+      return d.getFullYear() + '-' + hai(d.getMonth() + 1) + '-' + hai(d.getDate());
+    }
+
+    /** Thêm một dòng đợt nhập vào form; lo = đợt đang lưu, không có thì dòng trống của hôm nay. */
+    function themDongLo(lo) {
+      var ds = document.getElementById('ds-lo');
+      if (!ds) return;
+      var l = lo || {};
+      var chonNcc = '<option value="">— Không ghi —</option>' + NCC.map(function (n) {
+        return '<option value="' + n.id + '"' + (l.nhaCungCapId === n.id ? ' selected' : '') + '>' +
+          Apex.esc(n.ten) + '</option>';
+      }).join('');
+      var o = document.createElement('div');
+      o.className = 'dong-lo';
+      o.innerHTML =
+        '<input type="date" class="lo-ngay" aria-label="Ngày nhập" value="' +
+        Apex.esc(l.ngayNhap || homNay()) + '" oninput="veTomTatVt()" />' +
+        '<input type="number" class="lo-sl" min="1" step="1" aria-label="Số lượng nhập" value="' +
+        (l.soLuong == null ? 1 : l.soLuong) + '" oninput="veTomTatVt()" />' +
+        '<input type="number" class="lo-gia" min="0" step="1000" aria-label="Đơn giá đợt này" value="' +
+        (l.gia == null ? 0 : l.gia) + '" oninput="veTomTatVt()" />' +
+        '<select class="lo-ncc" aria-label="Nơi mua đợt này">' + chonNcc + '</select>' +
+        '<button type="button" class="nut-bo-dong" title="Bỏ đợt nhập này" onclick="xoaDongLo(this)">' +
+        '<i class="fa-solid fa-xmark"></i></button>';
+      ds.appendChild(o);
+      veTomTatVt();
+    }
+
+    /** Bỏ một đợt; đợt cuối cùng thì không cho bỏ (vật tư phải có ít nhất một đợt nhập). */
+    function xoaDongLo(nut) {
+      var ds = document.getElementById('ds-lo');
+      var loi = document.getElementById('loi-form');
+      if (ds.querySelectorAll('.dong-lo').length <= 1) {
+        if (loi) loi.textContent = 'Vật tư phải có ít nhất một đợt nhập.';
+        return;
+      }
+      if (loi) loi.textContent = '';
+      var dong = nut.closest('.dong-lo');
+      if (dong) dong.parentNode.removeChild(dong);
+      veTomTatVt();
+    }
+
+    /** Các đợt đang gõ trong form, đúng thứ tự trên màn hình. */
+    function docLoTuForm() {
+      return Array.prototype.map.call(document.querySelectorAll('#ds-lo .dong-lo'), function (o) {
+        var ncc = o.querySelector('.lo-ncc').value;
+        return {
+          ngayNhap: o.querySelector('.lo-ngay').value || homNay(),
+          soLuong: parseInt(o.querySelector('.lo-sl').value, 10),
+          gia: parseInt(o.querySelector('.lo-gia').value, 10),
+          nhaCungCapId: ncc ? parseInt(ncc, 10) : null
+        };
+      });
+    }
+
+    /** Tổng của các đợt: số lượng, tiền, đơn giá bình quân (cùng công thức với backend). */
+    function tongLoNhap(ds) {
+      var sl = 0, tien = 0;
+      ds.forEach(function (l) {
+        var s = isNaN(l.soLuong) ? 0 : l.soLuong;
+        var g = isNaN(l.gia) ? 0 : l.gia;
+        sl += s;
+        tien += g * s;
+      });
+      return { soLuong: sl, tien: tien, gia: sl > 0 ? Math.round(tien / sl) : 0 };
     }
 
     /**
@@ -297,7 +410,11 @@
       veTomTatVt();
     }
 
-    /** Tóm tắt tính ngay khi gõ: tổng tiền, còn lại, tiền đã dùng — theo đúng đơn vị của loại. */
+    /**
+     * Tóm tắt tính ngay khi gõ: tổng tiền, còn lại, tiền đã dùng — theo đúng đơn vị của loại.
+     * Số lượng và tiền cộng từ các ĐỢT NHẬP, giá mỗi gram là giá bình quân (mỗi đợt một giá
+     * thì không biết cái đang in thuộc đợt nào) — đúng công thức backend dùng để lưu.
+     */
     function veTomTatVt() {
       var o = document.getElementById('tom-tat-vt');
       var oLoai = document.getElementById('f-loai');
@@ -308,12 +425,24 @@
         var e = document.getElementById(id);
         return e ? (parseInt(e.value, 10) || 0) : 0;
       };
-      var gia = so('f-gia'), sl = so('f-sl'), gram = so('f-gram'), daDung = so('f-dung');
-      var tong = laNhua ? gram * sl : sl;
+      var dsLo = docLoTuForm();
+      var t = tongLoNhap(dsLo);
+      var gram = so('f-gram'), daDung = so('f-dung');
+      var tong = laNhua ? gram * t.soLuong : t.soLuong;
       var dv = laNhua ? 'g' : ' cái';
-      var tienDaDung = laNhua ? (gram > 0 ? Math.round(gia / gram * daDung) : 0) : gia * daDung;
-      o.innerHTML = 'Tổng tiền mua <strong>' + Apex.money(gia * sl) + '</strong>' +
-        (laNhua && gram ? ' · Đơn giá <strong>' + Apex.number(Math.round(gia / gram)) + 'đ/g</strong>' : '') +
+      var moiDonVi = t.soLuong > 0 ? t.tien / t.soLuong : 0;
+      var tienDaDung = laNhua
+        ? (tong > 0 ? Math.round(t.tien / tong * daDung) : 0)
+        : Math.round(moiDonVi * daDung);
+
+      var oTong = document.getElementById('tong-lo');
+      if (oTong) {
+        oTong.innerHTML = dsLo.length + ' đợt · Tổng <strong>' + Apex.number(t.soLuong) +
+          '</strong> đơn vị · <strong>' + Apex.money(t.tien) + '</strong>' +
+          (dsLo.length > 1 ? ' · Giá bình quân <strong>' + Apex.money(t.gia) + '</strong>/đơn vị' : '');
+      }
+      o.innerHTML = 'Tổng tiền mua <strong>' + Apex.money(t.tien) + '</strong>' +
+        (laNhua && gram ? ' · Đơn giá <strong>' + Apex.number(Math.round(moiDonVi / gram)) + 'đ/g</strong>' : '') +
         ' · Còn lại <strong>' + Apex.number(Math.max(0, tong - daDung)) + dv + '</strong>' +
         (daDung ? ' · Tiền đã dùng <strong>' + Apex.money(tienDaDung) + '</strong>' : '');
     }
@@ -340,12 +469,24 @@
       var tinhChat = oLoai.options[oLoai.selectedIndex].getAttribute('data-tinh-chat') || 'dung_cu';
       var laNhua = tinhChat === 'nhua';
 
-      var gia = parseInt(document.getElementById('f-gia').value, 10);
-      var soLuong = parseInt(document.getElementById('f-sl').value, 10);
+      // Số lượng và giá của vật tư cộng từ các đợt nhập (giá = bình quân), không gõ rời
+      var dsLo = docLoTuForm();
+      if (!dsLo.length) { loi.textContent = 'Vật tư phải có ít nhất một đợt nhập.'; return; }
+      for (var k = 0; k < dsLo.length; k++) {
+        if (isNaN(dsLo[k].soLuong) || dsLo[k].soLuong < 1) {
+          loi.textContent = 'Đợt nhập thứ ' + (k + 1) + ': số lượng phải là số nguyên từ 1 trở lên.';
+          return;
+        }
+        if (isNaN(dsLo[k].gia) || dsLo[k].gia < 0) {
+          loi.textContent = 'Đợt nhập thứ ' + (k + 1) + ': đơn giá phải là số không âm.';
+          return;
+        }
+      }
+      var tong = tongLoNhap(dsLo);
+      var gia = tong.gia;
+      var soLuong = tong.soLuong;
       // Không phải nhựa thì không có khái niệm khối lượng mỗi đơn vị
       var gram = laNhua ? parseInt(document.getElementById('f-gram').value, 10) : 0;
-      if (isNaN(gia) || gia < 0) { loi.textContent = 'Giá mua không hợp lệ, vui lòng nhập số không âm.'; return; }
-      if (isNaN(soLuong) || soLuong < 1) { loi.textContent = 'Số lượng phải là số nguyên từ 1 trở lên.'; return; }
       if (isNaN(gram) || gram < 0) { loi.textContent = 'Khối lượng không hợp lệ, vui lòng nhập số không âm.'; return; }
 
       var duLieu = {
@@ -355,6 +496,8 @@
         loai: tinhChat,
         mauSacId: document.getElementById('f-mau').value
           ? parseInt(document.getElementById('f-mau').value, 10) : null,
+        loNhap: dsLo,
+        // gia + soLuong gửi kèm cho khớp với các đợt; backend mới tự cộng lại từ loNhap
         gia: gia,
         soLuong: soLuong,
         khoiLuongGram: gram,
