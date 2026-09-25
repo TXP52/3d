@@ -1,8 +1,8 @@
 window.Apex = (function () {
   'use strict';
 
-  var BRAND = 'Bedecraft';
-  var JAVA_API = 'http://localhost:8090/api';
+  var BRAND = 'Bedemaker';
+  var JAVA_API = (window.IN3D_API || 'http://localhost:8090/api');
 
   /* ---------------- Tiện ích ---------------- */
 
@@ -19,7 +19,12 @@ window.Apex = (function () {
 
   var fill = function (selector, html) {
     var el = document.querySelector(selector);
-    if (el) el.innerHTML = html;
+    if (!el) return;
+    el.innerHTML = html;
+    // Vẽ lại bảng thì áp dụng lại kiểu sắp xếp và từ khoá đang tìm (xem apDungBang)
+    if (typeof apDungBang === 'function' && (el.closest('table.bang') || el.querySelector('table.bang'))) {
+      apDungBang();
+    }
   };
 
   var ngayVN = function (iso) {
@@ -388,7 +393,7 @@ window.Apex = (function () {
         tatTai();
         // Lỗi mạng (fetch tự reject) không mang câu tiếng Việt nào -> nói thẳng là chưa gọi được backend
         LOI_NAP = (e && e.status) ? e
-          : new Error('Không kết nối được backend Java (cổng 8090). Kiểm tra backend đã chạy chưa rồi thử lại.');
+          : new Error('Không kết nối được server. Thử lại sau ít phút.');
         // Backend tắt thì bảng để TRỐNG và có thông báo đỏ ở đầu trang (capNhatBanner),
         // không gọi hàm vẽ với số liệu rỗng — nhìn "0 đơn, 0 ₫" dễ tưởng là thật.
         if (luot === LUOT_NAP) {
@@ -511,10 +516,8 @@ window.Apex = (function () {
     if (trangEl) {
       trangEl.insertAdjacentHTML('afterbegin',
         '<div class="bao-backend" id="bao-backend"><i class="fa-solid fa-plug-circle-xmark"></i> ' +
-        (DA_NAP
-          ? 'Mất kết nối backend Java (cổng 8090), số liệu đang hiện có thể đã cũ. '
-          : 'Không kết nối được backend Java (cổng 8090) nên chưa nạp được dữ liệu. ') +
-        'Chạy backend rồi tải lại trang.</div>');
+        (DA_NAP ? 'Mất kết nối server' : 'Không kết nối được server') +
+        '</div>');
     }
   };
 
@@ -550,7 +553,7 @@ window.Apex = (function () {
       });
     }, function () {
       tatTai();
-      var loi = new Error('Không kết nối được backend Java (cổng 8090). Kiểm tra backend đã chạy chưa rồi thử lại.');
+      var loi = new Error('Không kết nối được server. Thử lại sau ít phút.');
       loi.status = 0;
       throw loi;
     });
@@ -757,7 +760,7 @@ window.Apex = (function () {
           else loi(kq.j.loi || ('Không lưu được ảnh (HTTP ' + kq.status + ')'));
         })
         .catch(function () {
-          loi('Không kết nối được backend Java (cổng 8090) nên chưa lưu được ảnh.');
+          loi('Không kết nối được server nên chưa lưu được ảnh.');
         });
     });
   };
@@ -1232,13 +1235,139 @@ window.Apex = (function () {
     document.getElementById('apex-phu-mo').classList.remove('hien');
   };
 
-  // Tìm nhanh: ẩn/hiện hàng của bảng đầu tiên trên trang theo từ khoá
-  var timTrongBang = function (tuKhoa) {
-    var tk = (tuKhoa || '').toLowerCase();
-    document.querySelectorAll('table.bang tbody tr').forEach(function (tr) {
-      tr.style.display = tr.textContent.toLowerCase().indexOf(tk) >= 0 ? '' : 'none';
+  /* ---------------- Tìm trong bảng + sắp xếp theo cột ----------------
+     Hai thứ này chạy trên CHÍNH các hàng đang hiện, không cần từng trang sửa gì: ô tìm ở
+     thanh trên lọc hàng theo từ khoá, bấm tiêu đề cột thì sắp xếp tăng / giảm dần.
+     Trang vẽ lại bảng (sau mỗi lần lưu, mỗi lần đổi bộ lọc) thì tự áp dụng lại cả hai. */
+
+  var TU_KHOA_TIM = '';     // từ khoá đang gõ ở ô tìm
+  var SAP_XEP = {};         // khoá bảng -> { cot: số thứ tự cột, giam: true/false }
+
+  /** Khoá nhớ kiểu sắp xếp của một bảng: id của bảng / thẻ chứa, không có thì theo thứ tự trên trang. */
+  function khoaBang(bang) {
+    var than = bang.querySelector('tbody');
+    if (than && than.id) return than.id;
+    if (bang.id) return bang.id;
+    return 'bang-' + Array.prototype.indexOf.call(document.querySelectorAll('table.bang'), bang);
+  }
+
+  /**
+   * Giá trị để so sánh của một ô: số (tiền, gram, số lượng, %) thì so theo số, ngày
+   * dd/mm/yyyy so theo thời gian, còn lại so theo chữ (có dấu tiếng Việt).
+   * Ô trống / "—" luôn xuống cuối.
+   */
+  function giaTriSap(td) {
+    var chu = (td ? td.textContent : '').replace(/\s+/g, ' ').trim();
+    if (!chu || chu === '—' || chu === '-') return { trong: true, so: 0, chu: '' };
+    var ngay = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(chu);
+    if (ngay) {
+      return { trong: false, so: new Date(+ngay[3], +ngay[2] - 1, +ngay[1]).getTime(), chu: '' };
+    }
+    // "19.000 ₫", "1.611.777", "2–9g/cái", "73,5%" -> lấy cụm số đầu tiên (chấm = phân nhóm nghìn)
+    var m = /-?\d[\d.]*(,\d+)?/.exec(chu);
+    if (m && /\d/.test(chu.charAt(0)) || (m && /^[^a-zA-ZÀ-ỹ]*\d/.test(chu))) {
+      var so = parseFloat(m[0].replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(so)) return { trong: false, so: so, chu: '' };
+    }
+    return { trong: false, so: null, chu: chu.toLowerCase() };
+  }
+
+  /** Sắp xếp các hàng của một bảng theo kiểu đang nhớ; chưa chọn cột nào thì để nguyên. */
+  function sapXepBang(bang) {
+    var kieu = SAP_XEP[khoaBang(bang)];
+    var than = bang.querySelector('tbody');
+    if (!kieu || !than) return;
+    var hang = Array.prototype.slice.call(than.rows);
+    // Hàng báo trống ("Chưa có ...") chỉ có một ô trải dài: để yên, không sắp xếp
+    if (hang.length < 2 || hang.some(function (tr) { return tr.cells.length <= 1; })) return;
+
+    var dau = hang.map(function (tr, i) {
+      return { tr: tr, i: i, v: giaTriSap(tr.cells[kieu.cot]) };
+    });
+    dau.sort(function (a, b) {
+      if (a.v.trong !== b.v.trong) return a.v.trong ? 1 : -1;      // ô trống xuống cuối
+      var d;
+      if (a.v.so !== null && b.v.so !== null) d = a.v.so - b.v.so;
+      else d = String(a.v.chu).localeCompare(String(b.v.chu), 'vi');
+      if (d) return kieu.giam ? -d : d;
+      return a.i - b.i;                                            // giữ thứ tự cũ khi bằng nhau
+    });
+    dau.forEach(function (x) { than.appendChild(x.tr); });
+
+    // Mũi tên trên tiêu đề cột
+    var oTieuDe = bang.querySelectorAll('thead th');
+    Array.prototype.forEach.call(oTieuDe, function (th, k) {
+      th.classList.toggle('sx-tang', k === kieu.cot && !kieu.giam);
+      th.classList.toggle('sx-giam', k === kieu.cot && kieu.giam);
+    });
+  }
+
+  /** Ẩn hàng không khớp từ khoá đang gõ. */
+  function locTheoTuKhoa(bang) {
+    var than = bang.querySelector('tbody');
+    if (!than) return;
+    Array.prototype.forEach.call(than.rows, function (tr) {
+      tr.style.display = !TU_KHOA_TIM || tr.textContent.toLowerCase().indexOf(TU_KHOA_TIM) >= 0 ? '' : 'none';
+    });
+  }
+
+  /** Áp dụng lại sắp xếp + lọc cho mọi bảng trên trang (gọi sau mỗi lần trang vẽ lại bảng). */
+  var apDungBang = function () {
+    document.querySelectorAll('table.bang').forEach(function (bang) {
+      sapXepBang(bang);
+      locTheoTuKhoa(bang);
     });
   };
+
+  var timTrongBang = function (tuKhoa) {
+    TU_KHOA_TIM = (tuKhoa || '').toLowerCase().trim();
+    document.querySelectorAll('table.bang').forEach(locTheoTuKhoa);
+  };
+
+  function batSapXep() {
+    if (!document.getElementById('css-sap-xep')) {
+      var st = document.createElement('style');
+      st.id = 'css-sap-xep';
+      st.textContent =
+        'table.bang thead th{cursor:pointer;user-select:none;position:relative;padding-right:18px}' +
+        'table.bang thead th::after{content:"\\f0dc";font-family:"Font Awesome 6 Free";font-weight:900;' +
+        'font-size:9px;position:absolute;right:6px;top:50%;transform:translateY(-50%);opacity:.22}' +
+        'table.bang thead th:hover::after{opacity:.55}' +
+        'table.bang thead th.sx-tang::after{content:"\\f0de";opacity:1;color:var(--accent-dam)}' +
+        'table.bang thead th.sx-giam::after{content:"\\f0dd";opacity:1;color:var(--accent-dam)}' +
+        'table.bang thead th.phai{padding-right:18px}';
+      document.head.appendChild(st);
+    }
+
+    // Bấm tiêu đề cột: lần 1 tăng dần, lần 2 giảm dần, lần 3 về thứ tự gốc của trang
+    document.addEventListener('click', function (e) {
+      var th = e.target.closest('table.bang thead th');
+      if (!th) return;
+      var bang = th.closest('table.bang');
+      var cot = Array.prototype.indexOf.call(th.parentElement.cells, th);
+      var khoa = khoaBang(bang);
+      var kieu = SAP_XEP[khoa];
+      if (!kieu || kieu.cot !== cot) SAP_XEP[khoa] = { cot: cot, giam: false };
+      else if (!kieu.giam) kieu.giam = true;
+      else {
+        delete SAP_XEP[khoa];
+        Array.prototype.forEach.call(bang.querySelectorAll('thead th'), function (x) {
+          x.classList.remove('sx-tang', 'sx-giam');
+        });
+        if (typeof veLaiTrang === 'function') { try { veLaiTrang(); } catch (bo) { } }
+        return;
+      }
+      sapXepBang(bang);
+      locTheoTuKhoa(bang);
+    });
+
+    // Trang vẽ lại bảng thì áp dụng lại — khỏi phải sửa từng trang
+    // KHÔNG theo dõi DOM bằng MutationObserver: chính việc sắp xếp cũng đổi DOM nên nó tự
+    // gọi lại mình mãi, trang treo cứng. Chỗ duy nhất cần bám là Apex.fill (mọi trang đều
+    // vẽ bảng qua đó) — xem hàm fill.
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', batSapXep);
+  else batSapXep();
 
   // Menu thao tác (dropdown ba chấm)
   var batMenuThaoTac = function () {
@@ -1473,6 +1602,7 @@ window.Apex = (function () {
     moMenu: moMenu,
     dongMenu: dongMenu,
     timTrongBang: timTrongBang,
+    apDungBang: apDungBang,
     layPhien: layPhien,
     dangXuat: dangXuat,
     doiTrangThai: doiTrangThai,

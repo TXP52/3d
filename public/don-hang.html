@@ -9,7 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="assets/css/apex.css?v=30" rel="stylesheet">
-  <script src="assets/js/apex.js?v=32"></script>
+  <script src="assets/js/cau-hinh.js"></script>
+    <script src="assets/js/apex.js?v=36"></script>
   <style>
     .ds-mon { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .dong-mon {
@@ -257,12 +258,15 @@
                      '<span style="color:var(--accent-dam);">&minus; ' + Apex.money(o.tienGiam) + '</span>')
               : '')
           : '') +
-        // Hai khoản ngoài tiền hàng của đơn gõ tay
+        // Hai khoản ngoài tiền hàng của đơn gõ tay, rồi hai dòng tiền cuối:
+        //   Khách trả   = tiền hàng sau giảm + khác  (số thu của khách, đúng số COD)
+        //   Thực nhận   = khách trả - phí            (chính là Tổng tiền của đơn)
         (o.phuThu > 0 ? dong('Khác', '+ ' + Apex.money(o.phuThu)) : '') +
-        (o.phi > 0
-          ? dong('Phí', '<span style="color:var(--do);">&minus; ' + Apex.money(o.phi) + '</span>')
-          : '') +
+        (o.phi > 0 ? dong('Khách trả', Apex.money(o.total + o.phi)) +
+                     dong('Phí', '<span style="color:var(--do);">&minus; ' + Apex.money(o.phi) + '</span>')
+                   : '') +
         dong('Tổng tiền', '<strong>' + Apex.money(o.total) + '</strong>') +
+        dong('Tiền thực nhận', '<strong style="color:var(--accent-dam);">' + Apex.money(o.total) + '</strong>') +
         '</div>' +
         '<div style="margin-top:16px;font-weight:600;">Sản phẩm đã đặt</div>' + mon +
         '<div class="o-nhap" style="margin-top:16px;margin-bottom:0;">' +
@@ -278,6 +282,8 @@
         '<button class="nut nut-do" type="button" onclick="Apex.dangLuu(this, Apex.xoaDon(' + o.dbId + '))">' +
         '<i class="fa-solid fa-trash"></i> Xoá</button>' +
         '<div class="day-phai">' +
+        '<button class="nut nut-vien" type="button" onclick="moFormDon(' + o.dbId + ')">' +
+        '<i class="fa-solid fa-pen"></i> Sửa đơn</button>' +
         '<button class="nut nut-xanh" type="button" onclick="Apex.dangLuu(this, Apex.danhDauDaTT(' + o.dbId + '))">' +
         '<i class="fa-solid fa-check"></i> Đã thanh toán</button></div>' +
         '</div>';
@@ -510,16 +516,29 @@
       bao.textContent = c.laTaiKhoan ? 'Khách trong danh bạ (KH-' + c.nguoiDungId + ')' : 'Khách lẻ';
     }
 
-    function moFormDon() {
+    /**
+     * Form tạo đơn — truyền id đơn thì thành form SỬA đơn đó (cùng một form, cùng một
+     * bộ ô nhập; backend nhận đúng một dạng dữ liệu cho cả hai đường).
+     * Sửa đơn: giá của từng món được tính lại theo bảng giá đang bán, kho tự trả lại
+     * món cũ rồi trừ món mới.
+     */
+    function moFormDon(dbId) {
+      var d = dbId ? donTho(dbId) : null;      // đơn THÔ: có kênh, phí, phụ thu, món kèm id
+      var sua = !!(d && d.id);
+      var tt = (d && d.thanhToan && d.thanhToan[0]) || null;
+
+      var kenhDang = sua ? (d.kenh || 'website') : 'facebook';
       var chonKenh = Object.keys(KENH).map(function (k) {
-        return '<option value="' + k + '"' + (k === 'facebook' ? ' selected' : '') + '>' + KENH[k].ten + '</option>';
+        return '<option value="' + k + '"' + (k === kenhDang ? ' selected' : '') + '>' + KENH[k].ten + '</option>';
       }).join('');
+      var ttDang = sua ? (d.trangThai || 'cho_xac_nhan') : 'cho_xac_nhan';
       var chonTt = Object.keys(Apex.ttMap).map(function (k) {
-        return '<option value="' + k + '"' + (k === 'cho_xac_nhan' ? ' selected' : '') + '>' +
+        return '<option value="' + k + '"' + (k === ttDang ? ' selected' : '') + '>' +
           Apex.ttMap[k] + '</option>';
       }).join('');
+      var ptDang = tt ? (tt.phuongThuc || 'cod') : 'cod';
       var chonPt = Object.keys(PHUONG_THUC).map(function (k) {
-        return '<option value="' + k + '">' + PHUONG_THUC[k] + '</option>';
+        return '<option value="' + k + '"' + (k === ptDang ? ' selected' : '') + '>' + PHUONG_THUC[k] + '</option>';
       }).join('');
       // Gợi ý mã đang chạy; chủ shop vẫn gõ tay mã khác được, backend kiểm tra lại
       var maDangChay = (Apex.khuyenMai || []).filter(function (k) {
@@ -528,7 +547,7 @@
 
       var html =
         '<div class="ht-dau">' +
-        '<div><h3>Tạo đơn hàng</h3></div>' +
+        '<div><h3>' + (sua ? 'Sửa đơn ' + Apex.esc(d.maDon || '') : 'Tạo đơn hàng') + '</h3></div>' +
         '<button class="nut-dong" type="button" onclick="Apex.dongHopThoai()" aria-label="Đóng">' +
         '<i class="fa-solid fa-xmark"></i></button></div>' +
 
@@ -564,9 +583,11 @@
         // "Phí" trừ khỏi tổng (phí sàn Shopee / TikTok, phí ship shop chịu)
         '<div class="luoi-nhap-2" style="margin-top:12px;">' +
         '<div class="o-nhap"><label for="f-phu-thu">Khác (cộng vào tổng)</label>' +
-        '<input type="number" id="f-phu-thu" min="0" step="1000" value="0" oninput="tinhTongMon()" /></div>' +
+        '<input type="number" id="f-phu-thu" min="0" step="1000" value="' + (sua ? (d.phuThu || 0) : 0) +
+        '" oninput="tinhTongMon()" /></div>' +
         '<div class="o-nhap"><label for="f-phi">Phí sàn, phí ship… (trừ khỏi tổng)</label>' +
-        '<input type="number" id="f-phi" min="0" step="1000" value="0" oninput="tinhTongMon()" /></div>' +
+        '<input type="number" id="f-phi" min="0" step="1000" value="' + (sua ? (d.phi || 0) : 0) +
+        '" oninput="tinhTongMon()" /></div>' +
         '</div>' +
         '<div class="tong-mon" id="tong-mon"></div></div>' +
 
@@ -578,26 +599,66 @@
         '<div class="o-nhap"><label for="f-phuong-thuc">Cách thanh toán</label>' +
         '<select id="f-phuong-thuc">' + chonPt + '</select></div>' +
         '<div class="o-nhap"><label for="f-ma-km">Mã khuyến mãi</label>' +
-        '<input type="text" id="f-ma-km" list="ds-ma-km" />' +
+        '<input type="text" id="f-ma-km" list="ds-ma-km" value="' +
+        (sua ? Apex.esc(d.maKhuyenMai || '') : '') + '" />' +
         '<datalist id="ds-ma-km">' + maDangChay.map(function (k) {
           return '<option value="' + Apex.esc(k.ma) + '">' + Apex.esc(k.ten || '') + '</option>';
         }).join('') + '</datalist></div>' +
         '</div>' +
 
         '<div class="o-nhap"><label class="o-tick" for="f-da-tt">' +
-        '<input type="checkbox" id="f-da-tt" /> Khách đã trả tiền rồi</label></div>' +
+        '<input type="checkbox" id="f-da-tt"' +
+        (tt && tt.trangThai === 'da_thanh_toan' ? ' checked' : '') + ' /> Khách đã trả tiền rồi</label></div>' +
 
         '<div class="bao-loi" id="loi-tao-don"></div>' +
         '</div>' +
 
         '<div class="ht-chan"><div class="day-phai">' +
         '<button class="nut nut-vien" type="button" onclick="Apex.dongHopThoai()">Huỷ</button>' +
-        '<button class="nut nut-chinh" type="button" onclick="luuDonMoi(this)">' +
-        '<i class="fa-solid fa-floppy-disk"></i> Tạo đơn</button>' +
+        '<button class="nut nut-chinh" type="button" onclick="luuDonMoi(this, ' + (sua ? d.id : 'null') + ')">' +
+        '<i class="fa-solid fa-floppy-disk"></i> ' + (sua ? 'Lưu đơn' : 'Tạo đơn') + '</button>' +
         '</div></div>';
 
       Apex.moHopThoai(html, 'rong');
-      themDongMon();   // mở form là có sẵn một dòng món cho nhanh
+      if (!sua) {
+        themDongMon();   // mở form là có sẵn một dòng món cho nhanh
+        return;
+      }
+      // Sửa đơn: điền lại thông tin khách và từng món đang có
+      document.getElementById('f-ten-khach').value = d.tenKhach || '';
+      document.getElementById('f-sdt').value = d.soDienThoai || '';
+      document.getElementById('f-dia-chi').value = d.diaChi || '';
+      document.getElementById('f-ghi-chu').value = d.ghiChu || '';
+      document.getElementById('f-nguoi-dung-id').value = d.nguoiDungId || '';
+      (d.chiTiet || []).forEach(themDongMonCu);
+      if (!(d.chiTiet || []).length) themDongMon();
+      tinhTongMon();
+    }
+
+    /**
+     * Một dòng món điền sẵn từ đơn đang sửa. Món gắn sản phẩm thì chọn đúng sản phẩm +
+     * phân loại; món shop tự gõ (không có sanPhamId) thì về dạng "Món tự gõ" kèm tên.
+     * Đơn giá luôn coi là GÕ TAY để giữ nguyên giá đã bán cho khách, dù bảng giá đã đổi.
+     */
+    function themDongMonCu(ct) {
+      themDongMon();
+      var dong = document.querySelector('#ds-mon-tay .dong-mon-tay:last-child');
+      if (!dong) return;
+      var oSp = dong.querySelector('.mon-sp');
+      var coSp = ct.sanPhamId && SP_THEO_ID[ct.sanPhamId];
+      oSp.value = coSp ? String(ct.sanPhamId) : 'tu-go';
+      doiSanPham(oSp);
+      var oBt = dong.querySelector('.mon-bt');
+      if (coSp) {
+        if (oBt.tagName === 'SELECT' && ct.bienTheId) oBt.value = String(ct.bienTheId);
+      } else {
+        oBt.value = ct.tenSanPham || '';
+      }
+      dong.querySelector('.mon-sl').value = ct.soLuong || 1;
+      var oGia = dong.querySelector('.mon-gia');
+      oGia.value = ct.donGia || 0;
+      oGia.setAttribute('data-tu-dong', '0');
+      tinhTongMon();
     }
 
     /** Đọc các dòng món thành mảng matHang gửi cho backend. */
@@ -630,7 +691,8 @@
       return mon;
     }
 
-    function luuDonMoi(nut) {
+    /** Lưu form: dbId = null là tạo đơn mới, có id là sửa đơn đó. */
+    function luuDonMoi(nut, dbId) {
       var loi = document.getElementById('loi-tao-don');
       var tenKhach = document.getElementById('f-ten-khach').value.trim();
       var sdt = document.getElementById('f-sdt').value.trim();
@@ -676,10 +738,13 @@
       // Ghi xong: Apex đóng hộp thoại, nạp lại các khoá của trang (kho đã trừ) rồi báo toast.
       // Backend từ chối (mã sai, món không còn bán...) thì câu đó hiện ngay trong ô lỗi.
       Apex.dangLuu(nut, function () {
-        return Apex.ghi('POST', '/quan-tri/don-hang', duLieu).then(function (kq) {
-          return Apex.capNhatXong('Đã tạo đơn hàng').then(function () { return kq; });
+        var hua = dbId
+          ? Apex.ghi('PUT', '/quan-tri/don-hang/' + dbId, duLieu)
+          : Apex.ghi('POST', '/quan-tri/don-hang', duLieu);
+        return hua.then(function (kq) {
+          return Apex.capNhatXong(dbId ? 'Đã lưu đơn hàng' : 'Đã tạo đơn hàng').then(function () { return kq; });
         });
-      }, loi, 'Đang tạo đơn…');
+      }, loi, dbId ? 'Đang lưu đơn…' : 'Đang tạo đơn…');
     }
 
     function locDon() { veBang(document.getElementById('loc-trang-thai').value); }

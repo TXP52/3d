@@ -1,0 +1,52 @@
+# ============================================================
+# Đưa trang admin lên GitHub Pages.
+#
+# Vì sao cần file này: GitHub Pages chỉ phát được thư mục gốc của repo
+# hoặc thư mục /docs. Trang admin nằm trong public/ nên phải có bước này
+# để chép riêng public/ lên Pages, khỏi phải đổi tên thư mục (đổi tên là
+# hỏng đường dẫn khi chạy ở máy nhà).
+#
+# Sau khi đẩy file này lên: vào repo trên GitHub → Settings → Pages →
+# mục "Build and deployment" chọn Source = "GitHub Actions".
+# ============================================================
+name: Đưa trang admin lên Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:      # cho phép bấm chạy tay trong tab Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nếu đang chạy dở mà đẩy tiếp thì để lần cũ chạy xong, không huỷ giữa chừng
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  dua-len:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.ket-qua.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      # .nojekyll: bảo GitHub đừng xử lý file qua Jekyll, nếu không những
+      # thư mục/tệp bắt đầu bằng dấu gạch dưới sẽ bị bỏ qua khi phát.
+      - name: Thêm .nojekyll
+        run: touch public/.nojekyll
+
+      - name: Đóng gói thư mục public
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Phát lên Pages
+        id: ket-qua
+        uses: actions/deploy-pages@v4
