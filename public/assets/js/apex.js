@@ -1178,7 +1178,7 @@ window.Apex = (function () {
     // Sidebar
     var sb = '<aside class="apex-sidebar" id="apex-sidebar">' +
       '<a class="thuong-hieu" href="index.html">' +
-      '<img src="assets/img/logo.png" alt="IN3D" />' +
+      '<img src="assets/img/logo.png" alt="BEDEMAKER" />' +
       '<div><div class="ten">' + BRAND + '</div></div></a>' +
       '<div class="cuon">';
     NAV.forEach(function (g) {
