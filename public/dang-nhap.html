@@ -153,7 +153,7 @@
         emailDangDangNhap = kq.email;
         sangBuoc2(kq);
       } catch (err) {
-        loi1.textContent = 'Không kết nối được backend Java. Hãy chạy backend (cổng 8090) rồi thử lại.';
+        loi1.textContent = 'Không kết nối được server';
         datNut(nut1, false, '<i class="fa-solid fa-right-to-bracket"></i> Tiếp tục');
       }
     });
@@ -256,7 +256,7 @@
         ok2.style.display = 'block';
         setTimeout(function () { window.location.href = 'index.html'; }, 800);
       } catch (err) {
-        loi2.textContent = 'Không kết nối được backend Java.';
+        loi2.textContent = 'Không kết nối được server';
         datNut(nut2, false, '<i class="fa-solid fa-shield-halved"></i> Xác thực &amp; đăng nhập');
       }
     });
@@ -282,7 +282,7 @@
         oOtp[0].focus();
         batDauDemNguoc((kq.phutHieuLuc || 5) * 60);
       } catch (err) {
-        loi2.textContent = 'Không kết nối được backend Java.';
+        loi2.textContent = 'Không kết nối được server';
       }
       nutGL.textContent = 'Gửi lại mã';
     }
