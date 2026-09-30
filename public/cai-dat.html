@@ -57,10 +57,36 @@
             </div>
           </div>
 
-          <!-- Trạng thái hệ thống -->
-          <div class="the" style="align-self:start;">
-            <div class="the-dau"><div><h3>Trạng thái hệ thống</h3></div></div>
-            <div class="the-than" id="trang-thai-ht"></div>
+          <div>
+            <!-- Đổi mật khẩu quản trị -->
+            <div class="the" style="margin-bottom:20px;">
+              <div class="the-dau"><div><h3>Đổi mật khẩu</h3></div></div>
+              <div class="the-than">
+                <div class="o-nhap">
+                  <label for="mk-cu">Mật khẩu hiện tại</label>
+                  <input id="mk-cu" type="password" autocomplete="current-password">
+                </div>
+                <div class="o-nhap">
+                  <label for="mk-moi">Mật khẩu mới</label>
+                  <input id="mk-moi" type="password" autocomplete="new-password">
+                </div>
+                <div class="o-nhap">
+                  <label for="mk-lai">Nhập lại mật khẩu mới</label>
+                  <input id="mk-lai" type="password" autocomplete="new-password">
+                </div>
+                <div class="bao-loi" id="mk-loi" style="display:none;"></div>
+                <div class="bao-ok" id="mk-ok" style="display:none;"></div>
+                <button class="nut nut-chinh" id="nut-doi-mk">
+                  <i class="fa-solid fa-key"></i> Đổi mật khẩu
+                </button>
+              </div>
+            </div>
+
+            <!-- Trạng thái hệ thống -->
+            <div class="the">
+              <div class="the-dau"><div><h3>Trạng thái hệ thống</h3></div></div>
+              <div class="the-than" id="trang-thai-ht"></div>
+            </div>
           </div>
 
         </div>
@@ -71,6 +97,58 @@
 
   <script>
     Apex.shell('cai-dat', 'Cài đặt cửa hàng');
+
+    /* ---------------- Đổi mật khẩu quản trị ----------------
+       Gọi thẳng API chứ không qua Apex.ghi: Apex.ghi nạp lại toàn bộ dữ liệu trang
+       sau mỗi lần ghi, mà đổi mật khẩu thì chẳng có bảng nào cần vẽ lại. */
+    (function () {
+      var oCu = document.getElementById('mk-cu');
+      var oMoi = document.getElementById('mk-moi');
+      var oLai = document.getElementById('mk-lai');
+      var oLoi = document.getElementById('mk-loi');
+      var oOk = document.getElementById('mk-ok');
+      var nut = document.getElementById('nut-doi-mk');
+
+      function bao(el, chu) {
+        oLoi.style.display = 'none';
+        oOk.style.display = 'none';
+        if (!chu) return;
+        el.textContent = chu;
+        el.style.display = 'block';
+      }
+
+      nut.addEventListener('click', function () {
+        var cu = oCu.value;
+        var moi = oMoi.value;
+
+        if (!cu) { bao(oLoi, 'Nhập mật khẩu hiện tại.'); oCu.focus(); return; }
+        if (moi.length < 8) { bao(oLoi, 'Mật khẩu mới phải có ít nhất 8 ký tự.'); oMoi.focus(); return; }
+        if (moi !== oLai.value) { bao(oLoi, 'Hai ô mật khẩu mới không giống nhau.'); oLai.focus(); return; }
+
+        bao(null, '');
+        nut.disabled = true;
+
+        var phien = Apex.layPhien();
+        fetch(Apex.javaApi + '/auth/doi-mat-khau', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + (phien && phien.token)
+          },
+          body: JSON.stringify({ matKhauCu: cu, matKhauMoi: moi })
+        }).then(function (r) {
+          return r.json().then(function (kq) { return { ok: r.ok, kq: kq }; });
+        }).then(function (d) {
+          nut.disabled = false;
+          if (!d.ok) { bao(oLoi, d.kq.loi || 'Không đổi được mật khẩu.'); return; }
+          oCu.value = oMoi.value = oLai.value = '';
+          bao(oOk, 'Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.');
+        }, function () {
+          nut.disabled = false;
+          bao(oLoi, 'Không kết nối được server');
+        });
+      });
+    })();
 
     (function () {
       var KHOA = 'in3d_caidat';
